@@ -156,6 +156,8 @@ fn a_concurrent_writer_never_makes_the_position_disagree_with_the_rows() {
     let writer_store = store.clone();
     let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let flag = stop.clone();
+    let ready = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let writer_ready = ready.clone();
     let writer = std::thread::spawn(move || {
         let mut conn = rusqlite::Connection::open(&writer_store).expect("open");
         conn.busy_timeout(std::time::Duration::from_secs(5)).expect("timeout");
@@ -170,9 +172,15 @@ fn a_concurrent_writer_never_makes_the_position_disagree_with_the_rows() {
             tx.execute("UPDATE aggregates SET generation = ?1, sequence = ?1", rusqlite::params![next])
                 .expect("advance");
             tx.commit().expect("commit");
+            writer_ready.store(true, std::sync::atomic::Ordering::Relaxed);
             next += 1;
         }
     });
+    let started = std::time::Instant::now();
+    while !ready.load(std::sync::atomic::Ordering::Relaxed) {
+        assert!(started.elapsed() < std::time::Duration::from_secs(10), "the writer never committed");
+        std::thread::yield_now();
+    }
     let mut checked = 0;
     for _ in 0..200 {
         let read = ik::operations::read(&store, "loan-1", 5);
