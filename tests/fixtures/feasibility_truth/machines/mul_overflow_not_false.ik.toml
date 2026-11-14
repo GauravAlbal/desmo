@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "mul_overflow_not_false"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+weird = {}
+[commands.go]
+from = ["idle"]
+args = { n = "int" }
+when = "$n * 2 < $n"
+to = "weird"
+

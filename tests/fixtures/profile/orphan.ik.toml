@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "profile_orphan"
+machine_version = 1
+
+[facts]
+
+[states]
+start = { initial = true }
+done = { terminal = true }
+other = {}
+
+[commands.finish]
+from = ["start"]
+to = "done"

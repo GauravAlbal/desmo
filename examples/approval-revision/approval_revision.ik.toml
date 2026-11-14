@@ -1,0 +1,41 @@
+# Approval applies to a revision, not to a sticky flag and not to a deleted fact.
+# approved_revision records which revision was approved. current_revision advances
+# on every edit. Authorization is legal only while those counters match and at
+# least one revision exists. Zero is the declared initial counter, not a sentinel
+# written to forget an approval.
+schema_version = 1
+machine_id = "approval_revision"
+machine_version = 1
+name = "ApprovalRevision"
+
+[facts]
+artifact_digest = { type = "string", policy = "replace" }
+current_revision = { type = "int", policy = "counter", initial = 0 }
+approved_revision = { type = "int", policy = "replace", initial = 0 }
+
+[states]
+draft = { initial = true }
+approved = {}
+authorized = { terminal = true }
+
+[commands.edit]
+from = ["draft", "approved"]
+to = "draft"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest", current_revision = "+1" }
+
+[commands.approve]
+from = ["draft"]
+to = "approved"
+args = { revision = "int" }
+when = "exists(artifact_digest) && current_revision > 0 && $revision == current_revision"
+then = { approved_revision = "$revision" }
+
+[commands.authorize]
+from = ["draft", "approved"]
+to = "authorized"
+when = "approved_revision == current_revision && current_revision > 0 && exists(artifact_digest)"
+
+[invariants.approval_matches_revision]
+when = "state == 'authorized'"
+assert = "approved_revision == current_revision && current_revision > 0 && exists(artifact_digest)"

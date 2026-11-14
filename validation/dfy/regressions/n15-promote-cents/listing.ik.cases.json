@@ -1,0 +1,29 @@
+{
+  "commands": {
+    "open": [
+      { "name": "listing", "args": { "amount": 10000, "deposit_window_ms": 5000 } }
+    ],
+    "accept": [
+      {
+        "name": "honest",
+        "args": { "deposit_cents": 200, "accepted_ms": 1000, "deposit_deadline_ms": 6000 }
+      },
+      {
+        "name": "cents_lie",
+        "args": { "deposit_cents": 1, "accepted_ms": 1000, "deposit_deadline_ms": 6000 }
+      }
+    ],
+    "deposit": [
+      { "name": "fund", "args": { "deposit_id": "dep-1" } }
+    ],
+    "fallthrough": [
+      { "name": "release", "args": {} }
+    ],
+    "promote": [
+      { "name": "clear", "args": {} }
+    ],
+    "reconcile": [
+      { "name": "after_promote", "args": {} }
+    ]
+  }
+}

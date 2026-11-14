@@ -1,0 +1,14 @@
+{
+  "id": "incomplete_search",
+  "graph": "graphs/linear-depth-1.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "expect": {
+    "result_accepted": true,
+    "execution_status": "completed",
+    "finding": "inconclusive",
+    "evidence_class": "bounded_paths",
+    "coverage_complete": false,
+    "host_interpretation": "inconclusive"
+  }
+}

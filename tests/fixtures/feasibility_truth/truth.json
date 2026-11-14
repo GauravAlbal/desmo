@@ -1,0 +1,3445 @@
+{
+  "cases": [
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "dead_commands",
+      "corpus": "corpus/dead_command_ghost.cases.json",
+      "id": "dead_command_ghost",
+      "machine": "machines/dead_command_ghost.ik.toml",
+      "notes": "Ghost command sources an unreachable leaf.",
+      "obligations": [
+        {
+          "id": "command/live/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "live"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/live/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "live"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "live"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,other,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/ghost/from/other/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "source=other never entered",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,other,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/ghost/0/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "source=other never entered",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,other,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/other/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "no incoming transition",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "dead_commands",
+      "corpus": "corpus/dead_always_false_guard.cases.json",
+      "id": "dead_always_false_guard",
+      "machine": "machines/dead_always_false_guard.ik.toml",
+      "notes": "Unconditional false comparison.",
+      "obligations": [
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "guard 1==0 is false",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/0/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "guard 1==0 is false",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/done/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "only command never commits",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unreachable_state",
+      "corpus": "corpus/missing_authored_branch.cases.json",
+      "id": "missing_authored_branch",
+      "machine": "machines/missing_authored_branch.ik.toml",
+      "notes": "Authored state with no writer.",
+      "obligations": [
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,other,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/other/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "declared leaf with no incoming",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "dead_commands",
+      "corpus": "corpus/seal_from_wrong_source.cases.json",
+      "id": "seal_from_wrong_source",
+      "machine": "machines/seal_from_wrong_source.ik.toml",
+      "notes": "Same command, one source dead by state guard.",
+      "obligations": [
+        {
+          "id": "command/review/from/edited/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "review"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/seal/from/reviewed/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "review"
+            },
+            {
+              "args": {},
+              "command": "seal"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[edited,reviewed,sealed,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/seal/from/edited/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "source=edited makes state==reviewed false",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "state/sealed/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "review"
+            },
+            {
+              "args": {},
+              "command": "seal"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/reviewed/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "review"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/always_true_first_arm.cases.json",
+      "id": "always_true_first_arm",
+      "machine": "machines/always_true_first_arm.ik.toml",
+      "notes": "Always-true first arm shadows later equality.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/b/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/go/from/a/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,b,c,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,3,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "shadowed_by=0 covering all ints",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,b,c,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,3,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/c/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "only destination of shadowed arm",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/covering_earlier_arm.cases.json",
+      "id": "covering_earlier_arm",
+      "machine": "machines/covering_earlier_arm.ik.toml",
+      "notes": "Range arm covers a later equality.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/go/2/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": -2
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/nonneg/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/neg/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": -2
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,exact,neg,nonneg,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,3,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "shadowed_by=0 because 3>=0",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,exact,neg,nonneg,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,3,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/exact/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "only destination of shadowed arm",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/unconditional_first_arm.cases.json",
+      "id": "unconditional_first_arm",
+      "machine": "machines/unconditional_first_arm.ik.toml",
+      "notes": "Bare first arm is unconditional.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,b,c,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "unconditional earlier arm",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,b,c,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/c/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "shadowed later destination",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/always_true_or_cover.cases.json",
+      "id": "always_true_or_cover",
+      "machine": "machines/always_true_or_cover.ik.toml",
+      "notes": "Covering OR is always true on ints.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,hit,miss,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "shadowed_by covering OR",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,hit,miss,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/miss/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "shadowed destination",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/string_eq_paid_failed_other.cases.json",
+      "id": "string_eq_paid_failed_other",
+      "machine": "machines/string_eq_paid_failed_other.ik.toml",
+      "notes": "Equality partition plus other.",
+      "obligations": [
+        {
+          "id": "outcome/step/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "paid"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/step/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "failed"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/step/2/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "open"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/paid/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "paid"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/failed/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "failed"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/other/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "open"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/string_ne_covers_later.cases.json",
+      "id": "string_ne_covers_later",
+      "machine": "machines/string_ne_covers_later.ik.toml",
+      "notes": "Equal/not-equal covers the later arm.",
+      "obligations": [
+        {
+          "id": "outcome/step/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "paid"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/step/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "due"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[idle,paid,rest,shadow,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/step/2/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "eq/ne partition is total",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[idle,paid,rest,shadow,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/shadow/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "unconditional after total partition",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/string_eq_only.cases.json",
+      "id": "string_eq_only",
+      "machine": "machines/string_eq_only.ik.toml",
+      "notes": "Single equality guard is reachable.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "ok"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/yes/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "ok"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "published_safety",
+      "corpus": "corpus/counter_never_negative.cases.json",
+      "id": "counter_never_negative",
+      "machine": "machines/counter_never_negative.ik.toml",
+      "notes": "Classic non-negative counter.",
+      "obligations": [
+        {
+          "id": "command/inc/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "inc"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/dec/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "inc"
+            },
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "dec"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[bad,s,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/neg/from/s/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "n starts 0; dec requires n>0",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[bad,s,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/bad/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 3,
+          "scope": "counter never negative",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "published_safety",
+      "corpus": "corpus/counter_dec_blocked_at_zero.cases.json",
+      "id": "counter_dec_blocked_at_zero",
+      "machine": "machines/counter_dec_blocked_at_zero.ik.toml",
+      "notes": "Decrement guard blocks at zero.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "strings=[s,under,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/dec/from/s/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "n initial 0 so n>0 is false",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[s,under,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/under/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "dec never commits",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "overflow_boundary",
+      "corpus": "corpus/overflow_inc_at_i64_max.cases.json",
+      "id": "overflow_inc_at_i64_max",
+      "machine": "machines/overflow_inc_at_i64_max.ik.toml",
+      "notes": "Counter overflow is an error, not a false guard.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "strings=[s,t,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/inc/from/s/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 1,
+          "scope": "checked +1 at i64 max refuses; not a false guard",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[s,t,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/t/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 1,
+          "scope": "apply overflow is not a commit",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[s,t,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/inc/0/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 1,
+          "scope": "apply overflow refuses",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "overflow_boundary",
+      "corpus": "corpus/overflow_max_minus_one_ok.cases.json",
+      "id": "overflow_max_minus_one_ok",
+      "machine": "machines/overflow_max_minus_one_ok.ik.toml",
+      "notes": "Increment from max-1 succeeds.",
+      "obligations": [
+        {
+          "id": "command/inc/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "inc"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/t/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "inc"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/overflow_guard_add_error.cases.json",
+      "id": "overflow_guard_add_error",
+      "machine": "machines/overflow_guard_add_error.ik.toml",
+      "notes": "Overflow of n+1 is an error; wraparound provers may pick the later arm.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "n": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,wrap,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "at max, n+1 overflows (error, not false) so later arm is not considered; at other n first arm wins or is false with n!=max",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,wrap,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/wrap/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 2,
+          "scope": "overflow is not fallthrough",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "state/ok/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "n": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/overflow_mul_guard_error.cases.json",
+      "id": "overflow_mul_guard_error",
+      "machine": "machines/overflow_mul_guard_error.ik.toml",
+      "notes": "Multiplication overflow is an error.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "n": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[big,idle,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "max*2 overflows; error does not fall through",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[big,idle,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/big/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 2,
+          "scope": "mul overflow is not false",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unreachable_behind_invariant",
+      "corpus": "corpus/invariant_blocks_state.cases.json",
+      "id": "invariant_blocks_state",
+      "machine": "machines/invariant_blocks_state.ik.toml",
+      "notes": "Unreachable state behind an invariant.",
+      "obligations": [
+        {
+          "complete": true,
+          "domain": "strings=[bad,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/bad/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "published_pattern",
+          "nodes": 1,
+          "scope": "invariant refuses the only writer",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[bad,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "published_pattern",
+          "nodes": 1,
+          "scope": "apply invariant blocks commit",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unreachable_state",
+      "corpus": "corpus/no_incoming_state.cases.json",
+      "id": "no_incoming_state",
+      "machine": "machines/no_incoming_state.ik.toml",
+      "notes": "Isolated leaf.",
+      "obligations": [
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,ghost,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/ghost/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "no incoming",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "fact_flow",
+      "corpus": "corpus/sneak_phase_without_flag.cases.json",
+      "id": "sneak_phase_without_flag",
+      "machine": "machines/sneak_phase_without_flag.ik.toml",
+      "notes": "Fact-flow implication: phase active implies flagged.",
+      "obligations": [
+        {
+          "id": "command/begin/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "begin"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/finish/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "begin"
+            },
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[active,done,idle,s,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/sneak/from/s/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "published_pattern",
+          "nodes": 3,
+          "scope": "phase X without flag Y violates invariant",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "begin"
+            },
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "fact_flow",
+      "corpus": "corpus/flag_no_setter.cases.json",
+      "id": "flag_no_setter",
+      "machine": "machines/flag_no_setter.ik.toml",
+      "notes": "Complete finite machine: unset-never-written flag. Engine may stay unknown.",
+      "obligations": [
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/commit/from/idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "brute_force",
+          "nodes": 1,
+          "scope": "ready stays false; no assignment exists",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/done/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "brute_force",
+          "nodes": 1,
+          "scope": "guard never true",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "brute_force"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "fact_flow",
+      "corpus": "corpus/fact_only_on_success_path.cases.json",
+      "id": "fact_only_on_success_path",
+      "machine": "machines/fact_only_on_success_path.ik.toml",
+      "notes": "Token exists only on the take path; use is still reachable via take.",
+      "obligations": [
+        {
+          "id": "command/take/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "take"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/skip/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "skip"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/use/from/held/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "take"
+            },
+            {
+              "args": {},
+              "command": "use"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/held/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "take"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "skip"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "parent_fallback",
+      "corpus": "corpus/parent_child_halt.cases.json",
+      "id": "parent_child_halt",
+      "machine": "machines/parent_child_halt.ik.toml",
+      "notes": "Parent fallback and child override are distinct authored goals.",
+      "obligations": [
+        {
+          "id": "authored/outcome/halt/child/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": true
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/outcome/halt/parent/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": false
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/state/power/stopped/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": true
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unrelated_region",
+      "corpus": "corpus/unrelated_region_flag.cases.json",
+      "id": "unrelated_region_flag",
+      "machine": "machines/unrelated_region_flag.ik.toml",
+      "notes": "Adding an unrelated region adds its goals; it does not invent lane debt.",
+      "obligations": [
+        {
+          "id": "authored/state/lane/ok/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/state/flag/on/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/go/from/off__start/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/flip/from/off__start/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "mutex_flag",
+      "corpus": "corpus/generated_dead_product.cases.json",
+      "id": "generated_dead_product",
+      "machine": "machines/generated_dead_product.ik.toml",
+      "notes": "Mutual-exclusion product is generated-impossible; authored done stays mandatory.",
+      "obligations": [
+        {
+          "id": "authored/state/mode/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/state/flag/on/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,off,off__done,off__idle,on,on__done,on__idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/on__done/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "published_pattern",
+          "nodes": 3,
+          "scope": "invariant forbids mode=done and flag=on",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "state/off__done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/on__idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/schema2_always_true_first.cases.json",
+      "id": "schema2_always_true_first",
+      "machine": "machines/schema2_always_true_first.ik.toml",
+      "notes": "Lowered always-true first arm.",
+      "obligations": [
+        {
+          "id": "authored/outcome/go/child/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "authored coordinate; impossibility never discharges",
+          "id": "authored/outcome/go/child/1/executable",
+          "mechanical": "authored_goal",
+          "method": "by_construction",
+          "scope": "later authored arm shadowed; stays mandatory for coverage but unreachable",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "authored coordinate; impossibility never discharges",
+          "id": "authored/state/lane/rare/executable",
+          "mechanical": "authored_goal",
+          "method": "by_construction",
+          "scope": "only later arm writes rare",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "authored/state/lane/ok/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "mutex_flag",
+      "corpus": "corpus/mutex_flip_then_finish_ok.cases.json",
+      "id": "mutex_flip_then_finish_ok",
+      "machine": "machines/mutex_flip_then_finish_ok.ik.toml",
+      "notes": "Finish is allowed only while the mutex flag is off.",
+      "obligations": [
+        {
+          "id": "command/finish/from/off__idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/terminal/mode/done/reachable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/flip/from/off__idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,off,off__done,off__idle,on,on__done,on__idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/finish/from/on__idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 4,
+          "scope": "finish requires flag off",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/string_gt_reachable.cases.json",
+      "id": "string_gt_reachable",
+      "machine": "machines/string_gt_reachable.ik.toml",
+      "notes": "String ordering is reachable; an unsound solver may treat the unbounded domain as empty.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "s": "b"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "s": "b"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": false,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "bounded_unknown",
+      "corpus": "corpus/string_gt_bounded_unknown.cases.json",
+      "id": "string_gt_bounded_unknown",
+      "machine": "machines/string_gt_bounded_unknown.ik.toml",
+      "notes": "Genuinely unknown to a bounded sample that excludes a witness.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "bounded_unknown",
+          "scope": "finite sample {a} misses greater strings; do not conclude unreachability",
+          "truth": "UNKNOWN"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "bounded_unknown",
+          "scope": "bounded string domain is incomplete",
+          "truth": "UNKNOWN"
+        }
+      ],
+      "truth_method": "bounded_unknown"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/string_ge_reachable.cases.json",
+      "id": "string_ge_reachable",
+      "machine": "machines/string_ge_reachable.ik.toml",
+      "notes": "Inclusive string order.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "s": "z"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/string_lt_reachable.cases.json",
+      "id": "string_lt_reachable",
+      "machine": "machines/string_lt_reachable.ik.toml",
+      "notes": "Less-than string order.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "s": "a"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/indirect_arith_reachable.cases.json",
+      "id": "indirect_arith_reachable",
+      "machine": "machines/indirect_arith_reachable.ik.toml",
+      "notes": "Indirect arithmetic is reachable; the in-house fragment may stay unknown.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": 4
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": 5
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": false,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "bounded_unknown",
+      "corpus": "corpus/unbounded_int_incomplete.cases.json",
+      "id": "unbounded_int_incomplete",
+      "machine": "machines/unbounded_int_incomplete.ik.toml",
+      "notes": "Bounded int sample cannot decide a far cut.",
+      "obligations": [
+        {
+          "id": "command/step/from/idle/executable",
+          "method": "bounded_unknown",
+          "scope": "samples {-1,0,1} miss n>1000; domain unbounded",
+          "truth": "UNKNOWN"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "bounded_unknown",
+          "scope": "incomplete int sample",
+          "truth": "UNKNOWN"
+        }
+      ],
+      "truth_method": "bounded_unknown"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/negative_dividend_div.cases.json",
+      "id": "negative_dividend_div",
+      "machine": "machines/negative_dividend_div.ik.toml",
+      "notes": "Toward-zero division: -6/2 == -3.",
+      "obligations": [
+        {
+          "id": "command/go/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": -6
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/hit/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": -6
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/toward_zero_div.cases.json",
+      "id": "toward_zero_div",
+      "machine": "machines/toward_zero_div.ik.toml",
+      "notes": "Toward-zero: -1/2 == 0. Floor division would disagree.",
+      "obligations": [
+        {
+          "id": "command/go/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": -1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/unset_fact_cmp_no_fallthrough.cases.json",
+      "id": "unset_fact_cmp_no_fallthrough",
+      "machine": "machines/unset_fact_cmp_no_fallthrough.ik.toml",
+      "notes": "Unset fact: error, not false. A prover that treats error as false selects the later arm.",
+      "obligations": [
+        {
+          "complete": true,
+          "domain": "strings=[hit,idle,later,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/0/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "unset token makes the comparison an error, not false",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[hit,idle,later,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "error does not fall through to the later arm",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[hit,idle,later,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/later/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "unconditional later arm never considered",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[hit,idle,later,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/hit/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "first arm errors",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[hit,idle,later,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "go always errors",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unset_facts",
+      "corpus": "corpus/unset_exists_missing.cases.json",
+      "id": "unset_exists_missing",
+      "machine": "machines/unset_exists_missing.ik.toml",
+      "notes": "exists/not_exists split on an initially unset fact.",
+      "obligations": [
+        {
+          "id": "command/use_missing/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "use_missing"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/missing/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "use_missing"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/use_present/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "t": "x"
+              },
+              "command": "fill"
+            },
+            {
+              "args": {},
+              "command": "use_present"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/present/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "t": "x"
+              },
+              "command": "fill"
+            },
+            {
+              "args": {},
+              "command": "use_present"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/short_circuit_and_later_arm.cases.json",
+      "id": "short_circuit_and_later_arm",
+      "machine": "machines/short_circuit_and_later_arm.ik.toml",
+      "notes": "false && error short-circuits; error && _ does not.",
+      "obligations": [
+        {
+          "id": "outcome/go/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/b/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,b,idle,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/0/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 2,
+          "scope": "x==1 evaluates token and errors; x==0 short-circuits to false then takes later arm",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,b,idle,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/a/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 2,
+          "scope": "first arm never commits",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/error_or_true_no_fallthrough.cases.json",
+      "id": "error_or_true_no_fallthrough",
+      "machine": "machines/error_or_true_no_fallthrough.ik.toml",
+      "notes": "error || true still errors. A two-sided OR prover may mark it reachable.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "left error refuses; right $x==0 is never considered",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/ok/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "OR does not skip a left error",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "short_circuit",
+      "corpus": "corpus/true_or_error_ok.cases.json",
+      "id": "true_or_error_ok",
+      "machine": "machines/true_or_error_ok.ik.toml",
+      "notes": "true || error short-circuits to true.",
+      "obligations": [
+        {
+          "id": "command/go/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/ok/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/overflow_earlier_blocks_max_arm.cases.json",
+      "id": "overflow_earlier_blocks_max_arm",
+      "machine": "machines/overflow_earlier_blocks_max_arm.ik.toml",
+      "notes": "Classic overflow-as-false unsoundness.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "n": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[always,atmax,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 2,
+          "scope": "n+1>n holds until overflow; at max the guard errors so n==max is never selected",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[always,atmax,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/atmax/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 2,
+          "scope": "wraparound would wrongly enable the later arm",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "reachable_linear",
+      "corpus": "corpus/linear_ok.cases.json",
+      "id": "linear_ok",
+      "machine": "machines/linear_ok.ik.toml",
+      "notes": "Linear commit.",
+      "obligations": [
+        {
+          "id": "command/go/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "terminal/done/reachable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unreachable_state",
+      "corpus": "corpus/terminal_unreachable.cases.json",
+      "id": "terminal_unreachable",
+      "machine": "machines/terminal_unreachable.ik.toml",
+      "notes": "Declared terminal never reached.",
+      "obligations": [
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,end,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/end/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "terminal has no writer",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,end,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "terminal/end/reachable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "terminal has no writer",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "reachable_linear",
+      "corpus": "corpus/terminal_reachable.cases.json",
+      "id": "terminal_reachable",
+      "machine": "machines/terminal_reachable.ik.toml",
+      "notes": "Two-step terminal.",
+      "obligations": [
+        {
+          "id": "state/mid/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "terminal/end/reachable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "step"
+            },
+            {
+              "args": {},
+              "command": "fin"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/end/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "step"
+            },
+            {
+              "args": {},
+              "command": "fin"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/bool_partition.cases.json",
+      "id": "bool_partition",
+      "machine": "machines/bool_partition.ik.toml",
+      "notes": "Boolean partition is total.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "ok": true
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/go/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "ok": false
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/yes/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "ok": true
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/no/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "ok": false
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/int_eq_ne_other.cases.json",
+      "id": "int_eq_ne_other",
+      "machine": "machines/int_eq_ne_other.ik.toml",
+      "notes": "Integer equal/not-equal partition.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 7
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/go/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/hit/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 7
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/miss/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": -7
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "published_safety",
+      "corpus": "corpus/int_range_split.cases.json",
+      "id": "int_range_split",
+      "machine": "machines/int_range_split.ik.toml",
+      "notes": "Ordered trichotomy.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": -2
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/go/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/go/2/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 5
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "dead_commands",
+      "corpus": "corpus/two_sources_one_dead.cases.json",
+      "id": "two_sources_one_dead",
+      "machine": "machines/two_sources_one_dead.ik.toml",
+      "notes": "Two-source command with one dead source.",
+      "obligations": [
+        {
+          "id": "command/fwd/from/a/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "fwd"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[a,b,c,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/jump/from/a/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "state==b is false at a",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "command/jump/from/b/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "fwd"
+            },
+            {
+              "args": {},
+              "command": "jump"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/c/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "fwd"
+            },
+            {
+              "args": {},
+              "command": "jump"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/covering_eq_after_range.cases.json",
+      "id": "covering_eq_after_range",
+      "machine": "machines/covering_eq_after_range.ik.toml",
+      "notes": "Boundary equality after a closed range.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 3
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,point,wide,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,3,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "x==3 is covered by x>=3",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,point,wide,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,3,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/point/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "shadowed point",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "short_circuit",
+      "corpus": "corpus/nested_false_and_error.cases.json",
+      "id": "nested_false_and_error",
+      "machine": "machines/nested_false_and_error.ik.toml",
+      "notes": "Nested AND: false short-circuit vs error.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "x==1 short-circuits false; x==2 errors on unset token",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,x,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/ok/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 1,
+          "scope": "never commits",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/guard_error_then_unconditional.cases.json",
+      "id": "guard_error_then_unconditional",
+      "machine": "machines/guard_error_then_unconditional.ik.toml",
+      "notes": "Earlier guard error shadows an unconditional later arm.",
+      "obligations": [
+        {
+          "complete": true,
+          "domain": "strings=[err,idle,missing,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/0/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "unset comparison errors",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[err,idle,missing,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "unconditional later arm not considered after error",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[err,idle,missing,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "command errors",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/add_overflow_not_false.cases.json",
+      "id": "add_overflow_not_false",
+      "machine": "machines/add_overflow_not_false.ik.toml",
+      "notes": "Wrapping add would satisfy n+1<n at max; checked add errors.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "strings=[idle,pos,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "n+1<n is false on defined ints; at max it errors rather than wrapping to true",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[idle,pos,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/pos/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "wraparound would make MAX+1 < MAX",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/mul_overflow_not_false.cases.json",
+      "id": "mul_overflow_not_false",
+      "machine": "machines/mul_overflow_not_false.ik.toml",
+      "notes": "Checked i64 multiply: n=-1 yields -2<-1 so the guard is true; overflow at i64 max is error not true. Hand truth that treated 2n<n as impossible was wrong.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "int argument n sampled including -1;  -1*2 < -1 holds under checked i64",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "kernel_replay",
+          "nodes": 2,
+          "trace": [
+            {
+              "args": {
+                "n": -1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "int argument n sampled including -1;  -1*2 < -1 holds under checked i64",
+          "id": "state/weird/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "kernel_replay",
+          "nodes": 2,
+          "trace": [
+            {
+              "args": {
+                "n": -1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "kernel_replay"
+    },
+    {
+      "brute_force": {
+        "complete": false,
+        "max_depth": 4,
+        "max_nodes": 128
+      },
+      "category": "bounded_unknown",
+      "corpus": "corpus/deep_state_incomplete_unknown.cases.json",
+      "id": "deep_state_incomplete_unknown",
+      "machine": "machines/deep_state_incomplete_unknown.ik.toml",
+      "notes": "Long counter path is unknown under a short bound.",
+      "obligations": [
+        {
+          "id": "command/inc/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "inc"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/far/executable",
+          "method": "bounded_unknown",
+          "scope": "arrive needs n==50; depth-bounded inc sample never gets there",
+          "truth": "UNKNOWN"
+        },
+        {
+          "id": "command/arrive/from/s/executable",
+          "method": "bounded_unknown",
+          "scope": "incomplete counter climb",
+          "truth": "UNKNOWN"
+        }
+      ],
+      "truth_method": "bounded_unknown"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "published_safety",
+      "corpus": "corpus/counter_inc_only_never_neg.cases.json",
+      "id": "counter_inc_only_never_neg",
+      "machine": "machines/counter_inc_only_never_neg.ik.toml",
+      "notes": "Increment-only counter cannot go negative.",
+      "obligations": [
+        {
+          "id": "command/inc/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "inc"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[neg,s,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/see_neg/from/s/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 65,
+          "scope": "counter only increases",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[neg,s,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/neg/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 65,
+          "scope": "n stays non-negative",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "parent_fallback",
+      "corpus": "corpus/schema2_parent_fallback_false.cases.json",
+      "id": "schema2_parent_fallback_false",
+      "machine": "machines/schema2_parent_fallback_false.ik.toml",
+      "notes": "Child true-force; parent false-force; both reachable.",
+      "obligations": [
+        {
+          "id": "authored/outcome/halt/child/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": true
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/outcome/halt/parent/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": false
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/string_other_after_eq_ne.cases.json",
+      "id": "string_other_after_eq_ne",
+      "machine": "machines/string_other_after_eq_ne.ik.toml",
+      "notes": "Other after a total eq/ne split is dead.",
+      "obligations": [
+        {
+          "id": "outcome/step/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "a"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/step/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "b"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[a,eq,idle,ne,other,z,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/step/2/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "s==z already taken by != a",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[a,eq,idle,ne,other,z,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/other/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "third arm dead",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/div_negative_truncation.cases.json",
+      "id": "div_negative_truncation",
+      "machine": "machines/div_negative_truncation.ik.toml",
+      "notes": "-2/2 and -3/2 both equal -1 toward zero.",
+      "obligations": [
+        {
+          "id": "command/go/from/idle/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": -2
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/hit/executable",
+          "method": "by_construction",
+          "trace": [
+            {
+              "args": {
+                "n": -3
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/published_ordered_shadow.cases.json",
+      "id": "published_ordered_shadow",
+      "machine": "machines/published_ordered_shadow.ik.toml",
+      "notes": "Tautology OR shadows the later arm.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,first,second,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/1/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 2,
+          "scope": "tautology first arm",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,first,second,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/second/executable",
+          "mechanical": "unbounded_sample",
+          "method": "published_pattern",
+          "nodes": 2,
+          "scope": "shadowed",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "mutex_flag",
+      "corpus": "corpus/mutex_finish_then_flip_blocked.cases.json",
+      "id": "mutex_finish_then_flip_blocked",
+      "machine": "machines/mutex_finish_then_flip_blocked.ik.toml",
+      "notes": "Either order of finish and flip cannot occupy done+on.",
+      "obligations": [
+        {
+          "id": "authored/terminal/mode/done/reachable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/state/flag/on/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,idle,off,off__done,off__idle,on,on__done,on__idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/on__done/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "published_pattern",
+          "nodes": 3,
+          "scope": "finish then flip, or flip then finish, both hit the invariant",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "fact_flow",
+      "corpus": "corpus/phase_set_then_flag.cases.json",
+      "id": "phase_set_then_flag",
+      "machine": "machines/phase_set_then_flag.ik.toml",
+      "notes": "Ordered fact flow: idle -> armed -> flagged -> done.",
+      "obligations": [
+        {
+          "id": "command/arm/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "arm"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/flag/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "arm"
+            },
+            {
+              "args": {},
+              "command": "flag"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/finish/from/s/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "arm"
+            },
+            {
+              "args": {},
+              "command": "flag"
+            },
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/done/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "arm"
+            },
+            {
+              "args": {},
+              "command": "flag"
+            },
+            {
+              "args": {},
+              "command": "finish"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "unrelated_region",
+      "corpus": "corpus/unrelated_lane_with_rare.cases.json",
+      "id": "unrelated_lane_with_rare",
+      "machine": "machines/unrelated_lane_with_rare.ik.toml",
+      "notes": "Unrelated flag region plus a shadowed lane arm.",
+      "obligations": [
+        {
+          "id": "authored/state/lane/ok/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 1
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "authored coordinate; impossibility never discharges",
+          "id": "authored/state/lane/rare/executable",
+          "mechanical": "authored_goal",
+          "method": "by_construction",
+          "scope": "rare shadowed by covering first arm",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "id": "authored/state/flag/on/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "flip"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "published_pattern"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "dead_commands",
+      "corpus": "corpus/dead_command_from_done_source_unreached.cases.json",
+      "id": "dead_command_from_done_source_unreached",
+      "machine": "machines/dead_command_from_done_source_unreached.ik.toml",
+      "notes": "Command from an unreached source.",
+      "obligations": [
+        {
+          "id": "command/go/from/idle/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {},
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,end,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/again/from/end/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "end never entered",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": true,
+          "domain": "strings=[done,end,idle,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/end/executable",
+          "mechanical": "kernel_exhaustive",
+          "method": "by_construction",
+          "nodes": 2,
+          "scope": "no writer",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "ordered_outcome",
+      "corpus": "corpus/eq_not_eq_total_int.cases.json",
+      "id": "eq_not_eq_total_int",
+      "machine": "machines/eq_not_eq_total_int.ik.toml",
+      "notes": "Total eq/ne makes a later range dead.",
+      "obligations": [
+        {
+          "id": "outcome/go/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 0
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/go/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "x": 11
+              },
+              "command": "go"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,dead,eq,ne,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,10,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "outcome/go/2/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "x>10 already in !=0",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[a,dead,eq,ne,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,10,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/dead/executable",
+          "mechanical": "unbounded_sample",
+          "method": "by_construction",
+          "nodes": 3,
+          "scope": "third arm dead",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "string_partition",
+      "corpus": "corpus/string_eq_empty_and_other.cases.json",
+      "id": "string_eq_empty_and_other",
+      "machine": "machines/string_eq_empty_and_other.ik.toml",
+      "notes": "Empty-string equality partition.",
+      "obligations": [
+        {
+          "id": "outcome/step/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": ""
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "outcome/step/1/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "x"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/empty/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": ""
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "state/rest/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "s": "x"
+              },
+              "command": "step"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "parent_fallback",
+      "corpus": "corpus/child_only_force_true.cases.json",
+      "id": "child_only_force_true",
+      "machine": "machines/child_only_force_true.ik.toml",
+      "notes": "No parent; force false refuses, force true commits.",
+      "obligations": [
+        {
+          "id": "authored/outcome/halt/child/0/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": true
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "authored/state/power/stopped/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": true
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        },
+        {
+          "id": "command/halt/from/running/executable",
+          "method": "brute_force",
+          "trace": [
+            {
+              "args": {
+                "force": true
+              },
+              "command": "halt"
+            }
+          ],
+          "truth": "REACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    },
+    {
+      "brute_force": {
+        "complete": true,
+        "max_depth": 8,
+        "max_nodes": 128
+      },
+      "category": "adversarial",
+      "corpus": "corpus/overflow_sub_guard.cases.json",
+      "id": "overflow_sub_guard",
+      "machine": "machines/overflow_sub_guard.ik.toml",
+      "notes": "Subtraction overflow at i64 min is an error.",
+      "obligations": [
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "command/go/from/idle/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "n-1>n is false when defined; at i64 min subtraction overflows instead of wrapping true",
+          "truth": "UNREACHABLE"
+        },
+        {
+          "complete": false,
+          "domain": "strings=[idle,ok,􏿿#other]; ints=[-9223372036854775808,-1,0,1,2,9223372036854775807]; bools=[false,true]; remainder=􏿿#other",
+          "id": "state/ok/executable",
+          "mechanical": "unbounded_sample",
+          "method": "adversarial",
+          "nodes": 1,
+          "scope": "checked sub does not wrap",
+          "truth": "UNREACHABLE"
+        }
+      ],
+      "truth_method": "by_construction"
+    }
+  ],
+  "description": "Ground-truth feasibility obligations for any backend. REACHABLE includes a kernel-replayable trace. UNREACHABLE names the proof scope. UNKNOWN means a bounded method did not decide; unknown is never a backend error.",
+  "schema_version": 1,
+  "suite": "known_feasibility"
+}

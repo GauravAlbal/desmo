@@ -1,0 +1,14 @@
+{
+  "scenario_version": 1,
+  "machine": "../tagged_item.ik.toml",
+  "aggregate": "item-1",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "tag",
+      "name": "tag",
+      "args": { "id": "item_1", "label": "AMBER" },
+      "expect": "committed"
+    }
+  ]
+}

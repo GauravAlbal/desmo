@@ -1,0 +1,18 @@
+schema_version = 1
+machine_id = "short_circuit_and_later_arm"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+a = {}
+b = {}
+[commands.go]
+from = ["idle"]
+args = { x = "int" }
+outcomes = [
+  { when = '$x == 1 && token == "x"', to = "a" },
+  { when = "$x == 0", to = "b" }
+]
+

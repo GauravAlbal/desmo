@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "always_true_first_arm"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+b = {}
+c = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x >= 0 || $x < 0", to = "b" },
+  { when = "$x == 3", to = "c" }
+]
+

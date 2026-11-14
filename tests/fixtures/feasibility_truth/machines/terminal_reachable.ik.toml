@@ -1,0 +1,16 @@
+schema_version = 1
+machine_id = "terminal_reachable"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+mid = {}
+end = { terminal = true }
+[commands.step]
+from = ["idle"]
+to = "mid"
+[commands.fin]
+from = ["mid"]
+to = "end"
+

@@ -1,0 +1,14 @@
+{
+  "scenario_version": 1,
+  "machine": "../tagged_item.ik.toml",
+  "aggregate": "item-empty",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "empty-id",
+      "name": "tag",
+      "args": { "id": "", "label": "AMBER" },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    }
+  ]
+}

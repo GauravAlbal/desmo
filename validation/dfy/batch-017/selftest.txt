@@ -1,0 +1,47 @@
+selftest N24 positive build True change True c2fail [] OK
+selftest N24 alt-surface-reference build True change True c2fail [] OK
+selftest N24 alt-surface-echo-ref build True change True c2fail [] OK
+selftest N24 alt-surface-create-ref build True change True c2fail [] OK
+selftest N24 state-invariant build True change True c2fail [] OK
+selftest N24 status-before-value build True change True c2fail [] OK
+selftest N24 host-only build True change False c2fail ['abort_clear', 'abort_note', 'berth_id', 'boarded_n', 'clerk_id', 'desk_note', 'due_at', 'extra_berth', 'harbor_id', 'lane_code', 'launch_gate', 'launch_slots', 'marshal_id', 'ramp_set', 'skipper_id', 'trailer_bound'] OK
+selftest N24 alt-surface-host-only build True change False c2fail ['abort_clear', 'abort_note', 'berth_id', 'boarded_n', 'clerk_id', 'desk_note', 'due_at', 'extra_berth', 'harbor_id', 'lane_code', 'launch_gate', 'launch_slots', 'marshal_id', 'ramp_set', 'skipper_id', 'trailer_bound'] OK
+selftest N24 missing-input build True change False c2fail ['abort_note', 'berth_id', 'clerk_id', 'desk_note', 'harbor_id', 'lane_code', 'marshal_id', 'ramp_set', 'skipper_id', 'trailer_bound'] OK
+selftest N24 alt-surface-missing-input build True change False c2fail ['abort_note', 'berth_id', 'clerk_id', 'desk_note', 'harbor_id', 'lane_code', 'marshal_id', 'ramp_set', 'skipper_id', 'trailer_bound'] OK
+selftest N24 grammar-nonempty-only build True change False c2fail ['abort_note', 'berth_id', 'clerk_id', 'desk_note', 'harbor_id', 'lane_code', 'marshal_id', 'skipper_id'] OK
+selftest N24 grammar-length-only build True change False c2fail ['berth_id', 'clerk_id', 'harbor_id', 'lane_code', 'marshal_id', 'skipper_id'] OK
+selftest N24 over-constrained build True change False c2fail ['boat_name', 'slip_tag', 'wharf_nick'] OK
+selftest N24 stale build True change False c2fail ['abort_clear'] OK
+selftest N24 refuse build True change False c2fail ['abort_clear', 'abort_note', 'berth_id', 'boarded_n', 'boat_name', 'clerk_id', 'desk_note', 'due_at', 'extra_berth', 'harbor_id', 'lane_code', 'launch_gate', 'launch_slots', 'marshal_id', 'ramp_set', 'skipper_id', 'slip_tag', 'trailer_bound', 'wharf_nick'] OK
+selftest N24 breaks-old build True change False c2fail [] OK
+selftest N24 build-negative host-only-checks False OK
+selftest N24 build-negative missing-input-validity False OK
+selftest N24 build-negative grammar-nonempty-only False OK
+selftest N24 build-negative grammar-length-only False OK
+selftest N24 build-negative over-constrained False OK
+selftest N25 positive build True change True c2fail [] OK
+selftest N25 alt-surface-reference build True change True c2fail [] OK
+selftest N25 alt-surface-echo-ref build True change True c2fail [] OK
+selftest N25 state-invariant build True change True c2fail [] OK
+selftest N25 create-time-grammar build True change True c2fail [] OK
+selftest N25 host-only build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'deploy_gate', 'extra_mass', 'issued_n', 'kit_code', 'kit_mass', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'return_at', 'scrap_clear', 'scrap_note', 'slope_set'] OK
+selftest N25 alt-surface-host-only build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'deploy_gate', 'extra_mass', 'issued_n', 'kit_code', 'kit_mass', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'return_at', 'scrap_clear', 'scrap_note', 'slope_set'] OK
+selftest N25 alt-surface-echo-host-only build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'deploy_gate', 'extra_mass', 'issued_n', 'kit_code', 'kit_mass', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'return_at', 'scrap_clear', 'scrap_note', 'slope_set'] OK
+selftest N25 missing-input build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'kit_code', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'scrap_note', 'slope_set'] OK
+selftest N25 alt-surface-missing-input build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'kit_code', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'scrap_note', 'slope_set'] OK
+selftest N25 alt-surface-echo-missing-input build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'kit_code', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'scrap_note', 'slope_set'] OK
+selftest N25 shared-type-only-missing build True change False c2fail ['base_id', 'cache_id', 'medic_id', 'partner_id', 'ranger_id'] OK
+selftest N25 grammar-nonempty-only build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'kit_code', 'medic_id', 'partner_id', 'ranger_id', 'scrap_note'] OK
+selftest N25 grammar-length-only build True change False c2fail ['base_id', 'cache_id', 'kit_code', 'medic_id', 'partner_id', 'ranger_id'] OK
+selftest N25 status-before-value build True change True c2fail [] OK
+selftest N25 over-constrained build True change False c2fail ['cache_label', 'callsign', 'trail_mark'] OK
+selftest N25 stale build True change False c2fail [] OK
+selftest N25 refuse build True change False c2fail ['base_id', 'brief_note', 'cache_id', 'cache_label', 'callsign', 'deploy_gate', 'extra_mass', 'issued_n', 'kit_code', 'kit_mass', 'medic_id', 'partner_id', 'radio_bound', 'ranger_id', 'return_at', 'scrap_clear', 'scrap_note', 'slope_set', 'trail_mark'] OK
+selftest N25 breaks-old build True change False c2fail [] OK
+selftest N25 build-negative host-only-checks False OK
+selftest N25 build-negative missing-input-validity False OK
+selftest N25 build-negative shared-type-only-missing False OK
+selftest N25 build-negative grammar-nonempty-only False OK
+selftest N25 build-negative grammar-length-only False OK
+selftest N25 build-negative over-constrained False OK
+SELFTEST OK

@@ -1,0 +1,13 @@
+  ● [ idle ] ══▶ ⟪
+      │
+      │  command not identified in evidence
+      ▼
+  ○ [ ① request sent ]        observed
+      │
+      ▼
+  ○ [ ② committed ]           observed  ◀── YOU ARE HERE
+      │
+      ▼
+  ⟫ ══▶ ✔ [ tagged ]  END
+all outcomes: look up by saved operation id; never resend
+Safe next action: look up by saved operation id; never resend

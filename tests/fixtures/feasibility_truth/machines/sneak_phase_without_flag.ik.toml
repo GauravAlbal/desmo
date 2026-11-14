@@ -1,0 +1,25 @@
+schema_version = 1
+machine_id = "sneak_phase_without_flag"
+machine_version = 1
+
+[facts]
+phase = { type = "string", policy = "replace", initial = "idle" }
+flagged = { type = "bool", policy = "replace", initial = false }
+[states]
+s = { initial = true }
+done = {}
+[invariants.phase_implies_flag]
+assert = 'phase != "active" || flagged == true'
+[commands.begin]
+from = ["s"]
+then = { phase = '"active"', flagged = "true" }
+to = "s"
+[commands.sneak]
+from = ["s"]
+then = { phase = '"active"', flagged = "false" }
+to = "s"
+[commands.finish]
+from = ["s"]
+when = 'phase == "active" && flagged == true'
+to = "done"
+

@@ -1,0 +1,21 @@
+{
+  "commands": {
+    "checkout": [
+      {
+        "name": "honest_7d",
+        "args": { "checkout_ms": 1000, "loan_until_ms": 604801000 }
+      },
+      {
+        "name": "lie_14d",
+        "args": { "checkout_ms": 1000, "loan_until_ms": 1209601000 }
+      }
+    ],
+    "place_recall": [
+      { "name": "place", "args": {} }
+    ],
+    "checkin": [
+      { "name": "on_time", "args": { "now_ms": 1000 } },
+      { "name": "overdue", "args": { "now_ms": 604801001 } }
+    ]
+  }
+}

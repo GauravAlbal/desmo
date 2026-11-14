@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "indirect_arith_reachable"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = {}
+[commands.step]
+from = ["idle"]
+args = { n = "int" }
+when = "$n + 1 > 4"
+to = "done"
+

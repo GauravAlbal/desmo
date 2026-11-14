@@ -1,0 +1,10 @@
+{
+  "id": "unsupported_property",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "temporal",
+  "question": "dead_end_count",
+  "expect": {
+    "result_accepted": true,
+    "execution_status": "unsupported"
+  }
+}

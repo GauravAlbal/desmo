@@ -1,0 +1,76 @@
+# AS1-0 — kernel semantic oracle for async snapshot assurance.
+# Encodes REQ-AS1-K001 traces 1-3, 7, 12-14. Not Docker. Not RFJ authority.
+schema_version = 1
+machine_id = "as1_assurance"
+machine_version = 1
+name = "AS1Assurance"
+
+[facts]
+successors_while_unverified = { type = "int", policy = "replace", initial = 0 }
+max_unverified = { type = "int", policy = "kernel_only", initial = 1 }
+repair_consumed = { type = "int", policy = "counter", initial = 0 }
+c1_inflight = { type = "int", policy = "replace", initial = 0 }
+exact_current = { type = "int", policy = "replace", initial = 0 }
+c1_refuted = { type = "int", policy = "replace", initial = 0 }
+
+[states]
+idle = { initial = true }
+c1_admitted = {}
+overlapping = {}
+blocked = {}
+rfj_legal = {}
+refused = {}
+
+# Trace 1: C1 → durable assurance job started (start is the effect).
+[commands.start_c1]
+from = ["idle"]
+to = "c1_admitted"
+then = { c1_inflight = "1" }
+
+# Trace 2: C1 in flight, debt below cap → P2 permitted.
+[commands.start_p2]
+from = ["c1_admitted"]
+outcomes = [
+  { when = "c1_inflight == 1 && successors_while_unverified < max_unverified", to = "overlapping", then = { successors_while_unverified = "1" } },
+  { when = "successors_while_unverified >= max_unverified", to = "blocked" }
+]
+
+# Trace 3: C1 unresolved + C2 committed, debt at cap → P3 refused.
+[commands.start_p3]
+from = ["overlapping"]
+outcomes = [
+  { when = "successors_while_unverified >= max_unverified", to = "blocked" }
+]
+
+[commands.record_c1_pass]
+from = ["c1_admitted", "overlapping", "blocked"]
+to = "idle"
+then = { c1_inflight = "0", successors_while_unverified = "0" }
+
+# Trace 6/14: C1 REFUTED → repair selected; RFJ impossible.
+[commands.record_c1_refute]
+from = ["c1_admitted", "overlapping", "blocked"]
+to = "refused"
+then = { c1_inflight = "0", c1_refuted = "1", repair_consumed = "+1" }
+
+# Trace 7: provider unavailable → no semantic repair budget consumed.
+[commands.record_provider_unavailable]
+from = ["c1_admitted", "overlapping", "blocked"]
+to = "c1_admitted"
+
+[commands.certify_current]
+from = ["idle"]
+to = "rfj_legal"
+then = { exact_current = "1" }
+
+# Traces 12-14: historical snapshots are not enough; exact-current required.
+[commands.request_rfj]
+from = ["idle", "c1_admitted", "overlapping", "blocked", "rfj_legal", "refused"]
+outcomes = [
+  { when = "exact_current == 1 && c1_refuted == 0 && c1_inflight == 0", to = "rfj_legal" },
+  { when = "exact_current != 1 || c1_refuted == 1 || c1_inflight == 1", to = "refused" }
+]
+
+[invariants.as1_rfj_requires_exact_current]
+when = "state == 'rfj_legal'"
+assert = "exact_current == 1 && c1_refuted == 0 && c1_inflight == 0"

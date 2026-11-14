@@ -1,0 +1,26 @@
+C1 FAIL replace exit 1 stdout {"error":"unknown_command"}
+C2 FAIL replace exit 1 stdout {"error":"unknown_command"}
+C3 FAIL replace exit 1 stdout {"error":"unknown_command"}
+C4 FAIL replace exit 1 stdout {"error":"unknown_command"}
+{
+  "scope": "all",
+  "all_passed": false,
+  "requirements": {
+    "R1": "pass",
+    "R2": "pass",
+    "R3": "pass",
+    "R4": "pass",
+    "R5": "pass",
+    "R6": "pass",
+    "R7": "pass",
+    "R8": "pass",
+    "R9": "pass",
+    "R10": "pass",
+    "R11": "pass",
+    "R12": "pass",
+    "C1": "fail",
+    "C2": "fail",
+    "C3": "fail",
+    "C4": "fail"
+  }
+}

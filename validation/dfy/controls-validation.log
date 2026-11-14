@@ -1,0 +1,22 @@
+N1 always-refuse: FAIL: ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14']
+N1 duplicate-effect: FAIL: ['R8']
+N1 ignores-inflight: FAIL: none
+N1 late-overwrite: FAIL: ['R6', 'R10']
+N1 lost-reply-misattribution: FAIL: ['R14']
+N1 reference-toy: FAIL: none
+N1 reference-toy-changed: FAIL: none
+N2 always-refuse: FAIL: ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14']
+N2 duplicate-effect: FAIL: ['R9']
+N2 late-overwrite: FAIL: ['R6']
+N2 lost-reply-misattribution: FAIL: ['R11']
+N2 reference-toy: FAIL: none
+N2 reference-toy-changed: FAIL: none
+N2 unpaid-apply: FAIL: none
+N2 unpaid-replace: FAIL: none
+N3 always-refuse: FAIL: ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14']
+N3 duplicate-effect: FAIL: ['R8']
+N3 late-overwrite: FAIL: ['R14']
+N3 lost-reply-misattribution: FAIL: ['R11']
+N3 reference-toy: FAIL: none
+N3 reference-toy-changed: FAIL: none
+VALDONE

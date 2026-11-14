@@ -1,0 +1,36 @@
+{
+  "name": "@desmo/runtime",
+  "version": "0.5.0",
+  "description": "Typed Node adapter over the authoritative ik binary",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "desmo": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "assets",
+    "skills"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/json.test.js dist/client.test.js dist/envelope.test.js dist/operation.test.js dist/invocation.test.js dist/effect.test.js dist/effect-recipe.test.js dist/error-taxonomy.test.js dist/createWith.test.js dist/trace.test.js dist/codegen.test.js dist/workbench.test.js dist/skill.test.js",
+    "prepack": "node ./scripts/stage-skill.mjs"
+  },
+  "license": "MIT OR Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.6.3"
+  }
+}

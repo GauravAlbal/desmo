@@ -1,0 +1,59 @@
+{
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "target": "darwin-arm64"
+  },
+  "node": "v25.2.1",
+  "npm_manifest": {
+    "schema": "ikaros.npm-manifest.v1",
+    "version": "0.5.0",
+    "target": "darwin-arm64",
+    "binary_sha256": "979a9f6ee7b676af19cb43c2046dfd3806281e0889c6ffd2d77ff6424156cbc5",
+    "tarballs": {
+      "ikaros-runtime-0.5.0.tgz": "d8bb5c0db30f8d0a41a03a49dc126e181d9c677354555fb18a73c4fe8f5b9d51",
+      "ikaros-darwin-arm64-0.5.0.tgz": "68e3dfc99ffafe4d6eaba8aeeb981d1f64c8d6eec463db5a45b6e7c98cef4d77"
+    },
+    "license_files_present": []
+  },
+  "installed": {
+    "demo_names_stale_refusal": true,
+    "codegen_emits_types": true,
+    "operation_probe": {
+      "state": "running",
+      "lookup": "committed_exact",
+      "repeat": "HistoricalResult"
+    },
+    "binary_resolved_from_platform_package": true,
+    "resolved_binary_sha256": "979a9f6ee7b676af19cb43c2046dfd3806281e0889c6ffd2d77ff6424156cbc5",
+    "extracted_binary_sha256": "979a9f6ee7b676af19cb43c2046dfd3806281e0889c6ffd2d77ff6424156cbc5"
+  },
+  "generated_app_tests_pass": true,
+  "python": {
+    "wheel": "invariant_kernel-0.5.0-py3-none-any.whl",
+    "lookup_of_unsent_operation": "not_recorded"
+  },
+  "negative_controls": {
+    "no_platform_package_no_binary": {
+      "exit": 1,
+      "mentions_remedy": true
+    },
+    "missing_asset": {
+      "exit": 1,
+      "enoent": true
+    },
+    "tampered_tarball_digest_differs": true
+  },
+  "store_compatibility": {
+    "previous_schema": "3",
+    "schema_after_new_binary_opens": "4",
+    "new_binary_reads_old_store": [
+      "1",
+      "running",
+      "True"
+    ],
+    "old_binary_on_migrated_store_exit": 1,
+    "old_binary_refusal_text": "invariant_kernel.errors.KernelError: IK_PERSISTED_SCHEMA_UNKNOWN rule=store.schema_version: unknown persisted schema version `4`",
+    "old_binary_on_restored_backup_exit": 0
+  }
+}

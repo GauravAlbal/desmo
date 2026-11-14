@@ -1,0 +1,63 @@
+{
+  "steps": [
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 0
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 1
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 2
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 3,
+        "terminal": true
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregates": [
+          {
+            "aggregate_id": "agg-1",
+            "generation": 3,
+            "rebuilt": false,
+            "sequence": 3,
+            "state": {
+              "state": "verified"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-1",
+        "generation": 3,
+        "sequence": 3,
+        "state": {
+          "state": "verified"
+        },
+        "terminal": true
+      }
+    }
+  ]
+}

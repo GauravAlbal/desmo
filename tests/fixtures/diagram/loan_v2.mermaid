@@ -1,0 +1,13 @@
+flowchart LR
+    classDef here stroke-width:3px
+    classDef stuck stroke-width:2px
+    classDef terminal stroke-width:2px
+    i(( ))
+    s_idle(["idle ·2"])
+    s_on_loan["on_loan ·1"]
+    s_returned(("returned ·0"))
+    i --> s_idle
+    s_idle --> |declared · checkout (guard)| s_on_loan
+    s_on_loan --> |declared · checkin (guard)| s_returned
+    s_on_loan --> |declared · new · extend (guard)| s_on_loan
+    s_on_loan --> |declared · recall| s_on_loan

@@ -1,0 +1,43 @@
+# DELIBERATE all-refuse implementation: `approve` can never be satisfied. It cannot violate
+# the law because it can make no progress; required-progress tests must reject it.
+schema_version = 1
+machine_id = "publish_approval_all_refuse"
+machine_version = 1
+name = "PublishApprovalAllRefuse"
+
+[facts]
+artifact_digest = { type = "string", policy = "replace" }
+approved_digest = { type = "string", policy = "replace" }
+
+[states]
+draft = { initial = true }
+approved = {}
+published = { terminal = true }
+
+[commands.edit]
+from = ["draft"]
+to = "draft"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest" }
+
+[commands.approve]
+from = ["draft"]
+to = "approved"
+args = { artifact_digest = "string" }
+when = "exists(approved_digest)"
+then = { approved_digest = "$artifact_digest" }
+
+[commands.revise]
+from = ["approved"]
+to = "draft"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest" }
+
+[commands.publish]
+from = ["approved"]
+to = "published"
+when = "exists(approved_digest) && artifact_digest == approved_digest"
+
+[invariants.pub_inv_001]
+when = "state == 'published'"
+assert = "exists(artifact_digest) && exists(approved_digest) && artifact_digest == approved_digest"

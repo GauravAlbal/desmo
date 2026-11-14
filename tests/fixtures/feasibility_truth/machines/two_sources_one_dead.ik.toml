@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "two_sources_one_dead"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+b = {}
+c = {}
+[commands.fwd]
+from = ["a"]
+to = "b"
+[commands.jump]
+from = ["a", "b"]
+when = 'state == "b"'
+to = "c"
+

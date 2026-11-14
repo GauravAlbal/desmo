@@ -1,0 +1,12 @@
+{
+  "id": "honors_cancellation",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "fault": "cancel",
+  "expect": {
+    "result_accepted": false,
+    "rejection_reason": "cancelled",
+    "execution_status": "cancelled"
+  }
+}

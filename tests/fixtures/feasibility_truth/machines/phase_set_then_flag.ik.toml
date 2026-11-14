@@ -1,0 +1,25 @@
+schema_version = 1
+machine_id = "phase_set_then_flag"
+machine_version = 1
+
+[facts]
+phase = { type = "string", policy = "replace", initial = "idle" }
+flagged = { type = "bool", policy = "replace", initial = false }
+[states]
+s = { initial = true }
+done = {}
+[commands.arm]
+from = ["s"]
+when = 'phase == "idle"'
+then = { phase = '"armed"' }
+to = "s"
+[commands.flag]
+from = ["s"]
+when = 'phase == "armed"'
+then = { flagged = "true" }
+to = "s"
+[commands.finish]
+from = ["s"]
+when = "flagged == true"
+to = "done"
+

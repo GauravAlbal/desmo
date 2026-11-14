@@ -1,0 +1,18 @@
+{
+  "commands": {
+    "go": [
+      {
+        "name": "t",
+        "args": {
+          "ok": true
+        }
+      },
+      {
+        "name": "f",
+        "args": {
+          "ok": false
+        }
+      }
+    ]
+  }
+}

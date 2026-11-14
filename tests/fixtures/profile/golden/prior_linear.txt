@@ -1,0 +1,23 @@
+CHANGE IMPACT
+  new machine version 1 (prior version 1)
+  commands added: none
+  commands removed: none
+  states added: none
+  states removed: none
+
+VERDICT
+  ACCEPT
+ASSURANCE
+  class bounded_checked
+  exploration complete_within_corpus
+  ACCEPT is corpus-relative, not a proof
+
+RELEASE POLICY (strict; separate from developer ACCEPT)
+  verdict release_pass
+  obligation status: not_examined=6 satisfied=7
+  corpus d1adb4712da95cf4f61c110e9ec5d39a2fc3745f5aa7c3ed5249629dc53c3977 (2 cases), exploration complete within the supplied corpus, nodes 2
+  excluded: evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof
+  excluded: runtime artifact digest is unavailable: this report is not bound to a specific binary
+  excluded: external reducers, hosts, and effect executors are outside this check
+  excluded: obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002
+  excluded: no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)

@@ -1,0 +1,10 @@
+{
+  "scenario_version": 1,
+  "machine": "../approval_revision.ik.toml",
+  "aggregate": "doc-useful",
+  "steps": [
+    {"kind": "command", "label": "edit", "name": "edit", "args": {"artifact_digest": "doc-1"}, "expect": "committed"},
+    {"kind": "command", "label": "approve", "name": "approve", "args": {"revision": 1}, "expect": "committed"},
+    {"kind": "command", "label": "authorize", "name": "authorize", "expect": "committed"}
+  ]
+}

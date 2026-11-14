@@ -1,0 +1,18 @@
+{
+  "scenario_version": 1,
+  "machine": "../loan_checkout.ik.toml",
+  "aggregate": "loan-lie",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "checkout-lie",
+      "name": "checkout",
+      "args": {
+        "checkout_ms": 1000,
+        "loan_until_ms": 604801000,
+        "deposit_id": "dep-1"
+      },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    }
+  ]
+}

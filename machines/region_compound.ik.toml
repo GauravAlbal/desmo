@@ -1,0 +1,34 @@
+schema_version = 2
+machine_id = "region_compound"
+machine_version = 1
+name = "Compound coffee lifecycle"
+
+[regions.power.states]
+grinding = { initial = true }
+brewing = {}
+ready = {}
+off = { terminal = true }
+
+[regions.power.commands.brew]
+from = ["grinding"]
+to = "brewing"
+
+[regions.power.commands.finish]
+from = ["brewing"]
+to = "ready"
+
+# A guarded child override wins only when enabled; otherwise the parent exits.
+[regions.power.commands.power_off]
+from = ["grinding"]
+to = "ready"
+args = { override_enabled = "bool" }
+when = "$override_enabled == true"
+
+[regions.power.parent]
+name = "on"
+children = ["grinding", "brewing", "ready"]
+
+[regions.power.parent.commands.power_off]
+from = ["on"]
+to = "off"
+args = { override_enabled = "bool" }

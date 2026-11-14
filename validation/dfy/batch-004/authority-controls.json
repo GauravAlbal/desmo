@@ -1,0 +1,22 @@
+{
+  "baseline_run_fresh_out": {
+    "exit": 0,
+    "store_created": true
+  },
+  "store_flag_refused": {
+    "exit": 2,
+    "text": [
+      "ik scenario: scenario runs do not accept --store; they create a fresh scratch store under --out",
+      "usage: ik scenario run <machine.ik.toml> <scenario.json> --out <dir>"
+    ],
+    "store_created": false
+  },
+  "out_into_existing_store_refused": {
+    "exit": 2,
+    "text": [
+      "ik scenario: scratch path already contains a store file",
+      "usage: ik scenario run <machine.ik.toml> <scenario.json> --out <dir>"
+    ],
+    "store_bytes_unchanged": true
+  }
+}

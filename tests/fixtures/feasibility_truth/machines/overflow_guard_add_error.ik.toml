@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "overflow_guard_add_error"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+ok = {}
+wrap = {}
+[commands.go]
+from = ["idle"]
+args = { n = "int" }
+outcomes = [
+  { when = "$n + 1 > 0", to = "ok" },
+  { when = "$n == 9223372036854775807", to = "wrap" }
+]
+

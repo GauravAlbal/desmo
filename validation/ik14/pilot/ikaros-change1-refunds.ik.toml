@@ -1,0 +1,64 @@
+schema_version = 1
+machine_id = "refunds"
+machine_version = 2
+name = "Refunds"
+
+[facts]
+requester = { type = "string", policy = "replace" }
+amount_cents = { type = "int", policy = "replace" }
+approver = { type = "string", policy = "replace" }
+first_approver = { type = "string", policy = "replace" }
+paid_digest = { type = "string", policy = "replace" }
+version = { type = "int", policy = "replace" }
+ops = { type = "string", policy = "replace" }
+
+[states]
+draft = { initial = true }
+approved = {}
+payout_pending = {}
+paid = { terminal = true }
+
+[commands.submit]
+from = ["draft"]
+to = "draft"
+args = { requester = "string", amount_cents = "int", version = "int", ops = "string" }
+when = "$version == 1"
+then = { requester = "$requester", amount_cents = "$amount_cents", version = "$version", ops = "$ops", approver = "\"\"", first_approver = "\"\"" }
+
+[commands.edit]
+from = ["draft", "approved"]
+to = "draft"
+args = { amount_cents = "int", version = "int", ops = "string" }
+when = "$version == version + 1"
+then = { amount_cents = "$amount_cents", version = "$version", ops = "$ops", approver = "\"\"", first_approver = "\"\"" }
+
+[commands.approve]
+from = ["draft"]
+args = { approver = "string", amount_cents = "int", version = "int", ops = "string" }
+outcomes = [
+  { when = "first_approver == \"\" && $version == version + 1 && $amount_cents == amount_cents && $approver != requester && $approver != \"\"", to = "draft", then = { first_approver = "$approver", version = "$version", ops = "$ops" } },
+  { when = "first_approver != \"\" && $approver != first_approver && $approver != requester && $version == version + 1 && $amount_cents == amount_cents && $approver != \"\"", to = "approved", then = { approver = "$approver", version = "$version", ops = "$ops" } },
+]
+
+[commands.authorize_payout]
+from = ["approved"]
+to = "payout_pending"
+args = { amount_cents = "int", version = "int", effect_id = "string", payload_digest = "string", idempotency_key = "string", ops = "string" }
+when = "$version == version + 1 && $amount_cents == amount_cents && approver != \"\" && approver != requester && first_approver != \"\" && first_approver != approver && first_approver != requester"
+effect = { kind = "refund.payout", id = "$effect_id", payload_digest = "$payload_digest", idempotency_key = "$idempotency_key" }
+then = { version = "$version", ops = "$ops" }
+
+[commands.mark_paid]
+from = ["payout_pending"]
+to = "paid"
+args = { outcome_digest = "string", version = "int", ops = "string" }
+when = "$version == version + 1"
+then = { paid_digest = "$outcome_digest", version = "$version", ops = "$ops" }
+
+[invariants.approval_holds]
+when = "state == 'approved' || state == 'payout_pending' || state == 'paid'"
+assert = "approver != \"\" && approver != requester && first_approver != \"\" && first_approver != approver && first_approver != requester && exists(amount_cents) && exists(version)"
+
+[invariants.paid_has_digest]
+when = "state == 'paid'"
+assert = "exists(paid_digest)"

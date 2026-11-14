@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "overflow_earlier_blocks_max_arm"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+always = {}
+atmax = {}
+[commands.go]
+from = ["idle"]
+args = { n = "int" }
+outcomes = [
+  { when = "$n + 1 > $n", to = "always" },
+  { when = "$n == 9223372036854775807", to = "atmax" }
+]
+

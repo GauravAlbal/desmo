@@ -1,0 +1,34 @@
+{
+  "scenario_version": 1,
+  "machine": "../desk.ik.toml",
+  "aggregate": "loan-v2",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "checkout",
+      "name": "checkout",
+      "args": { "checkout_ms": 1000, "loan_until_ms": 604801000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "overdue-without-recall",
+      "name": "checkin",
+      "args": { "now_ms": 604801001 },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    },
+    {
+      "kind": "command",
+      "label": "place-recall",
+      "name": "place_recall",
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "overdue-with-recall",
+      "name": "checkin",
+      "args": { "now_ms": 604801001 },
+      "expect": "committed"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "diagnostic": {
+        "code": "IK_MACHINE_VERSION_UNKNOWN"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_MACHINE_HASH_MISMATCH"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_MACHINE_UNKNOWN"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-1",
+        "generation": 0
+      }
+    },
+    {
+      "diagnostic": {
+        "code": "IK_MACHINE_MISMATCH"
+      },
+      "exit": 1,
+      "ok": false
+    }
+  ]
+}

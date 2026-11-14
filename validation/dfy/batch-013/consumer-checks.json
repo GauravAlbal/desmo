@@ -1,0 +1,83 @@
+[
+  {
+    "adapter": "off",
+    "model": "consumer model A",
+    "plan_digest": "550292191f1be8dec5f4207b2561e0a05225836e7e05d55bfd083c4f9f28e31e",
+    "records": 3,
+    "trusts": {
+      "in-house": 3
+    },
+    "uncovered_ids": [],
+    "verdict": "ACCEPT"
+  },
+  {
+    "adapter": "on",
+    "model": "consumer model A",
+    "plan_digest": "550292191f1be8dec5f4207b2561e0a05225836e7e05d55bfd083c4f9f28e31e",
+    "records": 3,
+    "trusts": {
+      "in-house": 3
+    },
+    "uncovered_ids": [],
+    "verdict": "ACCEPT"
+  },
+  {
+    "adapter": "off",
+    "model": "consumer model H",
+    "plan_digest": "14052aa7d6a8f83a92b2b195ee22551ff30babdeec7de87d7bde213950bda06b",
+    "records": 46,
+    "trusts": {
+      "in-house": 46
+    },
+    "uncovered_ids": [
+      "outcome/classify/17/executable",
+      "outcome/classify/18/executable",
+      "outcome/classify/19/executable",
+      "outcome/classify/20/executable",
+      "outcome/classify/21/executable"
+    ],
+    "verdict": "REFUSED"
+  },
+  {
+    "adapter": "on",
+    "model": "consumer model H",
+    "plan_digest": "453c52b291ad2d6757d1f0d1c030634e26faade981cfec0a1f2667967d68356a",
+    "records": 51,
+    "trusts": {
+      "CheckedInvariant": 5,
+      "in-house": 46
+    },
+    "uncovered_ids": [],
+    "verdict": "ACCEPT"
+  },
+  {
+    "adapter": "on",
+    "model": "consumer model H, mutant (shadow broken at attempts=1000, invariant relaxed)",
+    "plan_digest": "5e3237682647b72165f841b4a670a3f9842912b7922e5d0c09153dc6e9e5970e",
+    "records": 49,
+    "trusts": {
+      "CheckedInvariant": 3,
+      "in-house": 46
+    },
+    "uncovered_ids": [
+      "outcome/classify/17/executable",
+      "outcome/classify/18/executable"
+    ],
+    "verdict": "REFUSED"
+  },
+  {
+    "adapter": "off",
+    "model": "mutant H, corpus extended with number=1000 (adapter off, kernel witnesses only)",
+    "plan_digest": "1de82885448e838047df7bbffd06370bfe2cbf8df02822b455180287ec327e45",
+    "records": 46,
+    "trusts": {
+      "in-house": 46
+    },
+    "uncovered_ids": [
+      "outcome/classify/19/executable",
+      "outcome/classify/20/executable",
+      "outcome/classify/21/executable"
+    ],
+    "verdict": "REFUSED"
+  }
+]

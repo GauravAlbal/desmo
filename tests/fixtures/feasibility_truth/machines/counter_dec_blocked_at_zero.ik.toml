@@ -1,0 +1,15 @@
+schema_version = 1
+machine_id = "counter_dec_blocked_at_zero"
+machine_version = 1
+
+[facts]
+n = { type = "int", policy = "replace", initial = 0 }
+[states]
+s = { initial = true }
+under = {}
+[commands.dec]
+from = ["s"]
+when = "n > 0"
+then = { n = "0" }
+to = "under"
+

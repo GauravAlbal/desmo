@@ -1,0 +1,378 @@
+{
+  "diagnostic_reruns": [],
+  "first_scoring": {
+    "N26/r1/build": {
+      "log_sha256": "0f2f3ce8f7460c29b446801616f3259319d6cecb0103d47e9ed992c5828d6b0f",
+      "per_rule": {
+        "bin_code": {
+          "1": true,
+          "2": true
+        },
+        "care_note": {
+          "1": true,
+          "2": true
+        },
+        "checkout_gate": {
+          "1": true,
+          "2": true
+        },
+        "crate_bound": {
+          "1": true,
+          "2": true
+        },
+        "loan_grams": {
+          "1": true,
+          "2": true
+        },
+        "loaned_n": {
+          "1": true,
+          "2": true
+        },
+        "nick": {
+          "1": true,
+          "2": true
+        },
+        "plot_id": {
+          "1": true,
+          "2": true
+        },
+        "plot_set": {
+          "1": true,
+          "2": true
+        },
+        "shed_id": {
+          "1": true,
+          "2": true
+        },
+        "shed_label": {
+          "1": true,
+          "2": true
+        },
+        "soak_at": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": true
+        },
+        "tender_id": {
+          "1": true,
+          "2": true
+        }
+      },
+      "rc": 0,
+      "status": "pass",
+      "timeout": false
+    },
+    "N26/r1/change": {
+      "log_sha256": "de09240ec40995c1e9d5bcea44cb7116de5381cfd8f41d5227c8eb626f1cc8df",
+      "per_rule": {
+        "bin_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "care_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "checkout_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "crate_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_grams": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "hedge_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "loan_grams": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "loaned_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plot_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plot_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "shed_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "shed_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "soak_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "tender_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "warden_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      },
+      "rc": 0,
+      "status": "pass",
+      "timeout": false
+    },
+    "N27/r1/build": {
+      "log_sha256": "9b618d92f0c9c8a8193a5c753b87ac06edabb7e6f92e927a129eacd9f1fce8a2",
+      "per_rule": {
+        "bay_id": {
+          "1": true,
+          "2": true
+        },
+        "billed_n": {
+          "1": true,
+          "2": true
+        },
+        "bin_id": {
+          "1": true,
+          "2": true
+        },
+        "bin_mark": {
+          "1": true,
+          "2": true
+        },
+        "dispatch_gate": {
+          "1": true,
+          "2": true
+        },
+        "frame_set": {
+          "1": true,
+          "2": true
+        },
+        "hours_bound": {
+          "1": true,
+          "2": true
+        },
+        "labor_total": {
+          "1": true,
+          "2": true
+        },
+        "rack_nick": {
+          "1": true,
+          "2": true
+        },
+        "ready_at": {
+          "1": true,
+          "2": true
+        },
+        "rider_id": {
+          "1": true,
+          "2": true
+        },
+        "seal_code": {
+          "1": true,
+          "2": true
+        },
+        "shop_note": {
+          "1": true,
+          "2": true
+        },
+        "tech_id": {
+          "1": true,
+          "2": true
+        }
+      },
+      "rc": 0,
+      "status": "pass",
+      "timeout": false
+    },
+    "N27/r1/change": {
+      "log_sha256": "6715b4ddf2de2e478de608e62d80efaa72d5435a341abf22955b631515039115",
+      "per_rule": {
+        "bay_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "billed_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bin_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bin_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "dispatch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_labor": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "frame_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "hours_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "labor_total": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rack_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ready_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rider_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seal_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "shop_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "tech_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      },
+      "rc": 0,
+      "status": "pass",
+      "timeout": false
+    }
+  },
+  "note": "Per replica and stage under the strict acceptance contract (exact required coordinates, strict booleans, runner exit and timeout): status, per-rule criterion results (1 valid path, 2 captured honest request committed and every attack refused, 3 invalidation, 4 existing instances), and the sha256 of the raw evaluator log retained for each stage. This is the first and only scoring; nothing was repaired or rerun."
+}

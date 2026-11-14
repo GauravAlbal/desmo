@@ -1,0 +1,24 @@
+schema_version = 1
+machine_id = "unset_exists_missing"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+missing = {}
+present = {}
+[commands.use_missing]
+from = ["idle"]
+when = "not_exists(token)"
+to = "missing"
+[commands.use_present]
+from = ["idle"]
+when = "exists(token)"
+to = "present"
+[commands.fill]
+from = ["idle"]
+args = { t = "string" }
+then = { token = "$t" }
+to = "idle"
+

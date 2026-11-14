@@ -1,0 +1,23 @@
+  ● [ idle ]                  (unchanged)
+      │
+      │  checkout             (unchanged)
+      ▼
+  ○ [ on_loan ]               ↺ can also: recall
+      │  ✚ ↺ extend           NEW — if: new_until > loan_until
+      │    • New loans (v2): can extend
+      │    • Old loans (v1): cannot; refusal not observed
+      │
+      │  checkin              (unchanged)
+      ▼
+  ✔ [ returned ]  END         (unchanged)
+
+CHANGE: +extend
+
+WHAT ELSE IS AT RISK (basis / status)
+  • Instances in changed states : on_loan (v1: checkin, recall | v2: +extend)                     (structural / checked)
+  • Shared facts touched        : loan_until_ms (written & read by extend)                        (structural / checked)
+  • Dead ends / unreachable     : none
+  • Shortest finish changed     : none
+  • Existing checks / cases     : none reference modified or removed commands
+  • Effects & invariants        : no changes
+  • Live v1 count & callers     : unknown  (not scanned / NOT ESTABLISHED)

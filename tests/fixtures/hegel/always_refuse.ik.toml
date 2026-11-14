@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "hegel_always_refuse"
+machine_version = 1
+
+[facts]
+n = { type = "int", policy = "replace", initial = 0 }
+
+[states]
+start = { initial = true }
+done = { terminal = true }
+
+[commands.go]
+from = ["start"]
+to = "done"
+args = { n = "int" }
+when = "1 == 0"
+
+[invariants.n_nonneg]
+assert = "n >= 0"

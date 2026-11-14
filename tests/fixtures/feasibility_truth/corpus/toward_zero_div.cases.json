@@ -1,0 +1,24 @@
+{
+  "commands": {
+    "go": [
+      {
+        "name": "neg1",
+        "args": {
+          "n": -1
+        }
+      },
+      {
+        "name": "one",
+        "args": {
+          "n": 1
+        }
+      },
+      {
+        "name": "two",
+        "args": {
+          "n": 2
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "commands": {
+    "power_off": [
+      { "name": "disabled", "args": { "override_enabled": false } },
+      { "name": "enabled", "args": { "override_enabled": true } }
+    ]
+  }
+}

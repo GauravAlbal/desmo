@@ -1,0 +1,10 @@
+{
+  "commands": {
+    "inc": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

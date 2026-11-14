@@ -1,0 +1,20 @@
+schema_version = 1
+machine_id = "profile_refused_leave"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+
+[states]
+start = { initial = true }
+waiting = {}
+done = { terminal = true }
+
+[commands.enter]
+from = ["start"]
+to = "waiting"
+
+[commands.leave]
+from = ["waiting"]
+to = "done"
+when = "exists(token)"

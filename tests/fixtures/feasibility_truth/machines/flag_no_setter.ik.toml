@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "flag_no_setter"
+machine_version = 1
+
+[facts]
+ready = { type = "bool", policy = "replace", initial = false }
+[states]
+idle = { initial = true }
+done = {}
+[commands.commit]
+from = ["idle"]
+when = "ready == true"
+to = "done"
+

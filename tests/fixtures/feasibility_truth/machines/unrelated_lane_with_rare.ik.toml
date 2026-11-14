@@ -1,0 +1,22 @@
+schema_version = 2
+machine_id = "unrelated_lane_with_rare"
+machine_version = 1
+
+[regions.lane.states]
+start = { initial = true }
+ok = {}
+rare = {}
+[regions.lane.commands.go]
+from = ["start"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x >= 0 || $x < 0", to = "ok" },
+  { when = "$x == 3", to = "rare" }
+]
+[regions.flag.states]
+off = { initial = true }
+on = {}
+[regions.flag.commands.flip]
+from = ["off"]
+to = "on"
+

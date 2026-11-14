@@ -1,0 +1,14 @@
+{
+  "protocol": "ik.analysis.adapter.v1",
+  "adapter": {"id": "p-route", "version": "0-prepared"},
+  "invocation": {
+    "argv": ["/absolute/path/to/adapters/p/adapter.py"],
+    "executable_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "engine": {"id": "P", "version_constraint": "p --version"},
+  "inputs": ["native_model", "observation_trace"],
+  "properties": ["safety", "reachability", "temporal", "observational"],
+  "evidence": ["bounded_paths", "observed_trace"],
+  "requires": {"production_store_access": false, "network": false},
+  "result_schema": "ik.analysis.result.v1"
+}

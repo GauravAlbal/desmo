@@ -1,0 +1,63 @@
+# VerificationAttempt — generic fixture machine (spec §9).
+# Proves the reusable runtime without any consumer concepts.
+schema_version = 1
+machine_id = "verification_attempt"
+machine_version = 1
+name = "VerificationAttempt"
+
+[facts]
+attempt_count = { type = "int", policy = "counter", initial = 0 }
+artifact_digest = { type = "string", policy = "replace" }
+baseline_digest = { type = "string", policy = "replace" }
+receipt_digest = { type = "string", policy = "replace" }
+receipt_artifact_digest = { type = "string", policy = "replace" }
+receipt_baseline_digest = { type = "string", policy = "replace" }
+max_attempts = { type = "int", policy = "kernel_only", initial = 3 }
+
+[states]
+created = { initial = true }
+running = {}
+submitted = {}
+repairable = {}
+verified = { terminal = true }
+exhausted = { terminal = true }
+cancelled = { terminal = true }
+
+[commands.start]
+from = ["created"]
+to = "running"
+
+[commands.submit]
+from = ["running"]
+to = "submitted"
+args = { artifact_digest = "string", baseline_digest = "string" }
+then = { artifact_digest = "$artifact_digest", baseline_digest = "$baseline_digest" }
+
+[commands.verify]
+from = ["submitted"]
+to = "verified"
+args = { receipt_digest = "string", receipt_artifact_digest = "string", receipt_baseline_digest = "string" }
+when = "$receipt_artifact_digest == artifact_digest && $receipt_baseline_digest == baseline_digest"
+then = { receipt_digest = "$receipt_digest", receipt_artifact_digest = "$receipt_artifact_digest", receipt_baseline_digest = "$receipt_baseline_digest" }
+
+[commands.reject]
+from = ["submitted"]
+outcomes = [
+  { when = "attempt_count + 1 < max_attempts", to = "repairable", then = { attempt_count = "+1" } },
+  { when = "attempt_count + 1 >= max_attempts", to = "exhausted", then = { attempt_count = "+1" } }
+]
+
+[commands.retry]
+from = ["repairable"]
+to = "running"
+
+[commands.cancel]
+from = ["created", "running", "submitted", "repairable"]
+to = "cancelled"
+
+[invariants.va_inv_004]
+assert = "attempt_count <= max_attempts"
+
+[invariants.va_inv_001]
+when = "state == 'verified'"
+assert = "exists(receipt_digest)"

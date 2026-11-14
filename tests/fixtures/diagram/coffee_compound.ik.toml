@@ -1,0 +1,34 @@
+schema_version = 2
+machine_id = "coffee"
+machine_version = 1
+
+[regions.power.states.idle]
+initial = true
+[regions.power.states.grinding]
+[regions.power.states.brewing]
+[regions.power.states.ready]
+[regions.power.states.off]
+
+[regions.power.commands.start]
+from = ["idle"]
+to = "grinding"
+[regions.power.commands.grind_complete]
+from = ["grinding"]
+to = "brewing"
+[regions.power.commands.brew_complete]
+from = ["brewing"]
+to = "ready"
+[regions.power.commands.take_cup]
+from = ["ready"]
+to = "idle"
+[regions.power.commands.power_on]
+from = ["off"]
+to = "idle"
+
+[regions.power.parent]
+name = "on"
+children = ["idle", "grinding", "brewing", "ready"]
+
+[regions.power.parent.commands.power_off]
+from = ["on"]
+to = "off"

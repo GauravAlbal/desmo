@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "published_ordered_shadow"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+first = {}
+second = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x != 1 || $x == 1", to = "first" },
+  { when = "$x == 1", to = "second" }
+]
+

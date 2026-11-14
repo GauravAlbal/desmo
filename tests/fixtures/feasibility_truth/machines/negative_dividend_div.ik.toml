@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "negative_dividend_div"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+hit = {}
+[commands.go]
+from = ["idle"]
+args = { n = "int" }
+when = "$n / 2 == 0 - 3"
+to = "hit"
+

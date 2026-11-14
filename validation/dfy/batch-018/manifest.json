@@ -1,0 +1,74 @@
+{
+  "batch": "018",
+  "binary_identical_in_release_build_and_packed_npm_package": true,
+  "builder_visible_sha256": {
+    "N26/brief.md": "9dea3b6ee851596e1279c635422d499c03c05160a0755d8ee184b30698003a58",
+    "N26/change.md": "e01308c3ae57971d1e26bde6fe5964eae0ace2da6d8c0e7564f7da81ec64ddf9",
+    "N26/stub/CONTRACT.md": "208e08fa8cef82bc6318a1b974a020c8aa1f3184cc0c406ae33153c9af040f34",
+    "N26/stub/server.mjs": "833b44f11952cf862e320f95a24f7a6362479241fe77d71e6862e993d3611680",
+    "N27/brief.md": "12aad67a5fe5139eafaff331bffffc19fff9e800315ec4995c49167777a5d74c",
+    "N27/change.md": "d8cda31db8a7153280c283dd68bb4bf202462faac822dcd219c8424967bfdb35",
+    "N27/stub/CONTRACT.md": "8aa433d12ef7739cdae79b46970fdde445089dd0722224ef310acdd2e66348ae",
+    "N27/stub/server.mjs": "77f194d29cd9bfb9d3b042c3d26f5853ae15ba5f72bd04cadf996f99d37112b2"
+  },
+  "candidate_source": "8cd5b6a89121c650091ddb45de4e74571ea08d61",
+  "evaluator_kit": "capture-and-replay kit (retained, hashed) plus the two family evaluators, sealed together",
+  "execution_limits": {
+    "isolated_scratch_tmpdir_cwd_per_stage": true,
+    "parallel_workers": 2,
+    "stages_of_one_replica_run_sequentially": true
+  },
+  "host": "macOS arm64",
+  "identity_check_note": "verified at pack time by the candidate builder; the release build directory was cleaned afterward",
+  "ik_binary_sha256": "4181ebf8da9d4b73a714b5da45afd1934501d41037664f7b4345c979c08d608e",
+  "ik_version": "invariant-kernel 0.5.0 protocol 1.0",
+  "instrument_selftest": [
+    "SELFTEST OK",
+    "SELFTEST OK"
+  ],
+  "isolation": "evaluators, rule tables, reference toys, defect controls and the capture kit are one encrypted archive; its key is held in a private file in the lead's home configuration, outside the experiment tree; all plaintext was deleted before dispatch only after the archive verified and every required artifact was hashed. Same-account isolation limits still apply: no general sandbox is claimed.",
+  "limits": "no humans, agent model identity not exposed, both families TypeScript, n=1 per family, macOS arm64, feasibility adapter off",
+  "npm_tarballs_sha256": {
+    "ikaros-darwin-arm64-0.5.0.tgz": "82044753bbaa380cac820ac33bc8751468dcbcd5557f3134ebcb2fd108c865be",
+    "ikaros-runtime-0.5.0.tgz": "4a7ff43789be096f9072eeb76dc257a1bf6b1414c8af69c58166e1cfa3f53beb"
+  },
+  "prompt_sha256": {
+    "common.md": "33d0599d1f1ab047ca2275898881e0d3bc72d675dfdb4a40d071d560664c1c3a",
+    "stage-build.md": "8202bc5f3095bd300ee5c88dce55c1bc227bd0ada77e56806e966df2bfa59546",
+    "stage-change.md": "7a7e50a856b830321ef136537889d002844a6f91d2b4944cc42a1023e919562c",
+    "tool-py.md": "9d2c4c4119279acbacb17720f32c936cd7df7230c994cdf15bc881483e725c7a",
+    "tool-ts.md": "f9d1c3bec7a4b939b5814579bda02968f1be4a3fe4d8cbbb7841ee1f0f938c41"
+  },
+  "purpose": "prospective two-family confirmation of full-grammar enforcement (see PREREG.md); frozen before any agent ran",
+  "runner_sha256": {
+    "exp.py": "591aa18c0e733fd814ef0073c3e32b1f318ba09d50431c575283c07cbff33d08",
+    "stage_acceptance.py": "a6fa320795743019368371d75e4d48f176f0d5eefc9cfe5fef27834ab97b51ec"
+  },
+  "sealed_evaluator_archive_sha256": "efb3797248bba962ea7e75689bdbd69632131874cc9818aef6f7dc2e7a5f4b28",
+  "staged_prompts_sha256": {
+    "N26/r1": "7693785061e2e3493d1d63a468290a67624e2d627286b8462cc39153b46e21f5",
+    "N27/r1": "9cdea1dc08d1d7388108bdfad8bacfd4e420b87eea2331444e3d576af3d2feb4"
+  },
+  "staged_skill_sha256": {
+    "N26/r1/build.md": "9085abadd82b599d05311061aa9fd2fa00e9e24dd245babc72e5ac132c051c23",
+    "N26/r1/change.md": "aeb03468a5ef1bb43beeebc0c42b00b913e59243229657d47c7a3ce64b0a1dc8",
+    "N27/r1/build.md": "9085abadd82b599d05311061aa9fd2fa00e9e24dd245babc72e5ac132c051c23",
+    "N27/r1/change.md": "aeb03468a5ef1bb43beeebc0c42b00b913e59243229657d47c7a3ce64b0a1dc8"
+  },
+  "targeted_regressions_on_packed_binary": {
+    "python": {
+      "rc": 0,
+      "tail": "150 passed, 1 skipped in 147.91s (0:02:27)"
+    },
+    "rust_suite_on_source": "run by the acceptance gate on the source revision; not re-run separately for this record",
+    "seam_fixtures": {
+      "rc": 0,
+      "tail": "all seams matched"
+    },
+    "typescript": {
+      "rc": 0,
+      "tail": "# duration_ms 6277.550834"
+    }
+  },
+  "what_this_supports": "a finite confirmation, on two fresh families with one replica each, of whether a fresh agent given the packaged candidate enforces the complete stated grammar at the runtime boundary; not a rate, not the original three-family two-replica requirement, not DFYJourneyQualified, not human review, consumer acceptance, native Linux x64, publication or a trust-boundary claim"
+}

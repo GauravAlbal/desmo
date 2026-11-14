@@ -1,0 +1,21 @@
+schema_version = 2
+machine_id = "schema2_parent_fallback_false"
+machine_version = 1
+
+[regions.power.states]
+running = { initial = true }
+stopped = {}
+[regions.power.commands.halt]
+from = ["running"]
+args = { force = "bool" }
+when = "$force == true"
+to = "stopped"
+[regions.power.parent]
+name = "unit"
+children = ["running"]
+[regions.power.parent.commands.halt]
+from = ["unit"]
+args = { force = "bool" }
+when = "$force == false"
+to = "stopped"
+

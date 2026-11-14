@@ -1,0 +1,16 @@
+schema_version = 1
+machine_id = "dead_command_from_done_source_unreached"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = {}
+end = {}
+[commands.go]
+from = ["idle"]
+to = "done"
+[commands.again]
+from = ["end"]
+to = "done"
+

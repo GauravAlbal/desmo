@@ -1,0 +1,30 @@
+{
+  "batch": "013",
+  "purpose": "requalification of the bytes carrying the two-tier coverage contract and the optional checked SMT feasibility adapter",
+  "candidate_source": "cb4f1057ad3658eeffbf9e217a6f17f9b4865902",
+  "includes": [
+    "two-tier coverage contract (465e37f)",
+    "optional pinned feasibility adapter, certificates, known-solution suite, cli panic paths removed (cb4f105)"
+  ],
+  "host": "macOS arm64",
+  "ik_version": "invariant-kernel 0.5.0 protocol 1.0",
+  "ik_binary_sha256": "e85424deaa27a92fd07540a952cb3529b0a306bb931bb1f6357e56eb32e9c765",
+  "binary_identical_in_release_build_and_packed_npm_package": true,
+  "npm_tarballs_sha256": {
+    "ikaros-darwin-arm64-0.5.0.tgz": "ef2aa74a26f2a09d93aa3b40809716172dfbc8484c751b0fafaf444bc1767919",
+    "ikaros-runtime-0.5.0.tgz": "042ea5cbedf03ec5348228c294fc1d4f65e58f70338a03f6e642393d028f0856"
+  },
+  "solvers_used_by_adapter_checks": {
+    "z3": "5.3.3",
+    "cvc5": "1.4.2",
+    "note": "discovered via the optional adapter; not bundled, not pinned by digest in this record"
+  },
+  "targeted_regressions_on_packed_binary": {
+    "artifact_qualification": "qualify_artifacts exit 0, negative controls behaved",
+    "seam_fixtures": "all seams matched",
+    "typescript_client_and_skill_tests": "66 passed, 0 failed",
+    "python_client_tests": "149 passed, 1 skipped",
+    "rust_suite_on_source": "573 passed, 0 failed"
+  },
+  "not_run": "no new agent wave (no new transfer claim); Linux x64; human participants"
+}

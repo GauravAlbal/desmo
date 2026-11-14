@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "unset_fact_cmp_no_fallthrough"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+hit = {}
+later = {}
+[commands.go]
+from = ["idle"]
+outcomes = [
+  { when = 'token == "x"', to = "hit" },
+  { to = "later" }
+]
+

@@ -1,0 +1,125 @@
+{
+  "exclude": [
+    {
+      "glob": ".pear[l]s/*",
+      "reason": "private work-graph state"
+    },
+    {
+      "glob": ".m[o]at.json",
+      "reason": "private acceptance-gate configuration"
+    },
+    {
+      "glob": "CLAUDE.md",
+      "reason": "private shipping-loop instructions; a public agent guide is docs/agent.md"
+    },
+    {
+      "glob": "mutants.out/*",
+      "reason": "generated cargo-mutants output"
+    },
+    {
+      "glob": "mutants.out.old/*",
+      "reason": "generated cargo-mutants output"
+    },
+    {
+      "glob": "dist/*",
+      "reason": "historical release artifacts; public artifacts are built from the candidate (IK-11)"
+    },
+    {
+      "glob": "LATEST_RELEASE",
+      "reason": "release manifest advances only after publication"
+    },
+    {
+      "glob": "docs/RELEASING.md",
+      "reason": "describes the private release and acceptance process"
+    },
+    {
+      "glob": "scripts/evidence-generate",
+      "reason": "private provenance generator bound to the acceptance receipt store"
+    },
+    {
+      "glob": "tests/evidence_manifest_test.sh",
+      "reason": "tests the private provenance generator"
+    },
+    {
+      "glob": "validation/runtime-evidence-manifest.json",
+      "reason": "private acceptance-receipt provenance"
+    },
+    {
+      "glob": "validation/ik-props-evidence.json",
+      "reason": "private acceptance-receipt provenance"
+    },
+    {
+      "glob": "validation/ik00/baseline.json",
+      "reason": "private planning baseline"
+    },
+    {
+      "glob": "scripts/accept",
+      "reason": "private acceptance gate wrapper; public gate is scripts/public-verify"
+    },
+    {
+      "glob": "docs/evidence-report.md",
+      "reason": "generated from private acceptance receipts"
+    },
+    {
+      "glob": "docs/region-lowering.pdk-result.json",
+      "reason": "private architecture-tool result record"
+    },
+    {
+      "glob": "validation/ik10/*",
+      "reason": "private consumer qualification record"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "private-gate",
+      "kind": "private",
+      "regex": "(?i)\\bm[o]at\\b"
+    },
+    {
+      "id": "work-graph",
+      "kind": "private",
+      "regex": "(?i)\\bpear[l]s?\\b"
+    },
+    {
+      "id": "private-consumer",
+      "kind": "private",
+      "regex": "\\bA[r]q\\b|a[r]q-next|a[r]q-thin"
+    },
+    {
+      "id": "private-review",
+      "kind": "private",
+      "regex": "(?i)\\btribuna[l]\\b|\\bpanopti[c]on\\b"
+    },
+    {
+      "id": "private-fleet",
+      "kind": "private",
+      "regex": "\\bv[x]\\b"
+    },
+    {
+      "id": "absolute-user-path",
+      "kind": "private",
+      "regex": "/Users/[A-Za-z0-9_.-]+"
+    },
+    {
+      "id": "github-token",
+      "kind": "secret",
+      "regex": "gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}"
+    },
+    {
+      "id": "provider-key",
+      "kind": "secret",
+      "regex": "sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}"
+    },
+    {
+      "id": "private-key",
+      "kind": "secret",
+      "regex": "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+    },
+    {
+      "id": "auth-header",
+      "kind": "secret",
+      "regex": "x-access-toke[n]:[^\\s\"']+"
+    }
+  ],
+  "acknowledged": []
+}

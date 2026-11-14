@@ -1,0 +1,39 @@
+# Host proposes derived arguments; the machine checks the relationship.
+# 14-day loan span is 1209600000 ms. Checkout refuses a host lie.
+# Checkin is host-gated: overdue is allowed only when a recall was placed.
+# Return clears every fact a later reconcile or projection would read.
+schema_version = 1
+machine_id = "loan_checkout"
+machine_version = 1
+name = "LoanCheckout"
+
+[facts]
+checkout_ms = { type = "int", policy = "replace" }
+loan_until_ms = { type = "int", policy = "replace" }
+deposit_id = { type = "string", policy = "replace" }
+recall_placed = { type = "int", policy = "replace", initial = 0 }
+overdue = { type = "int", policy = "replace", initial = 0 }
+
+[states]
+idle = { initial = true }
+on_loan = {}
+returned = { terminal = true }
+
+[commands.checkout]
+from = ["idle"]
+to = "on_loan"
+args = { checkout_ms = "int", loan_until_ms = "int", deposit_id = "string" }
+when = "$loan_until_ms == $checkout_ms + 1209600000"
+then = { checkout_ms = "$checkout_ms", loan_until_ms = "$loan_until_ms", deposit_id = "$deposit_id" }
+
+[commands.recall]
+from = ["on_loan"]
+to = "on_loan"
+then = { recall_placed = "1" }
+
+[commands.checkin]
+from = ["on_loan"]
+to = "returned"
+args = { overdue = "int" }
+when = "$overdue == 0 || recall_placed == 1"
+then = { overdue = "$overdue", deposit_id = '""', checkout_ms = "0", loan_until_ms = "0" }

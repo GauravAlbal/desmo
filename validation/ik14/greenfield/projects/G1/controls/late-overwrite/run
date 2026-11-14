@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+'use strict';
+process.env.DEFECT = 'late-overwrite';
+require('../_shared/engine.cjs');

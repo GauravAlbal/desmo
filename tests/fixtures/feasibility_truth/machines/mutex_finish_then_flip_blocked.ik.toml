@@ -1,0 +1,19 @@
+schema_version = 2
+machine_id = "mutex_finish_then_flip_blocked"
+machine_version = 1
+
+[regions.mode.states]
+idle = { initial = true }
+done = { terminal = true }
+[regions.mode.commands.finish]
+from = ["idle"]
+to = "done"
+[regions.flag.states]
+off = { initial = true }
+on = {}
+[regions.flag.commands.flip]
+from = ["off"]
+to = "on"
+[invariants.no_done_on]
+assert = 'region_mode != "done" || region_flag != "on"'
+

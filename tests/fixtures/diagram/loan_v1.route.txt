@@ -1,0 +1,9 @@
+  ● [ idle ]                  ◀── YOU ARE HERE (2 steps to end)
+      │
+      │  checkout             if: loan_until is checkout + 14d
+      ▼
+  ○ [ on_loan ]               ↺ can also: recall
+      │
+      │  checkin              if: overdue is 0, or recall_placed is 1
+      ▼
+  ✔ [ returned ]  END

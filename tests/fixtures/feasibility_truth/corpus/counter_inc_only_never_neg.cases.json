@@ -1,0 +1,16 @@
+{
+  "commands": {
+    "inc": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "see_neg": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

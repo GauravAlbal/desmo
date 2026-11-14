@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "string_eq_empty_and_other"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+empty = {}
+rest = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+outcomes = [
+  { when = '$s == ""', to = "empty" },
+  { when = '$s != ""', to = "rest" }
+]
+

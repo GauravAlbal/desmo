@@ -1,0 +1,10 @@
+{
+  "commands": {
+    "commit": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

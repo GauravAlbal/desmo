@@ -1,0 +1,355 @@
+"""Refund approval library. Lifecycle authority is the Ikaros kernel."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from typing import Any, Optional
+
+_KIT = "/tmp/ik-blind/kit"
+_CLIENT = os.path.join(_KIT, "python")
+if _CLIENT not in sys.path:
+    sys.path.insert(0, _CLIENT)
+
+os.environ.setdefault("IK_BINARY", os.path.join(_KIT, "ik"))
+
+from invariant_kernel import (  # noqa: E402
+    HistoricalResult,
+    Kernel,
+    KernelError,
+    TransportError,
+)
+
+_BINARY = os.environ.get("IK_BINARY") or os.path.join(_KIT, "ik")
+_MACHINE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "refunds.ik.toml")
+
+_VIEW_KEYS = ("state", "amount_cents", "version", "approver", "paid_digest")
+
+
+class Refused(Exception):
+    """A business rule forbids the action."""
+
+
+class Stale(Refused):
+    """Caller's expected_version is not the current version."""
+
+
+class Conflict(Refused):
+    """Same operation id or effect key reused with different content."""
+
+
+def _op_key(operation_id: Any) -> Optional[str]:
+    if operation_id is None:
+        return None
+    return str(operation_id)
+
+
+def _load_ops(facts: dict) -> dict:
+    raw = facts.get("ops")
+    if not raw:
+        return {}
+    loaded = json.loads(raw)
+    if not isinstance(loaded, dict):
+        return {}
+    return loaded
+
+
+def _dump_ops(ops: dict) -> str:
+    return json.dumps(ops, sort_keys=True, separators=(",", ":"))
+
+
+def _public(state: str, amount_cents: int, version: int, approver: Any, paid_digest: Any) -> dict:
+    if approver == "":
+        approver = None
+    return {
+        "state": state,
+        "amount_cents": amount_cents,
+        "version": version,
+        "approver": approver,
+        "paid_digest": paid_digest,
+    }
+
+
+def _view(aggregate: Any) -> dict:
+    facts = aggregate.facts
+    approver = facts.get("approver") or None
+    if aggregate.state == "paid":
+        paid = facts.get("paid_digest")
+    else:
+        paid = None
+    return _public(
+        aggregate.state,
+        facts["amount_cents"],
+        facts["version"],
+        approver,
+        paid,
+    )
+
+
+class Refunds:
+    def __init__(self, path: str) -> None:
+        parent = os.path.dirname(os.path.abspath(path))
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        self._path = path
+        self._kernel = Kernel(store=path, binary=_BINARY, session=True)
+        self._machine = self._kernel.machine(_MACHINE)
+
+    def __del__(self) -> None:
+        kernel = getattr(self, "_kernel", None)
+        if kernel is not None:
+            try:
+                kernel.close()
+            except Exception:
+                pass
+
+    def submit(self, refund_id, requester, amount_cents, operation_id=None) -> dict:
+        content = {
+            "method": "submit",
+            "requester": requester,
+            "amount_cents": amount_cents,
+        }
+        aggregate = self._open_or_create(refund_id)
+        if self._submitted(aggregate):
+            replayed = self._replay(aggregate, operation_id, content)
+            if replayed is not None:
+                return replayed
+            raise Refused("refund %s already exists" % refund_id)
+        view = _public("draft", amount_cents, 1, None, None)
+        ops = self._bind(aggregate, operation_id, content, view)
+        updated = self._command(
+            aggregate,
+            "submit",
+            {
+                "requester": requester,
+                "amount_cents": amount_cents,
+                "version": 1,
+                "ops": _dump_ops(ops),
+            },
+        )
+        return _view(updated)
+
+    def edit(self, refund_id, amount_cents, expected_version=None, operation_id=None) -> dict:
+        content = {
+            "method": "edit",
+            "amount_cents": amount_cents,
+            "expected_version": expected_version,
+        }
+        aggregate = self._require(refund_id)
+        replayed = self._replay(aggregate, operation_id, content)
+        if replayed is not None:
+            return replayed
+        self._expect(aggregate, expected_version)
+        if aggregate.state not in ("draft", "approved"):
+            raise Refused("edit is not allowed from %s" % aggregate.state)
+        version = aggregate.facts["version"] + 1
+        view = _public("draft", amount_cents, version, None, None)
+        ops = self._bind(aggregate, operation_id, content, view)
+        updated = self._command(
+            aggregate,
+            "edit",
+            {
+                "amount_cents": amount_cents,
+                "version": version,
+                "approver": "",
+                "ops": _dump_ops(ops),
+            },
+        )
+        return _view(updated)
+
+    def approve(self, refund_id, approver, amount_cents, expected_version=None, operation_id=None) -> dict:
+        content = {
+            "method": "approve",
+            "approver": approver,
+            "amount_cents": amount_cents,
+            "expected_version": expected_version,
+        }
+        aggregate = self._require(refund_id)
+        replayed = self._replay(aggregate, operation_id, content)
+        if replayed is not None:
+            return replayed
+        self._expect(aggregate, expected_version)
+        if aggregate.state != "draft":
+            raise Refused("approve is only valid from draft")
+        version = aggregate.facts["version"] + 1
+        view = _public("approved", aggregate.facts["amount_cents"], version, approver, None)
+        ops = self._bind(aggregate, operation_id, content, view)
+        updated = self._command(
+            aggregate,
+            "approve",
+            {
+                "approver": approver,
+                "amount_cents": amount_cents,
+                "version": version,
+                "ops": _dump_ops(ops),
+            },
+        )
+        return _view(updated)
+
+    def authorize_payout(self, refund_id, amount_cents, expected_version=None, operation_id=None) -> dict:
+        content = {
+            "method": "authorize_payout",
+            "amount_cents": amount_cents,
+            "expected_version": expected_version,
+        }
+        aggregate = self._require(refund_id)
+        replayed = self._replay(aggregate, operation_id, content)
+        if replayed is not None:
+            return replayed
+        self._expect(aggregate, expected_version)
+        if aggregate.state != "approved":
+            raise Refused("authorize_payout is only valid from approved")
+        version = aggregate.facts["version"] + 1
+        view = _public(
+            "payout_pending",
+            aggregate.facts["amount_cents"],
+            version,
+            aggregate.facts.get("approver") or None,
+            None,
+        )
+        ops = self._bind(aggregate, operation_id, content, view)
+        effect_id = "payout:%s" % refund_id
+        updated = self._command(
+            aggregate,
+            "authorize_payout",
+            {
+                "amount_cents": amount_cents,
+                "version": version,
+                "effect_id": effect_id,
+                "payload_digest": "amount:%s" % amount_cents,
+                "idempotency_key": effect_id,
+                "ops": _dump_ops(ops),
+            },
+        )
+        return _view(updated)
+
+    def record_payout(self, refund_id, outcome_digest, operation_id=None) -> dict:
+        content = {"method": "record_payout", "outcome_digest": outcome_digest}
+        aggregate = self._require(refund_id)
+        replayed = self._replay(aggregate, operation_id, content)
+        if replayed is not None:
+            return replayed
+        if aggregate.state == "paid":
+            self._record_effect(aggregate, outcome_digest)
+            return _view(aggregate)
+        if aggregate.state != "payout_pending":
+            raise Refused("record_payout is only valid from payout_pending")
+        recorded = self._record_effect(aggregate, outcome_digest)
+        version = recorded.facts["version"] + 1
+        view = _public(
+            "paid",
+            recorded.facts["amount_cents"],
+            version,
+            recorded.facts.get("approver") or None,
+            outcome_digest,
+        )
+        ops = self._bind(recorded, operation_id, content, view)
+        updated = self._command(
+            recorded,
+            "mark_paid",
+            {
+                "outcome_digest": outcome_digest,
+                "version": version,
+                "ops": _dump_ops(ops),
+            },
+        )
+        return _view(updated)
+
+    def get(self, refund_id) -> dict:
+        return _view(self._require(refund_id))
+
+    def _submitted(self, aggregate: Any) -> bool:
+        return "version" in aggregate.facts
+
+    def _open_or_create(self, refund_id: Any) -> Any:
+        found = self._try_show(refund_id)
+        if found is not None:
+            return found
+        try:
+            return self._machine.create(str(refund_id))
+        except KernelError as exc:
+            if getattr(exc, "rule", None) == "create.duplicate_aggregate":
+                return self._machine.show(str(refund_id))
+            self._map(exc)
+            raise
+
+    def _try_show(self, refund_id: Any) -> Optional[Any]:
+        if not os.path.exists(self._path):
+            return None
+        try:
+            return self._machine.show(str(refund_id))
+        except KernelError as exc:
+            rule = getattr(exc, "rule", None)
+            if rule in ("aggregate.not_found", "store.missing"):
+                return None
+            self._map(exc)
+            raise
+
+    def _require(self, refund_id: Any) -> Any:
+        aggregate = self._try_show(refund_id)
+        if aggregate is None or not self._submitted(aggregate):
+            raise Refused("unknown refund %s" % refund_id)
+        return aggregate
+
+    def _expect(self, aggregate: Any, expected_version: Optional[int]) -> None:
+        if expected_version is None:
+            return
+        current = aggregate.facts["version"]
+        if expected_version != current:
+            raise Stale("expected version %s but current is %s" % (expected_version, current))
+
+    def _replay(self, aggregate: Any, operation_id: Any, content: dict) -> Optional[dict]:
+        key = _op_key(operation_id)
+        if key is None:
+            return None
+        entry = _load_ops(aggregate.facts).get(key)
+        if entry is None:
+            return None
+        if entry.get("content") != content:
+            raise Conflict("operation %s was already used with different content" % key)
+        result = entry.get("result")
+        if not isinstance(result, dict):
+            raise Conflict("operation %s has no stored result" % key)
+        return {name: result[name] for name in _VIEW_KEYS}
+
+    def _bind(self, aggregate: Any, operation_id: Any, content: dict, view: dict) -> dict:
+        ops = _load_ops(aggregate.facts)
+        key = _op_key(operation_id)
+        if key is None:
+            return ops
+        existing = ops.get(key)
+        if existing is not None and existing.get("content") != content:
+            raise Conflict("operation %s was already used with different content" % key)
+        ops[key] = {"content": content, "result": view}
+        return ops
+
+    def _command(self, aggregate: Any, name: str, args: dict) -> Any:
+        try:
+            result = aggregate.execute({"name": name, "args": args})
+        except KernelError as exc:
+            self._map(exc)
+            raise
+        if isinstance(result, HistoricalResult):
+            return self._machine.show(aggregate.id)
+        return result
+
+    def _record_effect(self, aggregate: Any, outcome_digest: str) -> Any:
+        try:
+            result = aggregate.record(outcome_digest)
+        except KernelError as exc:
+            self._map(exc)
+            raise
+        if isinstance(result, HistoricalResult):
+            return self._machine.show(aggregate.id)
+        return result
+
+    def _map(self, exc: KernelError) -> None:
+        if isinstance(exc, TransportError):
+            raise exc
+        code = getattr(exc, "code", "")
+        if code == "IK_EFFECT_OUTCOME_CONFLICT":
+            raise Conflict(str(exc)) from exc
+        if code == "IK_CAPABILITY_STALE":
+            raise Stale(str(exc)) from exc
+        raise Refused(str(exc)) from exc

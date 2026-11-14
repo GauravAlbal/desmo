@@ -1,0 +1,16 @@
+schema_version = 1
+machine_id = "profile_needs_args"
+machine_version = 1
+
+[facts]
+n = { type = "string", policy = "replace" }
+
+[states]
+start = { initial = true }
+done = { terminal = true }
+
+[commands.go]
+from = ["start"]
+to = "done"
+args = { n = "string" }
+then = { n = "$n" }

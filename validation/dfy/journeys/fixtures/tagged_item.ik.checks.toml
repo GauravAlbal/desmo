@@ -1,0 +1,11 @@
+profile_version = 1
+
+[limits]
+max_nodes = 64
+max_depth = 8
+
+[[goals]]
+id = "tagged"
+kind = "reach_terminal"
+terminal = "tagged"
+required = true

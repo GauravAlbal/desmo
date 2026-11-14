@@ -1,0 +1,32 @@
+schema_version = 1
+machine_id = "hegel_lane"
+machine_version = 1
+
+[facts]
+label = { type = "string", policy = "replace", initial = "" }
+flag = { type = "bool", policy = "replace", initial = false }
+count = { type = "int", policy = "counter", initial = 0 }
+
+[states]
+open = { initial = true }
+done = { terminal = true }
+
+[commands.tag]
+from = ["open"]
+to = "open"
+args = { label = "string", flag = "bool" }
+then = { label = "$label", flag = "$flag" }
+
+[commands.tick]
+from = ["open"]
+to = "open"
+args = { n = "int" }
+when = "$n >= 0 && $n <= 2"
+then = { count = "+1" }
+
+[commands.finish]
+from = ["open"]
+to = "done"
+
+[invariants.count_small]
+assert = "count <= 20"

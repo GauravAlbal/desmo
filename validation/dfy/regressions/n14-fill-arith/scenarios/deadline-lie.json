@@ -1,0 +1,21 @@
+{
+  "scenario_version": 1,
+  "machine": "../rx.ik.toml",
+  "aggregate": "rx-deadline-lie",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "intake",
+      "name": "intake",
+      "args": { "qty": 10, "hold_ms": 5000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "fill-deadline-lie",
+      "name": "fill",
+      "args": { "units": 4, "remain_after": 6, "now_ms": 1000, "deadline": 0, "amount": 700 },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "commands": {
+    "arm": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "flag": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "finish": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

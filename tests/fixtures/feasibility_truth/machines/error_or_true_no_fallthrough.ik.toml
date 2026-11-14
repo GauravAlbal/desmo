@@ -1,0 +1,15 @@
+schema_version = 1
+machine_id = "error_or_true_no_fallthrough"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+ok = {}
+[commands.go]
+from = ["idle"]
+args = { x = "int" }
+when = 'token == "x" || $x == 0'
+to = "ok"
+

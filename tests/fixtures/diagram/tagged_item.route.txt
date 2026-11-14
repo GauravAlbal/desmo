@@ -1,0 +1,5 @@
+  ● [ idle ]                  ◀── YOU ARE HERE (1 step to end)
+      │
+      │  tag                  if: id in A-Za-z0-9._- length 1..64
+      ▼
+  ✔ [ tagged ]  END

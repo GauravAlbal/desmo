@@ -1,0 +1,14 @@
+{
+  "protocol": "ik.analysis.adapter.v1",
+  "adapter": {"id": "smt-lib2", "version": "1"},
+  "invocation": {
+    "argv": ["/absolute/path/to/adapters/smt/adapter.py"],
+    "executable_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "engine": {"id": "z3-cvc5", "version_constraint": "pinned"},
+  "inputs": ["native_model"],
+  "properties": ["safety", "reachability"],
+  "evidence": ["bounded_paths", "observed_trace", "checked_induction_or_certificate"],
+  "requires": {"production_store_access": false, "network": false},
+  "result_schema": "ik.analysis.result.v1"
+}

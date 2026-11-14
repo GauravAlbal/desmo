@@ -1,0 +1,16 @@
+schema_version = 1
+machine_id = "dead_command_ghost"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = {}
+other = {}
+[commands.live]
+from = ["idle"]
+to = "done"
+[commands.ghost]
+from = ["other"]
+to = "done"
+

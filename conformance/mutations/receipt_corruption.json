@@ -1,0 +1,8 @@
+{
+  "trace": "happy_verification_attempt",
+  "machine": "verification_attempt",
+  "mutations": [
+    {"sql": "UPDATE receipts SET receipt_json = '{}' WHERE aggregate_id = 'agg-1' AND sequence = 3"}
+  ],
+  "expect_code": "IK_PROJECTION_CORRUPT"
+}

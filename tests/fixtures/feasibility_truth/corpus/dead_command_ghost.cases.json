@@ -1,0 +1,10 @@
+{
+  "commands": {
+    "live": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

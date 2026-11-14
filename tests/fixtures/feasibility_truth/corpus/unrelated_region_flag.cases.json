@@ -1,0 +1,16 @@
+{
+  "commands": {
+    "go": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "flip": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

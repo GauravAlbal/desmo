@@ -1,0 +1,45 @@
+schema_version = 2
+machine_id = "region_stacked"
+machine_version = 1
+name = "Playback volume and display"
+
+[regions.playback.states]
+playing = { initial = true }
+paused = {}
+
+[regions.playback.commands.pause]
+from = ["playing"]
+to = "paused"
+
+[regions.playback.commands.play]
+from = ["paused"]
+to = "playing"
+
+[regions.volume.states]
+unmuted = { initial = true }
+muted = {}
+
+[regions.volume.commands.mute]
+from = ["unmuted"]
+to = "muted"
+
+[regions.volume.commands.unmute]
+from = ["muted"]
+to = "unmuted"
+
+[regions.display.states]
+lit = { initial = true }
+dark = { terminal = true }
+
+[regions.display.commands.blank]
+from = ["lit"]
+to = "dark"
+when = 'region_volume == "muted"'
+
+[commands.pause_and_mute]
+from = { playback = ["playing"], volume = ["unmuted"] }
+to = { playback = "paused", volume = "muted" }
+
+[commands.sleep]
+from = { playback = ["playing", "paused"], volume = ["unmuted", "muted"], display = ["lit"] }
+to = { playback = "paused", volume = "muted", display = "dark" }

@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "overflow_mul_guard_error"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+ok = {}
+big = {}
+[commands.go]
+from = ["idle"]
+args = { n = "int" }
+outcomes = [
+  { when = "$n * 2 == 0", to = "ok" },
+  { when = "$n == 9223372036854775807", to = "big" }
+]
+

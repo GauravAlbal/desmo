@@ -1,0 +1,18 @@
+schema_version = 2
+machine_id = "mutex_flip_then_finish_ok"
+machine_version = 1
+
+[regions.mode.states]
+idle = { initial = true }
+done = { terminal = true }
+[regions.mode.commands.finish]
+from = ["idle"]
+when = 'region_flag == "off"'
+to = "done"
+[regions.flag.states]
+off = { initial = true }
+on = {}
+[regions.flag.commands.flip]
+from = ["off"]
+to = "on"
+

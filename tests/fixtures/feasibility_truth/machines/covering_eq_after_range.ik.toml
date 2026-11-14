@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "covering_eq_after_range"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+wide = {}
+point = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x >= 3", to = "wide" },
+  { when = "$x == 3", to = "point" }
+]
+

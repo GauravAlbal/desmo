@@ -1,0 +1,1 @@
+Contract: accept checks `$deposit_cents == amount / 50`; promote assigns deposit_id='""' and zeros cents/accepted_ms/deadline so reconcile is not leftover-deposit. Legit: open 10000/5000, accept 200/1000/6000, deposit dep-1, fallthrough, promote, reconcile commits with empty id. Forbidden: accept deposit_cents=1 refused IK_INVARIANT_FAILED.

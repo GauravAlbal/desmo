@@ -1,0 +1,20 @@
+  ● [ idle ] ══▶ ⟪
+      │
+      │  command not identified in evidence
+      ▼
+  ○ [ ① request sent ]        observed
+      │
+      ▼
+  ✂ [ ② reply lost ]          observed
+      │
+      ▼
+  ○ [ ③ committed ]           found by lookup
+      │
+      ▼
+  ○ [ ④ asked again ]         found by lookup  ◀── YOU ARE HERE
+      │
+      ▼
+  ⟫ ══▶ ✔ [ tagged ]  END
+Established: the earlier operation committed; this lookup did not commit again
+Uncertain: whether any handle from this lookup is current
+Safe next action: do not resend; the earlier result stands

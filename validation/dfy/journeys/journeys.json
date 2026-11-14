@@ -1,0 +1,479 @@
+{
+  "schema": "ik.journey-model.v1",
+  "title": "Development-user journeys: build, change, diagnose a lifecycle application",
+  "runtime_line": "invariant-kernel 0.5.0 protocol 1.0",
+  "protocol": {"major": 1, "minor": 0},
+  "runtime_version": "0.5.0",
+  "states": [
+    "Brief",
+    "ToolReady",
+    "Drafted",
+    "Checked",
+    "ScenarioVerified",
+    "Operated",
+    "FailureObserved",
+    "Diagnosed",
+    "Recovered",
+    "ChangeRequested",
+    "Changed",
+    "Versioned"
+  ],
+  "journeys": {
+    "build": ["runtime.version", "build.identity", "build.laws", "build.check_plan", "build.check_accept", "build.scenario", "build.operate"],
+    "unhappy": ["unhappy.check_missing_corpus", "unhappy.check_invariant_witness", "unhappy.text_in_refused", "unhappy.illegal_state", "unhappy.stale_capability"],
+    "change": ["change.persist_v1", "change.check_prior", "change.old_instance_mismatch", "change.old_instance_continues"],
+    "diagnose": ["diagnose.lost_reply", "diagnose.report_handoff_verify"]
+  },
+  "steps": [
+    {
+      "id": "runtime.version",
+      "journey": "build",
+      "from": "Brief",
+      "to": "ToolReady",
+      "kind": "cli",
+      "argv": ["--version"],
+      "expect": {"exit": 0, "stdout_line": "invariant-kernel 0.5.0 protocol 1.0"}
+    },
+    {
+      "id": "build.identity",
+      "journey": "build",
+      "from": "ToolReady",
+      "to": "Drafted",
+      "kind": "cli",
+      "argv": ["identity", "fixtures/tagged_item.ik.toml"],
+      "save": "ident_tagged",
+      "expect": {
+        "exit": 0,
+        "json_eq": {"machine_id": "tagged_item", "version": 1},
+        "json_present": ["spec_hash"]
+      }
+    },
+    {
+      "id": "build.laws",
+      "journey": "build",
+      "from": "Drafted",
+      "to": "Drafted",
+      "kind": "cli",
+      "argv": ["laws", "fixtures/tagged_item.ik.toml"],
+      "expect": {
+        "exit": 0,
+        "json_eq": {"advisory": true, "machine_id": "tagged_item", "version": 1},
+        "json_present": ["unguarded_arguments", "spec_hash"]
+      }
+    },
+    {
+      "id": "build.check_plan",
+      "journey": "build",
+      "from": "Drafted",
+      "to": "Drafted",
+      "kind": "cli",
+      "argv": [
+        "check",
+        "fixtures/tagged_item.ik.toml",
+        "--profile",
+        "fixtures/tagged_item.ik.checks.toml",
+        "--plan",
+        "--json"
+      ],
+      "expect": {
+        "exit": 0,
+        "json_eq": {"schema": "ik.check.plan.v1"},
+        "json_present": ["goals", "bounds", "corpus_digest", "profile_digest"]
+      }
+    },
+    {
+      "id": "build.check_accept",
+      "journey": "build",
+      "from": "Drafted",
+      "to": "Checked",
+      "kind": "cli",
+      "argv": [
+        "check",
+        "fixtures/tagged_item.ik.toml",
+        "--corpus",
+        "fixtures/tagged_item.ik.cases.json",
+        "--profile",
+        "fixtures/tagged_item.ik.checks.toml",
+        "--json"
+      ],
+      "expect": {
+        "exit": 0,
+        "json_eq": {
+          "judgment.verdict": "accept",
+          "profile.goals.0.id": "tagged",
+          "profile.goals.0.status": "witness_found"
+        }
+      }
+    },
+    {
+      "id": "build.scenario",
+      "journey": "build",
+      "from": "Checked",
+      "to": "ScenarioVerified",
+      "kind": "scenario",
+      "argv": [
+        "scenario",
+        "run",
+        "fixtures/tagged_item.ik.toml",
+        "fixtures/scenarios/honest-tag.json",
+        "--out",
+        "$OUT/sc-build"
+      ],
+      "result": "$OUT/sc-build/result.json",
+      "expect": {
+        "exit": 0,
+        "json_eq": {
+          "schema": "ik.scenario.result.v1",
+          "all_expectations_met": true,
+          "machine_id": "tagged_item"
+        }
+      }
+    },
+    {
+      "id": "build.operate",
+      "journey": "build",
+      "from": "ScenarioVerified",
+      "to": "Operated",
+      "kind": "store_seq",
+      "store": "tagged.sqlite",
+      "machine": "fixtures/tagged_item.ik.toml",
+      "identity": "ident_tagged",
+      "ops": [
+        {
+          "op": "create",
+          "body": {"aggregate_id": "item-1", "request_id": "c1"},
+          "save_cap": "cap0",
+          "expect": {
+            "exit": 0,
+            "json_eq": {"ok": true, "result.mutation": true, "result.state.state": "idle", "result.generation": 0}
+          }
+        },
+        {
+          "op": "create",
+          "body": {"aggregate_id": "item-g", "request_id": "cg"},
+          "save_cap": "capg",
+          "expect": {
+            "exit": 0,
+            "json_eq": {"ok": true, "result.state.state": "idle"}
+          }
+        },
+        {
+          "op": "command",
+          "body": {
+            "aggregate_id": "item-1",
+            "request_id": "t1",
+            "capability": "$cap0",
+            "operation_id": "op-tag-1",
+            "command": {"name": "tag", "args": {"id": "item_1", "label": "AMBER"}}
+          },
+          "save_cap": "cap1",
+          "expect": {
+            "exit": 0,
+            "json_eq": {
+              "ok": true,
+              "result.mutation": true,
+              "result.state.state": "tagged",
+              "result.terminal": true,
+              "result.generation": 1
+            }
+          }
+        },
+        {
+          "op": "show",
+          "body": {"aggregate_id": "item-1", "request_id": "s1"},
+          "expect": {
+            "exit": 0,
+            "json_eq": {"ok": true, "result.generation": 1, "result.state.state": "tagged"}
+          }
+        }
+      ]
+    },
+    {
+      "id": "unhappy.check_missing_corpus",
+      "journey": "unhappy",
+      "from": "Drafted",
+      "to": "FailureObserved",
+      "kind": "cli",
+      "argv": ["check", "fixtures/solo/tagged_item.ik.toml", "--json"],
+      "expect": {
+        "exit": 1,
+        "json_eq": {"judgment.verdict": "refused", "judgment.status": "missing_evidence"},
+        "json_present": ["next_actions", "judgment.reasons"]
+      }
+    },
+    {
+      "id": "unhappy.check_invariant_witness",
+      "journey": "unhappy",
+      "from": "Drafted",
+      "to": "FailureObserved",
+      "kind": "cli",
+      "argv": ["check", "fixtures/probe.ik.toml", "--json"],
+      "expect": {
+        "exit": 1,
+        "json_eq": {
+          "judgment.verdict": "refused",
+          "invariant_witnesses.0.diagnostic.code": "IK_INVARIANT_FAILED",
+          "invariant_witnesses.0.diagnostic.rule": "x_limit"
+        }
+      }
+    },
+    {
+      "id": "unhappy.text_in_refused",
+      "journey": "unhappy",
+      "from": "Operated",
+      "to": "FailureObserved",
+      "kind": "store",
+      "store": "tagged.sqlite",
+      "machine": "fixtures/tagged_item.ik.toml",
+      "identity": "ident_tagged",
+      "op": "command",
+      "body": {
+        "aggregate_id": "item-g",
+        "request_id": "bad-empty",
+        "capability": "$capg",
+        "command": {"name": "tag", "args": {"id": "", "label": "AMBER"}}
+      },
+      "expect": {
+        "exit": 1,
+        "json_eq": {
+          "ok": false,
+          "diagnostic.code": "IK_INVARIANT_FAILED",
+          "diagnostic.rule": "tag.when"
+        }
+      }
+    },
+    {
+      "id": "unhappy.illegal_state",
+      "journey": "unhappy",
+      "from": "Operated",
+      "to": "FailureObserved",
+      "kind": "store",
+      "store": "tagged.sqlite",
+      "machine": "fixtures/tagged_item.ik.toml",
+      "identity": "ident_tagged",
+      "op": "command",
+      "body": {
+        "aggregate_id": "item-1",
+        "request_id": "ill1",
+        "capability": "$cap1",
+        "command": {"name": "tag", "args": {"id": "item_1", "label": "AMBER"}}
+      },
+      "expect": {
+        "exit": 1,
+        "json_eq": {
+          "ok": false,
+          "diagnostic.code": "IK_ILLEGAL_STATE",
+          "diagnostic.rule": "tag"
+        }
+      }
+    },
+    {
+      "id": "unhappy.stale_capability",
+      "journey": "unhappy",
+      "from": "Operated",
+      "to": "FailureObserved",
+      "kind": "store",
+      "store": "tagged.sqlite",
+      "machine": "fixtures/tagged_item.ik.toml",
+      "identity": "ident_tagged",
+      "op": "command",
+      "body": {
+        "aggregate_id": "item-1",
+        "request_id": "stale1",
+        "capability": "$cap0",
+        "operation_id": "op-stale-1",
+        "command": {"name": "tag", "args": {"id": "item_1", "label": "AMBER"}}
+      },
+      "expect": {
+        "exit": 1,
+        "json_eq": {
+          "ok": false,
+          "diagnostic.code": "IK_CAPABILITY_STALE"
+        }
+      }
+    },
+    {
+      "id": "change.persist_v1",
+      "journey": "change",
+      "from": "ChangeRequested",
+      "to": "ChangeRequested",
+      "kind": "store_seq",
+      "store": "loan.sqlite",
+      "machine": "fixtures/loan_checkout.ik.toml",
+      "identity": "ident_loan",
+      "identity_from": ["identity", "fixtures/loan_checkout.ik.toml"],
+      "ops": [
+        {
+          "op": "create",
+          "body": {"aggregate_id": "loan-1", "request_id": "lc1"},
+          "save_cap": "loan_cap0",
+          "expect": {
+            "exit": 0,
+            "json_eq": {"ok": true, "result.state.state": "idle"}
+          }
+        },
+        {
+          "op": "command",
+          "body": {
+            "aggregate_id": "loan-1",
+            "request_id": "co1",
+            "capability": "$loan_cap0",
+            "operation_id": "op-checkout-1",
+            "command": {
+              "name": "checkout",
+              "args": {
+                "checkout_ms": 1000,
+                "loan_until_ms": 1209601000,
+                "deposit_id": "dep-1"
+              }
+            }
+          },
+          "save_cap": "loan_cap1",
+          "expect": {
+            "exit": 0,
+            "json_eq": {"ok": true, "result.mutation": true, "result.state.state": "on_loan"}
+          }
+        }
+      ]
+    },
+    {
+      "id": "change.check_prior",
+      "journey": "change",
+      "from": "ChangeRequested",
+      "to": "Changed",
+      "kind": "cli",
+      "argv": [
+        "check",
+        "fixtures/loan_v2.ik.toml",
+        "--prior",
+        "fixtures/loan_checkout.ik.toml",
+        "--corpus",
+        "fixtures/loan_v2.ik.cases.json",
+        "--profile",
+        "fixtures/loan_checkout.ik.checks.toml",
+        "--json"
+      ],
+      "expect": {
+        "exit": 0,
+        "json_eq": {
+          "judgment.verdict": "accept",
+          "profile.goals.0.status": "witness_found",
+          "profile.baseline.goals.0.candidate": "witness_found",
+          "profile.baseline.goals.0.prior": "witness_found"
+        }
+      }
+    },
+    {
+      "id": "change.old_instance_mismatch",
+      "journey": "change",
+      "from": "Changed",
+      "to": "Versioned",
+      "kind": "store",
+      "store": "loan.sqlite",
+      "machine": "fixtures/loan_v2.ik.toml",
+      "identity": "ident_loan_v2",
+      "identity_from": ["identity", "fixtures/loan_v2.ik.toml"],
+      "op": "command",
+      "body": {
+        "aggregate_id": "loan-1",
+        "request_id": "ext1",
+        "capability": "$loan_cap1",
+        "command": {"name": "extend", "args": {"new_until_ms": 1209601001}}
+      },
+      "expect": {
+        "exit": 1,
+        "json_eq": {
+          "ok": false,
+          "diagnostic.code": "IK_MACHINE_MISMATCH"
+        }
+      }
+    },
+    {
+      "id": "change.old_instance_continues",
+      "journey": "change",
+      "from": "Versioned",
+      "to": "Versioned",
+      "kind": "store",
+      "store": "loan.sqlite",
+      "machine": "fixtures/loan_checkout.ik.toml",
+      "identity": "ident_loan",
+      "op": "command",
+      "body": {
+        "aggregate_id": "loan-1",
+        "request_id": "rec1",
+        "capability": "$loan_cap1",
+        "command": {"name": "recall"}
+      },
+      "save_cap": "loan_cap2",
+      "expect": {
+        "exit": 0,
+        "json_eq": {
+          "ok": true,
+          "result.mutation": true,
+          "result.state.state": "on_loan",
+          "result.state.recall_placed": 1
+        }
+      }
+    },
+    {
+      "id": "diagnose.lost_reply",
+      "journey": "diagnose",
+      "from": "FailureObserved",
+      "to": "Diagnosed",
+      "kind": "scenario",
+      "argv": [
+        "scenario",
+        "run",
+        "fixtures/tagged_item.ik.toml",
+        "fixtures/scenarios/lost-reply.json",
+        "--out",
+        "$OUT/sc-lost"
+      ],
+      "result": "$OUT/sc-lost/result.json",
+      "save": "lost_result",
+      "expect": {
+        "exit": 0,
+        "json_eq": {
+          "schema": "ik.scenario.result.v1",
+          "all_expectations_met": true
+        },
+        "step_eq": {
+          "found.response.outcome": "committed_exact",
+          "again.response.outcome": "historical",
+          "lost.response.outcome": "reply_dropped",
+          "restart.kind": "reopen"
+        }
+      }
+    },
+    {
+      "id": "diagnose.report_handoff_verify",
+      "journey": "diagnose",
+      "from": "Diagnosed",
+      "to": "Recovered",
+      "kind": "recover",
+      "expect": {
+        "report": {
+          "exit": 0,
+          "json_eq": {"schema": "ik.report.v1"}
+        },
+        "handoff": {
+          "exit": 0,
+          "json_eq": {"schema": "ik.handoff.v1", "kind": "recovery"}
+        },
+        "replay": {
+          "exit": 0,
+          "json_eq": {"ok": true}
+        },
+        "verify": {
+          "exit": 0,
+          "json_eq": {
+            "ok": true,
+            "result.verified": true,
+            "result.journal_ok": true,
+            "result.projection_ok": true
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,466 @@
+package invariantkernel_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"testing"
+
+	invariantkernel "github.com/GauravAlbal/desmo/go"
+)
+
+func repoRoot(t *testing.T) string {
+	t.Helper()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := invariantkernel.RepoRoot(wd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+func ikBin(t *testing.T) string {
+	t.Helper()
+	if env := os.Getenv("IK_BINARY"); env != "" {
+		return env
+	}
+	bin := filepath.Join(repoRoot(t), "target", "debug", "ik")
+	if _, err := os.Stat(bin); err == nil {
+		return bin
+	}
+	cmd := exec.Command("cargo", "build", "--bin", "ik", "--offline")
+	cmd.Dir = repoRoot(t)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("cargo build ik: %v\n%s", err, out)
+	}
+	return bin
+}
+
+func open(t *testing.T) (*invariantkernel.Kernel, *invariantkernel.Machine) {
+	t.Helper()
+	store := filepath.Join(t.TempDir(), "kernel.db")
+	k, err := invariantkernel.Open(store, invariantkernel.Options{Binary: ikBin(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := k.Machine(context.Background(), filepath.Join(repoRoot(t), "machines", "verification_attempt.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return k, m
+}
+
+func TestCreateAndHappyLifecycle(t *testing.T) {
+	_, m := open(t)
+	ctx := context.Background()
+	job, err := m.Create(ctx, "attempt-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job.State() != "created" || job.Generation != 0 {
+		t.Fatalf("create: state=%v gen=%d", job.State(), job.Generation)
+	}
+	if job, err = job.Command(ctx, "start", nil); err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "submit", map[string]any{
+		"artifact_digest": "abc", "baseline_digest": "def",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "verify", map[string]any{
+		"receipt_digest": "r1", "receipt_artifact_digest": "abc", "receipt_baseline_digest": "def",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if job.State() != "verified" || !job.Terminal || job.Generation != 3 {
+		t.Fatalf("verify: state=%v terminal=%v gen=%d", job.State(), job.Terminal, job.Generation)
+	}
+}
+
+func TestStaleCopiedHandleRefuses(t *testing.T) {
+	_, m := open(t)
+	ctx := context.Background()
+	old, err := m.Create(ctx, "job")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := old.Command(ctx, "start", nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err = old.Command(ctx, "submit", map[string]any{"artifact_digest": "a", "baseline_digest": "b"})
+	var stale *invariantkernel.StaleCapabilityError
+	if !errors.As(err, &stale) || stale.Code != "IK_CAPABILITY_STALE" || stale.Rule == "" {
+		t.Fatalf("want StaleCapabilityError, got %v", err)
+	}
+}
+
+func TestMalformedCommandRefuses(t *testing.T) {
+	_, m := open(t)
+	ctx := context.Background()
+	job, err := m.Create(ctx, "job")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "start", nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err = job.Command(ctx, "submit", nil)
+	var invalid *invariantkernel.CommandInvalidError
+	if !errors.As(err, &invalid) || invalid.Code != "IK_COMMAND_INVALID" {
+		t.Fatalf("want CommandInvalidError, got %v", err)
+	}
+}
+
+func TestTerminalMutationRefuses(t *testing.T) {
+	_, m := open(t)
+	ctx := context.Background()
+	job, err := m.Create(ctx, "job")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "start", nil); err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "submit", map[string]any{"artifact_digest": "a", "baseline_digest": "b"}); err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "verify", map[string]any{
+		"receipt_digest": "r", "receipt_artifact_digest": "a", "receipt_baseline_digest": "b",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = job.Command(ctx, "cancel", nil)
+	var illegal *invariantkernel.IllegalStateError
+	if !errors.As(err, &illegal) || illegal.Code != "IK_ILLEGAL_STATE" {
+		t.Fatalf("want IllegalStateError, got %v", err)
+	}
+}
+
+func TestEffectPlanRecordDuplicateConflict(t *testing.T) {
+	k, err := invariantkernel.Open(filepath.Join(t.TempDir(), "kernel.db"), invariantkernel.Options{Binary: ikBin(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	m, err := k.Machine(ctx, filepath.Join(repoRoot(t), "machines", "effect_probe.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	agg, err := m.Create(ctx, "fx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if agg, err = agg.Command(ctx, "plan", map[string]any{
+		"effect_id": "e1", "payload_digest": "p1", "idempotency_key": "k1",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if agg.Effect.Status != "pending" {
+		t.Fatalf("plan status %q", agg.Effect.Status)
+	}
+	recorded, err := agg.Record(ctx, "o1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := recorded.Record(ctx, "o1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Mutation == nil || *again.Mutation {
+		t.Fatalf("duplicate should not mutate: %+v", again.Mutation)
+	}
+	_, err = again.Record(ctx, "other", nil)
+	var conflict *invariantkernel.EffectConflictError
+	if !errors.As(err, &conflict) || conflict.Code != "IK_EFFECT_OUTCOME_CONFLICT" {
+		t.Fatalf("want EffectConflictError, got %v", err)
+	}
+}
+
+func TestShowReplayVerify(t *testing.T) {
+	_, m := open(t)
+	ctx := context.Background()
+	created, err := m.Create(ctx, "shown")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := created.Command(ctx, "start", nil); err != nil {
+		t.Fatal(err)
+	}
+	shown, err := m.Show(ctx, "shown")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shown.State() != "running" || shown.Generation != 1 {
+		t.Fatalf("show: state=%v gen=%d", shown.State(), shown.Generation)
+	}
+	replayed, err := m.Replay(ctx, "shown")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := replayed["aggregates"]; !ok {
+		t.Fatalf("replay missing aggregates: %v", replayed)
+	}
+	verified, err := m.Verify(ctx, "shown")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if verified["verified"] != true {
+		t.Fatalf("verify: %v", verified)
+	}
+}
+
+func TestProtocolMismatch(t *testing.T) {
+	k, m := open(t)
+	k.SetProtocolForTest(2, 0)
+	_, err := m.Create(context.Background(), "job")
+	var proto *invariantkernel.ProtocolError
+	if !errors.As(err, &proto) || proto.Code != "IK_PROTOCOL_VERSION_UNKNOWN" {
+		t.Fatalf("want ProtocolError, got %v", err)
+	}
+}
+func TestTransportFailureIsNotDomainDiagnostic(t *testing.T) {
+	k, err := invariantkernel.Open(filepath.Join(t.TempDir(), "s.db"), invariantkernel.Options{
+		Binary: "/no/such/ik-binary",
+	})
+	if err != nil {
+		var te *invariantkernel.TransportError
+		if !errors.As(err, &te) {
+			t.Fatalf("want TransportError, got %v", err)
+		}
+		return
+	}
+	_, err = k.Machine(context.Background(), "machines/verification_attempt.ik.toml")
+	var te *invariantkernel.TransportError
+	if !errors.As(err, &te) {
+		t.Fatalf("want TransportError, got %v", err)
+	}
+}
+
+func TestGoMatchesDirectCLI(t *testing.T) {
+	root := repoRoot(t)
+	bin := ikBin(t)
+	va := filepath.Join(root, "machines", "verification_attempt.ik.toml")
+	k, err := invariantkernel.Open(filepath.Join(t.TempDir(), "go.db"), invariantkernel.Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	m, err := k.Machine(ctx, va)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := m.Create(ctx, "agg-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job, err = job.Command(ctx, "start", nil); err != nil {
+		t.Fatal(err)
+	}
+
+	identOut, err := exec.Command(bin, "identity", va).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var identity map[string]any
+	if err := json.Unmarshal(identOut, &identity); err != nil {
+		t.Fatal(err)
+	}
+	cliStore := filepath.Join(t.TempDir(), "cli.db")
+	created := runCLI(t, bin, cliStore, va, "create", map[string]any{
+		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.5.0",
+		"request_id": "c", "op": "create", "aggregate_id": "agg-1", "machine": identity,
+	})
+	started := runCLI(t, bin, cliStore, va, "command", map[string]any{
+		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.5.0",
+		"request_id": "s", "op": "command", "aggregate_id": "agg-1", "machine": identity,
+		"capability": created["result"].(map[string]any)["capability"],
+		"command":    map[string]any{"name": "start"},
+	})
+	cli := started["result"].(map[string]any)
+	if job.State() != cli["state"].(map[string]any)["state"] || job.Generation != asUint(cli["generation"]) {
+		t.Fatalf("parity mismatch go=%v/%d cli=%v", job.State(), job.Generation, cli)
+	}
+}
+
+func TestCheckWrapper(t *testing.T) {
+	k, _ := open(t)
+	root := repoRoot(t)
+	res, err := k.Check(
+		context.Background(),
+		filepath.Join(root, "machines", "verification_attempt.ik.toml"),
+		"", "",
+		filepath.Join(root, "validation", "verification_baseline.json"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Verdict != "accept" && res.Verdict != "refused" {
+		t.Fatalf("verdict %q", res.Verdict)
+	}
+}
+
+func runCLI(t *testing.T, bin, store, machine, op string, req map[string]any) map[string]any {
+	t.Helper()
+	payload, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(bin, "--store", store, "--machine", machine, op)
+	cmd.Stdin = bytes.NewReader(payload)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("cli %s: %v\n%s", op, err, out)
+	}
+	var env map[string]any
+	if err := json.Unmarshal(out, &env); err != nil {
+		t.Fatal(err)
+	}
+	return env
+}
+
+func asUint(v any) uint64 {
+	n, _ := v.(float64)
+	return uint64(n)
+}
+
+// TestInvokeNilOmitsMachine is the Bind+Invoke escape hatch: a bound Machine
+// injects `machine` only when passed; nil is an unbound extension envelope.
+func TestInvokeNilOmitsMachine(t *testing.T) {
+	dir := t.TempDir()
+	capture := filepath.Join(dir, "req.json")
+	bin := writeCaptureBin(t, capture)
+	k, err := invariantkernel.Open(filepath.Join(dir, "store.db"), invariantkernel.Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := k.Bind(invariantkernel.NewIdentity("demo.machine", 1, "abc"))
+	ctx := context.Background()
+	if _, err := k.Invoke(ctx, "extension", m, map[string]any{"aggregate_id": "agg"}); err != nil {
+		t.Fatalf("bound Invoke: %v", err)
+	}
+	bound := readCaptured(t, capture)
+	if bound["machine"] == nil {
+		t.Fatalf("Invoke(op, machine, fields) must carry machine: %v", bound)
+	}
+	if _, err := k.Invoke(ctx, "extension", nil, map[string]any{"aggregate_id": "agg"}); err != nil {
+		t.Fatalf("nil Invoke: %v", err)
+	}
+	unbound := readCaptured(t, capture)
+	if _, ok := unbound["machine"]; ok {
+		t.Fatalf("Invoke(op, nil, fields) must omit machine: %v", unbound)
+	}
+	if unbound["op"] != "extension" || unbound["aggregate_id"] != "agg" {
+		t.Fatalf("unbound envelope = %v", unbound)
+	}
+}
+
+func writeCaptureBin(t *testing.T, capture string) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "ik-capture")
+	script := "#!/bin/sh\n" +
+		"if [ \"$1\" = \"--version\" ]; then echo 'ik 0.5.0 protocol 1.0'; exit 0; fi\n" +
+		"cat > '" + capture + "'\n" +
+		"echo '{\"ok\":true,\"result\":{\"recorded\":true}}'\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return bin
+}
+
+func readCaptured(t *testing.T, path string) map[string]any {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var env map[string]any
+	if err := json.Unmarshal(raw, &env); err != nil {
+		t.Fatalf("captured envelope is not JSON: %v\n%s", err, raw)
+	}
+	return env
+}
+
+func TestOwnerNamesTheDefinitionThatOwnsAnOldAggregate(t *testing.T) {
+	ctx := context.Background()
+	store := filepath.Join(t.TempDir(), "kernel.db")
+	k, err := invariantkernel.Open(store, invariantkernel.Options{Binary: ikBin(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	machines := filepath.Join(repoRoot(t), "machines")
+	v1, err := k.Machine(ctx, filepath.Join(machines, "publish_approval.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	v2, err := k.Machine(ctx, filepath.Join(machines, "publish_approval_v2.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := v1.Create(ctx, "legacy-doc"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := v2.Create(ctx, "fresh-doc"); err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := v2.Show(ctx, "legacy-doc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if legacy.Owner() != v1.Identity || legacy.Owner() == v2.Identity {
+		t.Fatalf("legacy owner %+v want v1 %+v not v2 %+v", legacy.Owner(), v1.Identity, v2.Identity)
+	}
+	fresh, err := v2.Show(ctx, "fresh-doc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fresh.Owner() != v2.Identity {
+		t.Fatalf("fresh owner %+v want %+v", fresh.Owner(), v2.Identity)
+	}
+}
+
+func TestTextInIdentifierGuard(t *testing.T) {
+	k, err := invariantkernel.Open(filepath.Join(t.TempDir(), "kernel.db"), invariantkernel.Options{Binary: ikBin(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	m, err := k.Machine(ctx, filepath.Join(repoRoot(t), "examples", "shipped", "tagged_item.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	item, err := m.Create(ctx, "item-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tagged, err := item.Command(ctx, "tag", map[string]any{"id": "item_1", "label": "AMBER"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tagged.State() != "tagged" || !tagged.Terminal {
+		t.Fatalf("tag: state=%v terminal=%v", tagged.State(), tagged.Terminal)
+	}
+	empty, err := m.Create(ctx, "item-empty")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = empty.Command(ctx, "tag", map[string]any{"id": "", "label": "AMBER"})
+	var failed *invariantkernel.InvariantFailedError
+	if !errors.As(err, &failed) || failed.Code != "IK_INVARIANT_FAILED" || failed.Rule != "tag.when" {
+		t.Fatalf("want InvariantFailedError tag.when, got %v", err)
+	}
+	shown, err := m.Show(ctx, "item-empty")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shown.State() != "idle" {
+		t.Fatalf("empty id mutated state to %v", shown.State())
+	}
+}

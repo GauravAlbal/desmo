@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "machine_id": "verification_attempt",
+  "spec_hash": "aae4f03a6e4169bdc86021914bc57db4bc391878651fa61fcd2a9d0d215b4a7f",
+  "uncovered_mandatory": [
+    "capability/stale",
+    "determinism/fold",
+    "event/frozen_choice",
+    "invariant/va_inv_001/evaluated",
+    "invariant/va_inv_004/evaluated",
+    "refusal/immutability",
+    "replay/equivalence",
+    "terminal/cancelled/mutation_refused",
+    "terminal/exhausted/mutation_refused",
+    "terminal/verified/mutation_refused"
+  ]
+}

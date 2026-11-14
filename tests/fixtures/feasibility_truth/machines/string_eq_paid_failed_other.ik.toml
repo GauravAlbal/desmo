@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "string_eq_paid_failed_other"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+paid = {}
+failed = {}
+other = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+outcomes = [
+  { when = '$s == "paid"', to = "paid" },
+  { when = '$s == "failed"', to = "failed" },
+  { when = '$s != "paid" && $s != "failed"', to = "other" }
+]
+

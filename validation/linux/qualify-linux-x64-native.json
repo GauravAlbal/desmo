@@ -1,0 +1,50 @@
+{
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "target": "linux-x64"
+  },
+  "node": "v22.23.5",
+  "npm_manifest": {
+    "schema": "ikaros.npm-manifest.v1",
+    "version": "0.5.0",
+    "target": "linux-x64",
+    "binary_sha256": "c5432567d631d02fff385c87e5a5d5c09ff721355d70b06de6f6339ca9f0d8e0",
+    "tarballs": {
+      "ikaros-runtime-0.5.0.tgz": "94cef87774e6263c977a3ea3eed2acbef0c196f6511b4b4c3e5d5fb4458a94e4",
+      "ikaros-linux-x64-0.5.0.tgz": "fb356ee0d3056c82c5e7334c7cdf2c0335f1628cf3aabe3912b3d40a52ed45f2"
+    },
+    "license_files_present": [
+      "LICENSE-MIT",
+      "LICENSE-APACHE"
+    ]
+  },
+  "installed": {
+    "demo_names_stale_refusal": true,
+    "codegen_emits_types": true,
+    "operation_probe": {
+      "state": "running",
+      "lookup": "committed_exact",
+      "repeat": "HistoricalResult"
+    },
+    "binary_resolved_from_platform_package": true,
+    "resolved_binary_sha256": "c5432567d631d02fff385c87e5a5d5c09ff721355d70b06de6f6339ca9f0d8e0",
+    "extracted_binary_sha256": "c5432567d631d02fff385c87e5a5d5c09ff721355d70b06de6f6339ca9f0d8e0"
+  },
+  "generated_app_tests_pass": true,
+  "python": {
+    "wheel": "invariant_kernel-0.5.0-py3-none-any.whl",
+    "lookup_of_unsent_operation": "not_recorded"
+  },
+  "negative_controls": {
+    "no_platform_package_no_binary": {
+      "exit": 1,
+      "mentions_remedy": true
+    },
+    "missing_asset": {
+      "exit": 1,
+      "enoent": true
+    },
+    "tampered_tarball_digest_differs": true
+  }
+}

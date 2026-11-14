@@ -1,0 +1,18 @@
+{
+  "commands": {
+    "step": [
+      {
+        "name": "paid",
+        "args": {
+          "s": "paid"
+        }
+      },
+      {
+        "name": "rest",
+        "args": {
+          "s": "due"
+        }
+      }
+    ]
+  }
+}

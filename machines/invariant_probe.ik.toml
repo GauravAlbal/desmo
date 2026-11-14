@@ -1,0 +1,18 @@
+schema_version = 1
+machine_id = "invariant_probe"
+machine_version = 1
+name = "InvariantProbe"
+
+[facts]
+x = { type = "int", policy = "replace", initial = 0 }
+
+[states]
+s = { initial = true }
+
+[commands.violate]
+from = ["s"]
+to = "s"
+then = { x = "5" }
+
+[invariants.x_limit]
+assert = "x <= 3"

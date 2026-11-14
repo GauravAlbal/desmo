@@ -1,0 +1,2 @@
+<ErrorLog> Monitor ApprovalMonitor remained hot at trace end
+<StrategyLog> finite trace

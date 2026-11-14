@@ -1,0 +1,6 @@
+{
+ "N1-r1-b2-lost-recover": "0\n{\"ok\":true,\"failures\":[]}",
+ "N2-r1-c2-control-recover": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N2-r2-c2-control-recover": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N3-r1-c2-control-recover": "0\n{\"ok\":true,\"failures\":[],\"mode\":\"authorized-recovery\",\"scenario\":\"expected-refusal\"}"
+}

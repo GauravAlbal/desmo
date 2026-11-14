@@ -1,0 +1,377 @@
+package invariantkernel
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sync/atomic"
+	"time"
+)
+
+// Options configure a Kernel.
+type Options struct {
+	Binary  string
+	Timeout time.Duration
+}
+
+// Kernel is a typed adapter over one ik store.
+type Kernel struct {
+	Store          string
+	Binary         string
+	Timeout        time.Duration
+	runtimeVersion string
+	protocolMajor  uint64
+	protocolMinor  uint64
+	nextID         atomic.Uint64
+}
+
+// Open locates ik and binds a store path. The store file is created only by create, never by a read.
+func Open(store string, opts Options) (*Kernel, error) {
+	bin, err := locateBinary(opts.Binary)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout(opts.Timeout))
+	defer cancel()
+	runtime, major, minor, err := parseVersion(ctx, bin)
+	if err != nil {
+		return nil, err
+	}
+	k := &Kernel{
+		Store:          resolvePath(store),
+		Binary:         bin,
+		Timeout:        defaultTimeout(opts.Timeout),
+		runtimeVersion: runtime,
+		protocolMajor:  major,
+		protocolMinor:  minor,
+	}
+	return k, nil
+}
+
+// Machine loads identity from `ik identity` so callers never hash a spec.
+func (k *Kernel) Machine(ctx context.Context, path string) (*Machine, error) {
+	ctx, cancel := k.bound(ctx)
+	defer cancel()
+	abs := resolvePath(path)
+	raw, err := runIdentity(ctx, k.Binary, abs)
+	if err != nil {
+		return nil, err
+	}
+	id, err := identityFromWire(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &Machine{kernel: k, Path: abs, Identity: id}, nil
+}
+
+// Bind attaches a known machine identity without probing `ik identity`.
+// Used by native machine packages whose identity is compiled in.
+func (k *Kernel) Bind(id MachineIdentity) *Machine {
+	return &Machine{kernel: k, Identity: id}
+}
+
+// Invoke sends one protocol envelope. Extra fields (package, observation) pass through.
+// Pass m only when that operation's wire contract permits or requires `machine`.
+// A Machine obtained via Bind does not imply that all companion operations are machine-scoped.
+func (k *Kernel) Invoke(ctx context.Context, op string, m *Machine, fields map[string]any) (map[string]any, error) {
+	return k.call(ctx, op, m, fields)
+}
+
+// Check is developer analysis. It is not a lifecycle operation.
+func (k *Kernel) Check(ctx context.Context, path string, prior, corpus, baseline string) (CheckResult, error) {
+	ctx, cancel := k.bound(ctx)
+	defer cancel()
+	text, ok, err := runCheck(ctx, k.Binary, resolvePath(path), prior, corpus, baseline)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	verdict := "refused"
+	if ok {
+		verdict = "accept"
+	}
+	return CheckResult{Text: text, OK: ok, Verdict: verdict}, nil
+}
+
+// Show reads one aggregate. Machine is required when the caller wants a live handle.
+func (k *Kernel) Show(ctx context.Context, m *Machine, aggregateID string) (*Aggregate, error) {
+	result, err := k.call(ctx, "show", m, map[string]any{"aggregate_id": aggregateID})
+	if err != nil {
+		return nil, err
+	}
+	return aggregateFromResult(m, result)
+}
+
+// Replay rebuilds projections from the journal.
+func (k *Kernel) Replay(ctx context.Context, m *Machine, aggregateID string) (map[string]any, error) {
+	fields := map[string]any{}
+	if aggregateID != "" {
+		fields["aggregate_id"] = aggregateID
+	}
+	return k.call(ctx, "replay", m, fields)
+}
+
+// Verify checks journal/projection consistency.
+func (k *Kernel) Verify(ctx context.Context, m *Machine, aggregateID string) (map[string]any, error) {
+	fields := map[string]any{}
+	if aggregateID != "" {
+		fields["aggregate_id"] = aggregateID
+	}
+	return k.call(ctx, "verify", m, fields)
+}
+
+func (k *Kernel) bound(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, k.Timeout)
+}
+
+func (k *Kernel) requestID() string {
+	n := k.nextID.Add(1)
+	return fmt.Sprintf("go-%d", n)
+}
+
+func (k *Kernel) call(ctx context.Context, op string, m *Machine, fields map[string]any) (map[string]any, error) {
+	ctx, cancel := k.bound(ctx)
+	defer cancel()
+	env := map[string]any{
+		"protocol":        map[string]any{"major": k.protocolMajor, "minor": k.protocolMinor},
+		"runtime_version": k.runtimeVersion,
+		"request_id":      k.requestID(),
+		"op":              op,
+	}
+	for key, value := range fields {
+		if value != nil {
+			env[key] = value
+		}
+	}
+	var machinePath string
+	if m != nil && m.Identity.MachineID != "" {
+		env["machine"] = m.Identity.wire()
+		machinePath = m.Path
+	}
+	return invoke(ctx, k.Binary, k.Store, machinePath, env)
+}
+
+// Machine is a compiled definition bound to a Kernel.
+type Machine struct {
+	kernel   *Kernel
+	Path     string
+	Identity MachineIdentity
+}
+
+func (m *Machine) Create(ctx context.Context, aggregateID string) (*Aggregate, error) {
+	result, err := m.kernel.call(ctx, "create", m, map[string]any{"aggregate_id": aggregateID})
+	if err != nil {
+		return nil, err
+	}
+	return aggregateFromResult(m, result)
+}
+
+// CreateWith creates the aggregate and applies the initializing command in one
+// validated operation. An invalid command or a law violation exposes no aggregate.
+// The same operation id replays as history. Reconcile a dropped reply with
+// LookupCreateWith. A bare Create followed by a required initialize is not this.
+func (m *Machine) CreateWith(ctx context.Context, aggregateID, operationID string, command map[string]any) (*Aggregate, *Historical, error) {
+	if operationID == "" {
+		operationID = NewOperationID()
+	}
+	result, err := m.kernel.call(ctx, "create_with_command", m, map[string]any{
+		"aggregate_id": aggregateID,
+		"command":      command,
+		"operation_id": operationID,
+	})
+	if err != nil {
+		return nil, nil, annotateOperation(err, operationID)
+	}
+	if historical, _ := result["historical"].(bool); historical {
+		return nil, historicalFromMap(aggregateID, result), nil
+	}
+	next, err := aggregateFromResult(m, result)
+	if err != nil {
+		return nil, nil, annotateOperation(err, operationID)
+	}
+	return next, nil, nil
+}
+
+func (m *Machine) Show(ctx context.Context, aggregateID string) (*Aggregate, error) {
+	return m.kernel.Show(ctx, m, aggregateID)
+}
+
+func (m *Machine) Replay(ctx context.Context, aggregateID string) (map[string]any, error) {
+	return m.kernel.Replay(ctx, m, aggregateID)
+}
+
+func (m *Machine) Verify(ctx context.Context, aggregateID string) (map[string]any, error) {
+	return m.kernel.Verify(ctx, m, aggregateID)
+}
+
+// Aggregate is a handle that carries the current capability internally.
+type Aggregate struct {
+	machine    *Machine
+	ID         string
+	capability Capability
+	rawState   any
+	Generation uint64
+	Terminal   bool
+	Effect     Effect
+	Receipt    *Receipt
+	Mutation   *bool
+	Raw        map[string]any
+}
+
+func aggregateFromResult(m *Machine, result map[string]any) (*Aggregate, error) {
+	capRaw, _ := result["capability"].(map[string]any)
+	cap, err := capabilityFromWire(capRaw)
+	if err != nil {
+		return nil, err
+	}
+	var mutation *bool
+	if v, ok := result["mutation"].(bool); ok {
+		mutation = &v
+	}
+	receipt, _ := result["receipt"].(map[string]any)
+	if receipt == nil {
+		receipt, _ = result["last_receipt"].(map[string]any)
+	}
+	effect, _ := result["effect"].(map[string]any)
+	return &Aggregate{
+		machine:    m,
+		ID:         asString(result["aggregate_id"]),
+		capability: cap,
+		rawState:   result["state"],
+		Generation: asUint(result["generation"]),
+		Terminal:   asBool(result["terminal"]),
+		Effect:     effectFromWire(effect),
+		Receipt:    receiptFromWire(receipt),
+		Mutation:   mutation,
+		Raw:        result,
+	}, nil
+}
+
+// State is the kernel state name when the payload is a declarative object.
+func (a *Aggregate) State() any {
+	if obj, ok := a.rawState.(map[string]any); ok {
+		if name, ok := obj["state"]; ok {
+			return name
+		}
+	}
+	return a.rawState
+}
+
+// Owner is the identity that owns this aggregate in the store. After a machine version change it can
+// differ from the handle's Machine.Identity on a Show through another version. Route an existing aggregate
+// to the retained definition whose Identity equals Owner (MachineIdentity values are comparable).
+func (a *Aggregate) Owner() MachineIdentity {
+	if wire, ok := a.Raw["machine"].(map[string]any); ok {
+		if id, err := identityFromWire(wire); err == nil {
+			return id
+		}
+	}
+	return a.machine.Identity
+}
+
+// Facts are the non-state fields of a declarative payload.
+func (a *Aggregate) Facts() map[string]any {
+	obj, ok := a.rawState.(map[string]any)
+	if !ok {
+		return map[string]any{}
+	}
+	out := make(map[string]any, len(obj))
+	for k, v := range obj {
+		if k != "state" {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// Command invokes a domain command under a freshly generated operation id (see
+// CommandWithOperation to supply your own). Args may be nil. If the outcome is unknown,
+// the error carries the id (OperationIDOf): reconcile with LookupOperation; do not resend.
+func (a *Aggregate) Command(ctx context.Context, name string, args map[string]any) (*Aggregate, error) {
+	next, historical, err := a.CommandWithOperation(ctx, "", name, args)
+	if err != nil {
+		return nil, err
+	}
+	if historical != nil {
+		return nil, fmt.Errorf("unexpected historical result for a freshly generated operation id")
+	}
+	return next, nil
+}
+
+// Record binds an effect outcome. Missing identity fields are taken from the pending intent.
+func (a *Aggregate) Record(ctx context.Context, outcomeDigest string, override map[string]any) (*Aggregate, error) {
+	wire := map[string]any{
+		"aggregate_id":       a.ID,
+		"outcome_digest":     outcomeDigest,
+		"effect_id":          "",
+		"payload_digest":     "",
+		"idempotency_key":    "",
+		"planned_generation": a.Generation,
+	}
+	if a.Effect.Intent != nil {
+		wire["effect_id"] = a.Effect.Intent.EffectID
+		wire["payload_digest"] = a.Effect.Intent.PayloadDigest
+		wire["idempotency_key"] = a.Effect.Intent.IdempotencyKey
+		wire["planned_generation"] = a.Effect.Intent.Generation
+	}
+	for k, v := range override {
+		wire[k] = v
+	}
+	operationID := NewOperationID()
+	result, err := a.machine.kernel.call(ctx, "record", a.machine, map[string]any{
+		"aggregate_id": a.ID,
+		"capability":   a.capability.wire(),
+		"effect":       wire,
+		"operation_id": operationID,
+	})
+	if err != nil {
+		return nil, annotateOperation(err, operationID)
+	}
+	next, err := aggregateFromResult(a.machine, result)
+	return next, annotateOperation(err, operationID)
+}
+
+func (a *Aggregate) Show(ctx context.Context) (*Aggregate, error) {
+	return a.machine.Show(ctx, a.ID)
+}
+
+func (a *Aggregate) Replay(ctx context.Context) (map[string]any, error) {
+	return a.machine.Replay(ctx, a.ID)
+}
+
+func (a *Aggregate) KernelVerify(ctx context.Context) (map[string]any, error) {
+	return a.machine.Verify(ctx, a.ID)
+}
+
+// SetProtocolForTest overrides the spoken protocol. Production code must not call this.
+func (k *Kernel) SetProtocolForTest(major, minor uint64) {
+	k.protocolMajor = major
+	k.protocolMinor = minor
+}
+
+// RepoRoot walks up from start looking for Cargo.toml + machines/.
+func RepoRoot(start string) (string, error) {
+	dir := start
+	for range 8 {
+		if fileExists(filepath.Join(dir, "Cargo.toml")) && fileExists(filepath.Join(dir, "machines")) {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "", &TransportError{Message: "invariant-kernel repo root not found"}
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}

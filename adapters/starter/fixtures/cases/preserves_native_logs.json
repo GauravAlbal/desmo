@@ -1,0 +1,12 @@
+{
+  "id": "preserves_native_logs",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "expect": {
+    "result_accepted": true,
+    "execution_status": "completed",
+    "native_log": "native/checker.log",
+    "stdout_preserved": true
+  }
+}

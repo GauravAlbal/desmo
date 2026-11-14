@@ -1,0 +1,24 @@
+{
+  "commands": {
+    "checkout": [
+      {
+        "name": "honest",
+        "args": {
+          "checkout_ms": 1000,
+          "loan_until_ms": 1209601000,
+          "deposit_id": "dep-1"
+        }
+      }
+    ],
+    "checkin": [
+      {
+        "name": "on_time",
+        "args": { "overdue": 0 }
+      },
+      {
+        "name": "overdue",
+        "args": { "overdue": 1 }
+      }
+    ]
+  }
+}

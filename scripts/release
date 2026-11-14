@@ -1,0 +1,59 @@
+#!/bin/sh
+# Build this-host Desmo artifacts. Does not publish.
+# Usage: scripts/release [v0.5.0]. Requires a clean committed source tree.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+TAG=${1:-}
+if [ -z "$TAG" ]; then
+  TAG="v$(python3 -c 'import pathlib, re, sys; print(re.search(r"(?m)^version = \"([^\"]+)\"", pathlib.Path(sys.argv[1]).read_text()).group(1))' "$ROOT/Cargo.toml")"
+fi
+case "$TAG" in
+  v*) ;;
+  *) TAG="v$TAG" ;;
+esac
+HOST=$(rustc -vV | awk '/^host:/{print $2}')
+case "$HOST" in
+  aarch64-apple-darwin) ASSET=ik-darwin-arm64 ;;
+  x86_64-apple-darwin) ASSET=ik-darwin-amd64 ;;
+  aarch64-unknown-linux-gnu) ASSET=ik-linux-arm64 ;;
+  x86_64-unknown-linux-gnu) ASSET=ik-linux-amd64 ;;
+  *) ASSET="ik-$HOST" ;;
+esac
+DEST="$ROOT/dist/$TAG"
+SHA=$(git -C "$ROOT" rev-parse HEAD)
+# Check before our intentional LATEST_RELEASE mutation, never after it.
+if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=normal)" ]; then
+  echo "release requires clean committed source (including LATEST_RELEASE)" >&2
+  exit 1
+fi
+if [ -e "$DEST" ] || [ -L "$DEST" ]; then
+  echo "refusing to overwrite existing artifact directory: $DEST" >&2
+  exit 1
+fi
+# Offline prerequisites must already be installed; release never fetches them.
+python3 -c 'import build, setuptools, wheel, pytest, venv'
+mkdir -p "$ROOT/dist"
+mkdir "$DEST"
+echo "building ik ($HOST) $TAG @ $SHA"
+cargo build --release --locked --offline --bin ik --manifest-path "$ROOT/Cargo.toml"
+test -x "$ROOT/target/release/ik"
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 IK_BINARY="$ROOT/target/release/ik" \
+  python3 -m pytest -q "$ROOT/python/tests" \
+  --ignore="$ROOT/python/tests/test_release_artifacts.py"
+cp "$ROOT/target/release/ik" "$DEST/ik"
+tar -C "$DEST" -czf "$DEST/${ASSET}.tar.gz" ik
+rm -f "$DEST/ik"
+(
+  cd "$ROOT/python"
+  # Default build derives the wheel from the shipped sdist, not the checkout.
+  PIP_NO_INDEX=1 python3 -m build --no-isolation --outdir "$DEST"
+)
+GITHUB_REF_NAME="$TAG" GITHUB_SHA="$SHA" IK_VERSION="$TAG" IK_SOURCE_SHA="$SHA" \
+  python3 "$ROOT/scripts/write-release-manifest.py" "$DEST"
+# This cannot skip: IK_DIST is explicit and absence/mismatch of provenance fails.
+# The verifier installs the wheel offline, extracts ik, and runs both supported
+# clients against that extracted binary (Go toolchain/modules must be cached).
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_ADDOPTS= IK_DIST="$DEST" IK_SOURCE_REVISION="$SHA" \
+  python3 -m pytest -o addopts= -q "$ROOT/python/tests/test_release_artifacts.py"
+cp "$DEST/release-manifest.json" "$ROOT/LATEST_RELEASE"
+echo "wrote $DEST"

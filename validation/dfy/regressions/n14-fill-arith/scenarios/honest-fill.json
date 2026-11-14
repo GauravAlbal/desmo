@@ -1,0 +1,21 @@
+{
+  "scenario_version": 1,
+  "machine": "../rx.ik.toml",
+  "aggregate": "rx-honest",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "intake",
+      "name": "intake",
+      "args": { "qty": 10, "hold_ms": 5000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "fill",
+      "name": "fill",
+      "args": { "units": 4, "remain_after": 6, "now_ms": 1000, "deadline": 6000, "amount": 700 },
+      "expect": "committed"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "string_other_after_eq_ne"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+eq = {}
+ne = {}
+other = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+outcomes = [
+  { when = '$s == "a"', to = "eq" },
+  { when = '$s != "a"', to = "ne" },
+  { when = '$s == "z"', to = "other" }
+]
+

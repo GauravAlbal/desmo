@@ -1,0 +1,21 @@
+{
+  "scenario_version": 1,
+  "machine": "../desk.ik.toml",
+  "aggregate": "loan-on-time",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "checkout",
+      "name": "checkout",
+      "args": { "checkout_ms": 1000, "loan_until_ms": 604801000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "on-time-checkin",
+      "name": "checkin",
+      "args": { "now_ms": 604801000 },
+      "expect": "committed"
+    }
+  ]
+}

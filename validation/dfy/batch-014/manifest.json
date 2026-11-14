@@ -1,0 +1,60 @@
+{
+  "batch": "014",
+  "purpose": "finite transfer check of the input-validity guide wording on two fresh families (see PREREG.md); frozen before any agent ran",
+  "candidate_source": "129475617026e1789d8cf5514b260e8cb2790a1f",
+  "includes": "coverage contract and optional feasibility adapter (batch 013 bytes), pinned-adapter enforcement, and the build/change guide wording that input-validity refusals are when-guards",
+  "host": "macOS arm64",
+  "ik_version": "invariant-kernel 0.5.0 protocol 1.0",
+  "ik_binary_sha256": "c3ad5137aec3a7e4c97761bf6442193c08a47571e8dca8e8e3f7d5d4d229e897",
+  "binary_identical_in_release_build_and_packed_npm_package": true,
+  "npm_tarballs_sha256": {
+    "ikaros-darwin-arm64-0.5.0.tgz": "45c1f9e893a08180b73bff3259f4f62db87ee1567d1ab8023156c3facc0a5034",
+    "ikaros-runtime-0.5.0.tgz": "a1947a063c701caf0edd5ba1383d6f7764036cf191982cc66952d4760d6b888b"
+  },
+  "targeted_regressions_on_packed_binary": {
+    "artifact_qualification": "scripts/qualify_artifacts.py exit 0, negative controls behaved",
+    "seam_fixtures": "all seams matched (validation/dfy/regressions/run.py)",
+    "typescript_client_and_skill_tests": "66 passed, 0 failed",
+    "python_client_tests": "149 passed, 1 skipped",
+    "rust_suite_on_source": "run by the acceptance gate on the source revision; not re-run separately for this record"
+  },
+  "builder_visible_sha256": {
+    "N18/brief.md": "3a74b139addaf425008a0c9781304cb5dd266577b06690bd62d5761ca0097e82",
+    "N18/change.md": "793686aa4ee91136168f6f596f9108087c2dd8c9eee2372aa023f69e30cfc789",
+    "N18/stub/server.mjs": "2ea6183a4d44789e8b799882c172dd7380715b837c5a9592c54286e8f0db69ee",
+    "N18/stub/CONTRACT.md": "b4321b0d707a732e7f28670184cbd07d4a8b7321578e5d617e37fe479846c666",
+    "N19/brief.md": "d9ca87578979421b748f98a23132b4aca7bbffce63d1532ed5b2d322edf14a26",
+    "N19/change.md": "8a683887fac1aa0ddac658bcce2593849d97c12220aad4976898e5690c16cffb",
+    "N19/stub/server.mjs": "c7bf090ce07384e4ab61568eab8f62a267b6bbee29cc7aa65500a6a71b9aca8f",
+    "N19/stub/CONTRACT.md": "ab1fe1f74b8f28aa5ad4eb9efe75fe0b986c41c08f9a91d5d50d74778d70f979"
+  },
+  "prompt_sha256": {
+    "common.md": "33d0599d1f1ab047ca2275898881e0d3bc72d675dfdb4a40d071d560664c1c3a",
+    "stage-build.md": "8202bc5f3095bd300ee5c88dce55c1bc227bd0ada77e56806e966df2bfa59546",
+    "stage-change.md": "7a7e50a856b830321ef136537889d002844a6f91d2b4944cc42a1023e919562c",
+    "tool-py.md": "9d2c4c4119279acbacb17720f32c936cd7df7230c994cdf15bc881483e725c7a",
+    "tool-ts.md": "f9d1c3bec7a4b939b5814579bda02968f1be4a3fe4d8cbbb7841ee1f0f938c41"
+  },
+  "staged_prompts_sha256": {
+    "N18/r1": "7c853f4484ac36835d95e990c8ccb57ed66d186ec7aa1758cfd6c7a94e770079",
+    "N18/r2": "0b393ec072bdb715733e72d2a39ab4995f31c5c11700747b884eadd1ce24ede2",
+    "N19/r1": "713b3e29c035224156a37d819bbea569585ebba2c612e657d8efefc92516139c",
+    "N19/r2": "1dcb7354746e4d90ac86a9ed81cd16c33eb1bfa33e7eb02bec0ef05dcd2c98ad"
+  },
+  "staged_skill_sha256": {
+    "N18/r1/build.md": "a6290bff40bb3e53737f9da878733628f73a72c5652285071058a76b707b039c",
+    "N18/r1/change.md": "bc7c7cd68cdd8e493838eadd6c215e9f1d6a30f038c512f8a2b369062363a37c",
+    "N18/r2/build.md": "a6290bff40bb3e53737f9da878733628f73a72c5652285071058a76b707b039c",
+    "N18/r2/change.md": "bc7c7cd68cdd8e493838eadd6c215e9f1d6a30f038c512f8a2b369062363a37c",
+    "N19/r1/build.md": "a6290bff40bb3e53737f9da878733628f73a72c5652285071058a76b707b039c",
+    "N19/r1/change.md": "bc7c7cd68cdd8e493838eadd6c215e9f1d6a30f038c512f8a2b369062363a37c",
+    "N19/r2/build.md": "a6290bff40bb3e53737f9da878733628f73a72c5652285071058a76b707b039c",
+    "N19/r2/change.md": "bc7c7cd68cdd8e493838eadd6c215e9f1d6a30f038c512f8a2b369062363a37c"
+  },
+  "scorer_sha256": "f12d98043be7b375be835dadad715bf6cf0ec186b45eb3d013e05ad26204df36",
+  "sealed_evaluator_archive_sha256": "0fc5de7418598d8f3360c6db157d17aa64ba6c1fb2d710e7a88844a666d75035",
+  "isolation": "evaluators, reference toys, defect controls and attack harness are one encrypted archive; the key was moved out of the experiment tree to a private file in the lead's home configuration before dispatch, and all plaintext was deleted before dispatch (oracle authors' own sessions retain their transcripts). Same-account isolation limits from the custody check still apply: no general sandbox is claimed.",
+  "instrument_selftest": "through the scorer path on these bytes, both families: reference passes build and change; host-only fails change (and build); missing-input-validity fails change with criterion 2 failing on exactly the input-validity rules (N18: abort_note, paper_grade; N19: abort_clear, lane_bound); stale, always-refuse and breaks-old fail. Output: SELFTEST OK.",
+  "what_this_supports": "a finite check that input-validity rules named in a brief were or were not enforced by machine guards on two fresh families; not a rate, a comparison, DFYJourneyQualified or any claim about other families",
+  "limits": "no Linux x64, no human participants, agent model identity not exposed, both families TypeScript, n=2 per family, feasibility adapter off"
+}

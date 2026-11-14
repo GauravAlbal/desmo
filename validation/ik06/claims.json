@@ -1,0 +1,173 @@
+{
+  "schema": "ikaros.qualification-manifest.v1",
+  "scope": "alpha slice: single worker, persistent local SQLite, cooperative callers. Not hostile agents, not other platforms.",
+  "claims": [
+    {
+      "id": "currentness",
+      "claim": "A stale or copied capability is refused; every committed mutation advances generation and rotates the nonce.",
+      "enforcement": [
+        {"file": "src/runtime.rs", "contains": "fn validate_capability"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "stale_request_without_an_operation_id_still_refuses"}
+      ],
+      "mutants": [
+        {"name": "AcceptStaleCapability", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "capability_stale_accepted_is_killed"}},
+        {"name": "SkipGenerationIncrement", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "generation_skip_is_killed"}},
+        {"name": "SkipNonceRotation", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "nonce_skip_is_killed"}}
+      ]
+    },
+    {
+      "id": "terminal",
+      "claim": "A terminal aggregate refuses every further mutation.",
+      "enforcement": [
+        {"file": "src/runtime.rs", "contains": "LawMutant::AllowTerminalMutation"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "terminal_mutation_is_killed"}
+      ],
+      "mutants": [
+        {"name": "AllowTerminalMutation", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "terminal_mutation_is_killed"}}
+      ]
+    },
+    {
+      "id": "valid-genesis",
+      "claim": "An initial state that violates a declared hard law is refused before any row or capability exists.",
+      "enforcement": [
+        {"file": "src/store.rs", "contains": "fn validate_genesis"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/genesis_validity.rs", "test": "false_initial_invariant_is_refused_without_rows"},
+        {"runner": "rust", "file": "tests/genesis_validity.rs", "test": "valid_genesis_succeeds_on_both_paths"},
+        {"runner": "rust", "file": "tests/genesis_validity.rs", "test": "skipping_genesis_validation_is_killed_for_create_with_command"}
+      ],
+      "mutants": [
+        {"name": "SkipGenesisValidation", "kill": {"runner": "rust", "file": "tests/genesis_validity.rs", "test": "skipping_genesis_validation_is_killed"}}
+      ]
+    },
+    {
+      "id": "invariants",
+      "claim": "A transition that violates a declared invariant is refused and does not commit.",
+      "enforcement": [
+        {"file": "src/declarative/compile.rs", "contains": "LawMutant::SkipInvariantValidation"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/flat_invariant_witness.rs", "test": "defective_flat_machine_is_refused_with_the_shortest_witness_path"},
+        {"runner": "pytest", "file": "python/tests/test_publish_approval_app.py", "test": "test_defective_revise_is_refused_at_runtime_and_by_a_bounded_witness"}
+      ],
+      "mutants": [
+        {"name": "SkipInvariantValidation", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "invariant_skip_is_killed"}}
+      ]
+    },
+    {
+      "id": "atomicity",
+      "claim": "Journal, receipt and projection commit together; a refusal or a crash at any listed boundary leaves a replayable prefix.",
+      "enforcement": [
+        {"file": "src/store.rs", "contains": "fn finish_step"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/crash_matrix.rs", "test": "command_after_journal_abort"},
+        {"runner": "rust", "file": "tests/crash_matrix.rs", "test": "admit_after_projection_exit"},
+        {"runner": "rust", "file": "tests/crash_matrix.rs", "test": "record_after_receipts_abort"},
+        {"runner": "rust", "file": "tests/crash_matrix.rs", "test": "genesis_after_aggregates_insert_exit"}
+      ],
+      "mutants": [
+        {"name": "PersistOnRefusal", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "partial_persist_on_refusal_is_killed"}},
+        {"name": "CommitPartialTransaction", "kill": {"runner": "rust", "file": "tests/transaction.rs", "test": "ik_prop_013_mutation_control_commit_partial_transaction_is_detected"}}
+      ]
+    },
+    {
+      "id": "operation-attribution",
+      "claim": "A caller operation id is committed atomically with its mutation; an exact repeat is history, a changed repeat conflicts, refusals leave no row.",
+      "enforcement": [
+        {"file": "src/store.rs", "contains": "fn insert_operation"},
+        {"file": "src/store.rs", "contains": "fn resolve_duplicate"},
+        {"file": "src/operation.rs", "contains": "pub fn fingerprint"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "lost_response_then_other_writer_is_reconciled_by_exact_repeat"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "reusing_an_id_for_different_semantics_or_a_refreshed_capability_conflicts"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "refused_requests_leave_no_operation_row_and_lookup_is_not_recorded"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "concurrent_identical_operations_commit_exactly_once"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "real_process_crash::crash_before_commit_at_each_attribution_boundary_leaves_no_binding"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::a_mutant_whose_seam_is_not_reached_reports_zero_firings"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::skipping_the_duplicate_gate_is_killed_for_transactions"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::skipping_the_duplicate_gate_is_killed_for_effect_records"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::skipping_the_duplicate_gate_is_killed_for_create_with_command"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed_for_transactions"},
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed_for_effect_records"}
+      ],
+      "mutants": [
+        {"name": "SkipOperationBinding", "kill": {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::skipping_operation_binding_is_killed"}},
+        {"name": "SkipDuplicateGate", "kill": {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::skipping_the_duplicate_gate_is_killed"}},
+        {"name": "OmitCapabilityFromFingerprint", "kill": {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed"}}
+      ]
+    },
+    {
+      "id": "replay",
+      "claim": "Replay folds frozen journal events and never re-decides them against live guards.",
+      "enforcement": [
+        {"file": "src/store.rs", "contains": "LawMutant::RerunLiveGuardsOnReplay"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/ik_props.rs", "test": "ik_prop_001_replay_reconstructs_exact_semantic_state"},
+        {"runner": "rust", "file": "tests/k1.rs", "test": "replay_reconstructs_projection_and_verify_passes"},
+        {"runner": "rust", "file": "tests/k1.rs", "test": "altered_domain_state_digest_refuses_replay"}
+      ],
+      "mutants": [
+        {"name": "RerunLiveGuardsOnReplay", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "frozen_event_store_replay_is_killed"}}
+      ]
+    },
+    {
+      "id": "effect-binding",
+      "claim": "At most one pending effect per aggregate; a duplicate outcome does not mutate; a conflicting outcome is refused.",
+      "enforcement": [
+        {"file": "src/runtime.rs", "contains": "LawMutant::AllowSecondPendingEffect"},
+        {"file": "src/runtime.rs", "contains": "LawMutant::AllowEffectConflict"}
+      ],
+      "evidence": [
+        {"runner": "rust", "file": "tests/operation_attribution.rs", "test": "effect_outcome_attribution_is_independent_of_effect_deduplication"},
+        {"runner": "pytest", "file": "python/tests/test_publish_approval_app.py", "test": "test_effect_outcome_is_idempotent_and_a_conflicting_outcome_is_refused"}
+      ],
+      "mutants": [
+        {"name": "AllowSecondPendingEffect", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "second_pending_is_killed"}},
+        {"name": "AllowEffectConflict", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "effect_conflict_is_killed"}},
+        {"name": "MutateOnDuplicate", "kill": {"runner": "rust", "file": "tests/vfy_adopt.rs", "test": "duplicate_mutation_is_killed"}}
+      ]
+    },
+    {
+      "id": "client-transport",
+      "claim": "Python, TypeScript and Go clients dispatch a mutation once under an operation id, never retry, and distinguish not-sent from submission-unknown.",
+      "enforcement": [
+        {"file": "python/src/invariant_kernel/client.py", "contains": "def lookup_operation"},
+        {"file": "typescript/src/client.ts", "contains": "lookupOperation"},
+        {"file": "go/operation.go", "contains": "func (a *Aggregate) CommandWithOperation"}
+      ],
+      "evidence": [
+        {"runner": "pytest", "file": "python/tests/test_operation_recovery.py", "test": "test_dropped_reply_then_other_writer_is_recovered_by_a_fresh_client"},
+        {"runner": "pytest", "file": "python/tests/test_operation_recovery.py", "test": "test_timeout_after_dispatch_is_submission_unknown_and_never_retried"},
+        {"runner": "node", "file": "typescript/src/operation.test.ts", "test": "a timeout after dispatch is submission-unknown and is never retried"},
+        {"runner": "node", "file": "typescript/src/operation.test.ts", "test": "a missing binary is pre-dispatch, keeps the operation id, and commits nothing"},
+        {"runner": "pytest", "file": "python/tests/test_operation_recovery.py", "test": "test_a_dead_session_keeps_an_in_flight_operation_id_unknown_not_unsent"},
+        {"runner": "go", "file": "go/operation_test.go", "test": "TestTimeoutAfterDispatchIsSubmissionUnknownAndNeverRetried"},
+        {"runner": "go", "file": "go/operation_test.go", "test": "TestPlainCommandAndRecordAlsoCarryAnOperationIDAfterAnUncertainTimeout"},
+        {"runner": "go", "file": "go/operation_test.go", "test": "TestMissingBinaryIsUnsentKeepsTheIDAndCommitsNothing"}
+      ],
+      "mutants": []
+    }
+  ],
+  "gaps": [
+    {
+      "id": "client-walls-not-mutation-controlled",
+      "text": "Client transport claims have positive and refusal tests but no deleted-wall (mutation) control; the constitutional mutants live in the Rust kernel only."
+    },
+    {
+      "id": "independent-review-not-performed",
+      "text": "The IK-06 independent-reviewer task (false greens, bypasses, uncertainty semantics, integration omissions) requires an independent agent or human; none was available in this run. See validation/ik06/SELF_REVIEW.md for the non-independent author review."
+    },
+    {
+      "id": "single-platform",
+      "text": "Executed on macOS arm64 only. Linux was not run."
+    }
+  ]
+}

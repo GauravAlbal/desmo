@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "string_lt_reachable"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+when = '$s < "m"'
+to = "done"
+

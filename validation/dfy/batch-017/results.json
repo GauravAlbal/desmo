@@ -1,0 +1,4685 @@
+{
+  "first_scoring": {
+    "N24/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": false
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": false
+        },
+        "slip_tag": {
+          "1": true,
+          "2": false
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N24/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": false
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": false
+        },
+        "launch_slots": {
+          "1": true,
+          "2": false
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "2": true
+        },
+        "callsign": {
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": false
+        },
+        "issued_n": {
+          "1": true,
+          "2": false
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": false
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "2": true
+        },
+        "callsign": {
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": false
+        },
+        "issued_n": {
+          "1": true,
+          "2": false
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": false
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "note": "Per replica and stage: pass, and per rule criterion results (1 valid path, 2 direct-command refusal incl. every grammar attack and valid-also value, 3 invalidation, 4 existing instances). first_scoring is the record. The rescoring uses a repaired evaluator and is reported separately; see DECISION.md.",
+  "rescoring_guard_informed_twin_repair": {
+    "N24/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N24/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "2": true
+        },
+        "callsign": {
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "2": true
+        },
+        "callsign": {
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v3_n25_complete_rows": {
+    "N25/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v4_capture_replay_parallel2_run1": {
+    "N24/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N24/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v4_capture_replay_parallel2_run2": {
+    "N24/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N24/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v4_capture_replay_parallel4_run1": {
+    "N24/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N24/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v4_capture_replay_parallel4_run2": {
+    "N24/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": false,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N24/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "berth_id": {
+          "1": true,
+          "2": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N24/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "berth_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boarded_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "boat_name": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "desk_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_berth": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harbor_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "launch_slots": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "marshal_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ramp_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "skipper_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slip_tag": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trailer_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "wharf_nick": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N25/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N25/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "base_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "brief_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cache_label": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "callsign": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "deploy_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "issued_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_code": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kit_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "medic_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "partner_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "radio_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "ranger_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "return_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "scrap_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "slope_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "trail_mark": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "sealed_evaluator_archives_sha256": {
+    "capture_replay_kit_member_manifest": "6b8552fc2af10346862ac833081d042f333cc092e7638b78e801e2d97990dcad",
+    "capture_replay_kit_v4": "cba44f3eb1c2b1075f1344b5f0023399c7a672da0824b894f908bb7755e06b27",
+    "capture_replay_kit_v4_resealed_without_scratch": "ee502afc0d61bc635ac81e94e8eb79f568bdd473e2a88cdf5682615c4635491e",
+    "first_scoring": "adfe43d41e8e93de3d0087829aa40f9c53e77d96df233538bc5496cdcd21d97b",
+    "repaired": "225e345956d9b47e23bc0dbcf7fbd23b22f370beb4eba567cee9222aec62752e",
+    "v3_n25_complete_rows": "31b71c91358a832928efeb272eaa74ae6fe1f055d0828cf97c6e516a737e92e0"
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "steps": [
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-c1",
+        "generation": 0
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 1,
+        "state": {
+          "state": "cancelled"
+        },
+        "terminal": true
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-c2",
+        "generation": 0
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 1
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 2,
+        "state": {
+          "state": "cancelled"
+        },
+        "terminal": true
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-c3",
+        "generation": 0
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 1
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 2
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 3,
+        "state": {
+          "state": "cancelled"
+        },
+        "terminal": true
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-c4",
+        "generation": 0
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 1
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 2
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 3
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 4,
+        "state": {
+          "attempt_count": 1,
+          "state": "cancelled"
+        },
+        "terminal": true
+      }
+    }
+  ]
+}

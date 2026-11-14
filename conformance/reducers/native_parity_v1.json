@@ -1,0 +1,340 @@
+{
+  "schema": "native_parity_v1",
+  "machine": {
+    "machine_id": "native-parity",
+    "version": 1,
+    "spec_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "initial_state": {
+    "clock": 0,
+    "facts": {
+      "kiss_noah": false
+    },
+    "obligation": "none",
+    "observed": null,
+    "relationship": {
+      "appraisal": 0,
+      "stage": "strangers",
+      "trust": 0
+    },
+    "route": "main",
+    "score": 0
+  },
+  "cases": [
+    {
+      "name": "accept_observation_is_frozen",
+      "command": {
+        "name": "accept",
+        "args": {
+          "amount": 2
+        }
+      },
+      "observation": {
+        "weather": "sunny",
+        "witness": "mira"
+      },
+      "decision": {
+        "kind": "emit",
+        "event": {
+          "event_type": "parity.accepted",
+          "event_version": 1,
+          "payload": {
+            "amount": 2,
+            "observed": {
+              "weather": "sunny",
+              "witness": "mira"
+            }
+          }
+        },
+        "note": {
+          "kind": "accepted",
+          "amount": 2
+        }
+      },
+      "apply": {
+        "state": {
+          "clock": 0,
+          "facts": {
+            "kiss_noah": false
+          },
+          "obligation": "none",
+          "observed": {
+            "weather": "sunny",
+            "witness": "mira"
+          },
+          "relationship": {
+            "appraisal": 0,
+            "stage": "strangers",
+            "trust": 0
+          },
+          "route": "main",
+          "score": 2
+        },
+        "terminal": false
+      }
+    },
+    {
+      "name": "reject_has_code_and_rule",
+      "command": {
+        "name": "reject",
+        "args": {}
+      },
+      "observation": null,
+      "diagnostic": {
+        "code": "IK_INVARIANT_FAILED",
+        "rule": "parity.reject"
+      }
+    },
+    {
+      "name": "explicit_noop_is_not_an_event",
+      "command": {
+        "name": "noop",
+        "args": {}
+      },
+      "observation": null,
+      "decision": {
+        "kind": "noop",
+        "note": {
+          "kind": "noop",
+          "reason": "nothing_to_do"
+        }
+      }
+    },
+    {
+      "name": "conditional_effect",
+      "command": {
+        "name": "plan_effect",
+        "args": {
+          "enabled": true
+        }
+      },
+      "observation": null,
+      "decision": {
+        "kind": "emit",
+        "event": {
+          "event_type": "parity.effect_planned",
+          "event_version": 1,
+          "payload": {
+            "enabled": true
+          }
+        }
+      },
+      "apply": {
+        "state": {
+          "clock": 0,
+          "facts": {
+            "kiss_noah": false
+          },
+          "obligation": "none",
+          "observed": null,
+          "relationship": {
+            "appraisal": 0,
+            "stage": "strangers",
+            "trust": 0
+          },
+          "route": "main",
+          "score": 0,
+          "effect_state": "planned"
+        },
+        "terminal": false,
+        "effect": {
+          "effect_id": "parity-effect-1",
+          "aggregate_id": "parity-aggregate",
+          "generation": 1,
+          "effect_kind": "send.invitation",
+          "payload_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "idempotency_key": "parity-effect-1",
+          "payload": {
+            "to": "mira"
+          }
+        }
+      }
+    },
+    {
+      "name": "effect_outcome_binding",
+      "command": {
+        "name": "resolve_effect",
+        "args": {}
+      },
+      "observation": null,
+      "decision": {
+        "kind": "emit",
+        "event": {
+          "event_type": "parity.effect_resolved",
+          "event_version": 1,
+          "payload": {}
+        }
+      },
+      "apply": {
+        "state": {
+          "clock": 0,
+          "facts": {
+            "kiss_noah": false
+          },
+          "obligation": "none",
+          "observed": null,
+          "relationship": {
+            "appraisal": 0,
+            "stage": "strangers",
+            "trust": 0
+          },
+          "route": "main",
+          "score": 0,
+          "effect_state": "resolved"
+        },
+        "terminal": false,
+        "outcome": {
+          "effect_id": "parity-effect-1",
+          "aggregate_id": "parity-aggregate",
+          "planned_generation": 1,
+          "payload_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "idempotency_key": "parity-effect-1",
+          "outcome_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      }
+    },
+    {
+      "name": "terminal_transition",
+      "command": {
+        "name": "finish",
+        "args": {}
+      },
+      "observation": null,
+      "decision": {
+        "kind": "emit",
+        "event": {
+          "event_type": "parity.finished",
+          "event_version": 1,
+          "payload": {}
+        }
+      },
+      "apply": {
+        "state": {
+          "clock": 0,
+          "facts": {
+            "kiss_noah": false
+          },
+          "obligation": "none",
+          "observed": null,
+          "relationship": {
+            "appraisal": 0,
+            "stage": "strangers",
+            "trust": 0
+          },
+          "route": "main",
+          "score": 0,
+          "finished": true
+        },
+        "terminal": true
+      }
+    },
+    {
+      "name": "narrative_wedding_weekend_kiss_noah",
+      "command": {
+        "name": "kiss_noah",
+        "args": {
+          "appraisal_delta": 4,
+          "clock": 2,
+          "route": "noah",
+          "stage": "chosen",
+          "trust_delta": 3
+        }
+      },
+      "observation": {
+        "location": "garden",
+        "weather": "rain"
+      },
+      "decision": {
+        "kind": "emit",
+        "event": {
+          "event_type": "wedding.kiss_noah",
+          "event_version": 1,
+          "payload": {
+            "appraisal_delta": 4,
+            "clock": 2,
+            "observation": {
+              "location": "garden",
+              "weather": "rain"
+            },
+            "obligation": "tell_noah_the_truth",
+            "route": "noah",
+            "stage": "chosen",
+            "trust_delta": 3
+          }
+        },
+        "note": {
+          "scene": "WEDDING-WEEKEND-01",
+          "transition": "D_KISS_NOAH"
+        }
+      },
+      "apply": {
+        "state": {
+          "clock": 2,
+          "facts": {
+            "kiss_noah": true
+          },
+          "obligation": "tell_noah_the_truth",
+          "observed": {
+            "location": "garden",
+            "weather": "rain"
+          },
+          "relationship": {
+            "appraisal": 4,
+            "stage": "chosen",
+            "trust": 3
+          },
+          "route": "noah",
+          "score": 0
+        },
+        "terminal": false
+      }
+    }
+  ],
+  "replay": [
+    {
+      "event_type": "parity.accepted",
+      "event_version": 1,
+      "payload": {
+        "amount": 2,
+        "observed": {
+          "weather": "sunny",
+          "witness": "mira"
+        }
+      }
+    },
+    {
+      "event_type": "wedding.kiss_noah",
+      "event_version": 1,
+      "payload": {
+        "appraisal_delta": 4,
+        "clock": 2,
+        "observation": {
+          "location": "garden",
+          "weather": "rain"
+        },
+        "obligation": "tell_noah_the_truth",
+        "route": "noah",
+        "stage": "chosen",
+        "trust_delta": 3
+      }
+    }
+  ],
+  "replay_state": {
+    "clock": 2,
+    "facts": {
+      "kiss_noah": true
+    },
+    "obligation": "tell_noah_the_truth",
+    "observed": {
+      "location": "garden",
+      "weather": "rain"
+    },
+    "relationship": {
+      "appraisal": 4,
+      "stage": "chosen",
+      "trust": 3
+    },
+    "route": "noah",
+    "score": 2
+  }
+}

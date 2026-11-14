@@ -1,0 +1,14 @@
+{
+  "protocol": "ik.analysis.adapter.v1",
+  "adapter": {"id": "starter-graph", "version": "1"},
+  "invocation": {
+    "argv": ["/absolute/path/to/adapter.py"],
+    "executable_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "engine": {"id": "starter-graph", "version_constraint": "1"},
+  "inputs": ["finite_runtime_graph"],
+  "properties": ["finite_scope_stuck"],
+  "evidence": ["bounded_paths", "exhaustive_finite_model"],
+  "requires": {"production_store_access": false, "network": false},
+  "result_schema": "ik.analysis.result.v1"
+}

@@ -1,0 +1,10 @@
+flowchart LR
+    classDef here stroke-width:3px
+    classDef stuck stroke-width:2px
+    classDef terminal stroke-width:2px
+    i(( ))
+    s_idle(["idle ·1 ▼ HERE"])
+    s_tagged(("tagged ·0"))
+    i --> s_idle
+    class s_idle here
+    s_idle --> |declared · tag (guard)| s_tagged

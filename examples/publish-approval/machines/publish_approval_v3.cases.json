@@ -1,0 +1,15 @@
+{
+  "commands": {
+    "edit": [{"name": "a", "args": {"artifact_digest": "aaaa"}}],
+    "approve": [{"name": "a", "args": {"artifact_digest": "aaaa"}}],
+    "revise": [{"name": "b", "args": {"artifact_digest": "bbbb"}}],
+    "authorize_publish": [
+      {"name": "approved-bytes", "args": {"effect_id": "e1", "payload_digest": "aaaa", "idempotency_key": "k1"}},
+      {"name": "changed-bytes", "args": {"effect_id": "e2", "payload_digest": "bbbb", "idempotency_key": "k2"}}
+    ],
+    "complete": [
+      {"name": "authorized", "args": {"published_digest": "aaaa"}},
+      {"name": "substituted", "args": {"published_digest": "bbbb"}}
+    ]
+  }
+}

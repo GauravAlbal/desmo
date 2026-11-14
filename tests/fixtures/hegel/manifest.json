@@ -1,0 +1,14 @@
+{
+  "protocol": "ik.analysis.adapter.v1",
+  "adapter": {"id": "hegel-runtime", "version": "1"},
+  "invocation": {
+    "argv": ["/pin/at/test/time/ik_hegel_adapter"],
+    "executable_sha256": "pin-at-test-time"
+  },
+  "engine": {"id": "hegeltest", "version_constraint": "=0.30.0"},
+  "inputs": ["ik.runtime-driver.v1", "executable_driver"],
+  "properties": ["safety", "reachability"],
+  "evidence": ["sampled_execution"],
+  "requires": {"production_store_access": false, "network": false},
+  "result_schema": "ik.analysis.result.v1"
+}

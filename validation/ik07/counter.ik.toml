@@ -1,0 +1,16 @@
+# IK-07 workload machine: one state, one self-looping counter command.
+schema_version = 1
+machine_id = "ik07_counter"
+machine_version = 1
+name = "Ik07Counter"
+
+[facts]
+n = { type = "int", policy = "counter", initial = 0 }
+
+[states]
+open = { initial = true }
+
+[commands.tick]
+from = ["open"]
+to = "open"
+then = { n = "+1" }

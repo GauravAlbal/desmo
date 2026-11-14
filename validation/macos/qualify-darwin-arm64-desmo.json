@@ -1,0 +1,50 @@
+{
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "target": "darwin-arm64"
+  },
+  "node": "v22.17.1",
+  "npm_manifest": {
+    "schema": "ikaros.npm-manifest.v1",
+    "version": "0.5.0",
+    "target": "darwin-arm64",
+    "binary_sha256": "ec8d52b4c0b895178e412b3586fcdb711c4667e0fa4ec256fd423ab6d6aa6344",
+    "tarballs": {
+      "desmo-runtime-0.5.0.tgz": "d8c470c4b681da72a92e1c8b28c5e40fa094a3a9b613fe87bdd830b301cc9efb",
+      "desmo-darwin-arm64-0.5.0.tgz": "abe8b8177b310302b7bda41ab84626820b0ff070d6596620e1f51aa071230520"
+    },
+    "license_files_present": [
+      "LICENSE-MIT",
+      "LICENSE-APACHE"
+    ]
+  },
+  "installed": {
+    "demo_names_stale_refusal": true,
+    "codegen_emits_types": true,
+    "operation_probe": {
+      "state": "running",
+      "lookup": "committed_exact",
+      "repeat": "HistoricalResult"
+    },
+    "binary_resolved_from_platform_package": true,
+    "resolved_binary_sha256": "ec8d52b4c0b895178e412b3586fcdb711c4667e0fa4ec256fd423ab6d6aa6344",
+    "extracted_binary_sha256": "ec8d52b4c0b895178e412b3586fcdb711c4667e0fa4ec256fd423ab6d6aa6344"
+  },
+  "generated_app_tests_pass": true,
+  "python": {
+    "wheel": "invariant_kernel-0.5.0-py3-none-any.whl",
+    "lookup_of_unsent_operation": "not_recorded"
+  },
+  "negative_controls": {
+    "no_platform_package_no_binary": {
+      "exit": 1,
+      "mentions_remedy": true
+    },
+    "missing_asset": {
+      "exit": 1,
+      "enoent": true
+    },
+    "tampered_tarball_digest_differs": true
+  }
+}

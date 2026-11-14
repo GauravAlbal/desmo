@@ -1,0 +1,13 @@
+{
+  "id": "honors_timeout",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "fault": "timeout",
+  "timeout_seconds": 1,
+  "expect": {
+    "result_accepted": false,
+    "rejection_reason": "timed_out",
+    "execution_status": "timed_out"
+  }
+}

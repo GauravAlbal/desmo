@@ -1,0 +1,37 @@
+{
+  "scenario_version": 1,
+  "machine": "../loan_v2.ik.toml",
+  "aggregate": "loan-1",
+  "steps": [
+    {
+      "kind": "prior_machine",
+      "label": "under_prior",
+      "path": "../loan_checkout.ik.toml"
+    },
+    {
+      "kind": "command",
+      "label": "checkout",
+      "name": "checkout",
+      "args": {
+        "checkout_ms": 1000,
+        "loan_until_ms": 1209601000,
+        "deposit_id": "dep-1"
+      },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "extend",
+      "name": "extend",
+      "present": "new",
+      "args": { "new_until_ms": 1209601001 },
+      "expect": "refused:IK_MACHINE_MISMATCH"
+    },
+    {
+      "kind": "command",
+      "label": "recall",
+      "name": "recall",
+      "expect": "committed"
+    }
+  ]
+}

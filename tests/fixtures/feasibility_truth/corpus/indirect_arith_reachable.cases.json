@@ -1,0 +1,24 @@
+{
+  "commands": {
+    "step": [
+      {
+        "name": "four",
+        "args": {
+          "n": 4
+        }
+      },
+      {
+        "name": "zero",
+        "args": {
+          "n": 0
+        }
+      },
+      {
+        "name": "five",
+        "args": {
+          "n": 5
+        }
+      }
+    ]
+  }
+}

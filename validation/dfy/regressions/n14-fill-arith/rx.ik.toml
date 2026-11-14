@@ -1,0 +1,31 @@
+# Pharmacy fill slice: remainder, deadline, and amount are checked, not copied blindly.
+schema_version = 1
+machine_id = "rx_fill_slice"
+machine_version = 1
+name = "RxFillSlice"
+
+[facts]
+remaining_qty = { type = "int", policy = "replace" }
+hold_ms = { type = "int", policy = "replace" }
+held_units = { type = "int", policy = "replace" }
+pickup_deadline_ms = { type = "int", policy = "replace" }
+amount_cents = { type = "int", policy = "replace" }
+
+[states]
+idle = { initial = true }
+verified = {}
+held = {}
+
+[commands.intake]
+from = ["idle"]
+to = "verified"
+args = { qty = "int", hold_ms = "int" }
+when = "$qty >= 1 && $hold_ms >= 1"
+then = { remaining_qty = "$qty", hold_ms = "$hold_ms" }
+
+[commands.fill]
+from = ["verified"]
+to = "held"
+args = { units = "int", remain_after = "int", now_ms = "int", deadline = "int", amount = "int" }
+when = "$units >= 1 && $units <= remaining_qty && $remain_after == remaining_qty - $units && $deadline == $now_ms + hold_ms && $amount == $units * 175"
+then = { remaining_qty = "$remain_after", held_units = "$units", pickup_deadline_ms = "$deadline", amount_cents = "$amount" }

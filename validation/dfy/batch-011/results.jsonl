@@ -1,0 +1,36 @@
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r1", "stage": "build", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r1", "stage": "change", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r1", "stage": "continuity", "passed": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r1", "stage": "diagnose:a-lost-investigate", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r1", "stage": "diagnose:b-lost-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r1", "stage": "diagnose:c-control-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r2", "stage": "build", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r2", "stage": "change", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r2", "stage": "continuity", "passed": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r2", "stage": "diagnose:a-lost-investigate", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r2", "stage": "diagnose:b-lost-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N13", "replica": "r2", "stage": "diagnose:c-control-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r1", "stage": "build", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r1", "stage": "change", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r1", "stage": "continuity", "passed": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r1", "stage": "diagnose:a-lost-investigate", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r1", "stage": "diagnose:b-lost-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r1", "stage": "diagnose:c-control-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r2", "stage": "build", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r2", "stage": "change", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r2", "stage": "continuity", "passed": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r2", "stage": "diagnose:a-lost-investigate", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r2", "stage": "diagnose:b-lost-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N14", "replica": "r2", "stage": "diagnose:c-control-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r1", "stage": "build", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r1", "stage": "change", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r1", "stage": "continuity", "passed": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r1", "stage": "diagnose:a-lost-investigate", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r1", "stage": "diagnose:b-lost-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r1", "stage": "diagnose:c-control-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r2", "stage": "build", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r2", "stage": "change", "passed": true, "failed": [], "runtime_use_ok": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r2", "stage": "continuity", "passed": true}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r2", "stage": "diagnose:a-lost-investigate", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r2", "stage": "diagnose:b-lost-recover", "passed": true, "failed": []}
+{"batch": "dfy-011", "track": "held-out families (second lineage), frozen instruments, first scoring", "family": "N15", "replica": "r2", "stage": "diagnose:c-control-recover", "passed": true, "failed": []}

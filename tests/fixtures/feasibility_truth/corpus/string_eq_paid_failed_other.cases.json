@@ -1,0 +1,24 @@
+{
+  "commands": {
+    "step": [
+      {
+        "name": "paid",
+        "args": {
+          "s": "paid"
+        }
+      },
+      {
+        "name": "failed",
+        "args": {
+          "s": "failed"
+        }
+      },
+      {
+        "name": "other",
+        "args": {
+          "s": "open"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,1721 @@
+//! `ik` CLI: strict canonical JSON envelopes over stdin/stdout.
+//!
+//! Usage: `ik --store <path> [--machine <def.toml>] create|command|record|show|replay|verify`
+//!
+//! `ik scenario` is a separate entry and does not read a caller store path.
+//!
+//! Reads one request envelope from stdin, writes one response envelope to stdout.
+//! Exit codes: 0 success, 1 envelope-level refusal, 2 transport/configuration failure.
+
+use crate::canonical::{canonical_json, normalize_shared_numbers};
+use crate::declarative::{load_def, load_definition};
+use crate::diagnostic::{Diagnostic, DiagnosticCode};
+use crate::external::ExternalMachine;
+use crate::identity::AggregateId;
+use crate::machine::{Machine, MachineRegistry, RegisteredMachine};
+use crate::operation::{Lookup, OperationHistory, OperationId, OperationOutcome, OperationRequest};
+use crate::protocol::{EnvelopeRequest, EnvelopeResponse, Op, RUNTIME_VERSION};
+use crate::store::{
+    CommandRequest, CommandResult, EffectOutcomeRequest, Store, TransactionRequest,
+};
+use serde_json::{json, Value};
+use std::collections::BTreeMap;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+
+pub fn entry() -> i32 {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    run(&args)
+}
+
+struct Subcommand {
+    name: &'static str,
+    usage: &'static str,
+    run: fn(&[String]) -> i32,
+}
+
+/// Dispatch table. `ik --help` lists these names from the same rows.
+const SUBCOMMANDS: &[Subcommand] = &[
+    Subcommand {
+        name: "operations",
+        usage: "       ik operations <store.sqlite> --aggregate <id> [--limit <n>] [--json]",
+        run: crate::operations::run,
+    },
+    Subcommand {
+        name: "census",
+        usage: "       ik census <store.sqlite> [--json]",
+        run: crate::census::run,
+    },
+    Subcommand {
+        name: "check",
+        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]",
+        run: run_check,
+    },
+    Subcommand {
+        name: "identity",
+        usage: "       ik identity <machine.ik.toml>",
+        run: run_identity,
+    },
+    Subcommand {
+        name: "laws",
+        usage: "       ik laws <machine.ik.toml>",
+        run: run_laws,
+    },
+    Subcommand {
+        name: "schema",
+        usage: "       ik schema <machine.ik.toml>",
+        run: run_schema,
+    },
+    Subcommand {
+        name: "corpus",
+        usage: "       ik corpus init <machine.ik.toml> --out <cases.json>",
+        run: run_corpus,
+    },
+    Subcommand {
+        name: "scenario",
+        usage: "       ik scenario run <machine.ik.toml> <scenario.json> --out <dir> | reproduce <bundle-dir> --out <dir>",
+        run: crate::scenario::run,
+    },
+    Subcommand {
+        name: "report",
+        usage: "       ik report <path>... [--json] [--html <file>]",
+        run: crate::report::run,
+    },
+    Subcommand {
+        name: "handoff",
+        usage: "       ik handoff <behavior.json> --evidence <path>... [--kind delivery|change|recovery] [--store <store.sqlite>] [--json]",
+        run: crate::handoff::run,
+    },
+    Subcommand {
+        name: "readout",
+        usage: "       ik readout <summary.md> --handoff <handoff.txt> [--stamp] [--json]",
+        run: crate::readout::run,
+    },
+    Subcommand {
+        name: "regression",
+        usage: "       ik regression promote <bundle-dir> --name <name> --reason <reason> [--into <dir>] | run <dir>",
+        run: crate::regression::run,
+    },
+    Subcommand {
+        name: "profile",
+        usage: "       ik profile diff <old.toml> <new.toml> [--json]",
+        run: run_profile,
+    },
+    Subcommand {
+        name: "evidence",
+        usage: "       ik evidence verify <evidence.json> --machine <m.ik.toml> [--profile <p.toml>] [--corpus <c.json>] [--runtime-binary <path>] [--json]",
+        run: run_evidence,
+    },
+    Subcommand {
+        name: "graph",
+        usage: "       ik graph export <machine.ik.toml> [--corpus cases.json] [--max-nodes N] [--max-depth D] --out graph.json",
+        run: crate::graph_export::run,
+    },
+    Subcommand {
+        name: "diagram",
+        usage: "       ik diagram <machine.ik.toml> [--prior <old.ik.toml>] [--evidence <path>]... [--kind delivery|change|recovery] [--format markdown|text|mermaid|table|json] [--focus <state>] [--level 0|1|2] [--ascii] [--operation <id>]",
+        run: crate::diagram::run,
+    },
+    Subcommand {
+        name: "analysis",
+        usage: "       ik analysis describe|run|validate-result|conformance ...",
+        run: crate::analysis::run_cli,
+    },
+    Subcommand {
+        name: "smt",
+        usage: "       ik smt --machine <def.toml> [--target <obligation_id>]",
+        run: crate::smt::run_smt_cli,
+    },
+    Subcommand {
+        name: "feasibility-backend",
+        usage: "       ik feasibility-backend --machine <def.toml> [--engine in-house|smt]",
+        run: crate::smt::run_feasibility_backend,
+    },
+];
+
+/// Names the dispatcher accepts, in the order `ik --help` lists them.
+pub fn dispatched_subcommand_names() -> impl Iterator<Item = &'static str> {
+    SUBCOMMANDS.iter().map(|command| command.name)
+}
+
+fn write_usage(mut emit: impl FnMut(&str)) {
+    emit("usage: ik --store <path> [--machine <def.toml>] [--session] create|command|record|show|replay|verify");
+    emit("       ik --help");
+    emit("       ik --version");
+    for command in SUBCOMMANDS {
+        emit(command.usage);
+    }
+}
+
+/// Dispatch the named subcommands; `None` means the legacy envelope mode.
+fn run_subcommand(args: &[String]) -> Option<i32> {
+    let rest = args.get(1..)?;
+    let name = args.first()?.as_str();
+    SUBCOMMANDS
+        .iter()
+        .find(|command| command.name == name)
+        .map(|command| (command.run)(rest))
+}
+
+/// Run one CLI invocation. Returns the process exit code.
+pub fn run(args: &[String]) -> i32 {
+    if let Some(code) = run_subcommand(args) {
+        return code;
+    }
+    let parsed = match parse_args(args) {
+        Ok(Some(flags)) => flags,
+        Ok(None) => return 0, // --version/--help handled
+        Err(msg) => return argument_error(&msg),
+    };
+    if parsed.session {
+        return run_session(&parsed);
+    }
+    let mut req = match read_request() {
+        Ok(req) => req,
+        Err(code) => return code,
+    };
+    if let Err(diagnostic) = validate_request(&mut req, &parsed) {
+        return emit_failure(&req.request_id, diagnostic);
+    }
+
+    let mut registry = MachineRegistry::new();
+    let registration = match register_reducer(&req, &parsed, &mut registry) {
+        Ok(registration) => registration,
+        Err(RegistrationFailure::Configuration(errors)) => {
+            for error in errors {
+                eprintln!("ik: machine definition error: {error}");
+            }
+            return 2;
+        }
+        Err(RegistrationFailure::Registration(diagnostic)) => {
+            eprintln!("ik: machine registration failed: {diagnostic}");
+            return 2;
+        }
+        Err(RegistrationFailure::Envelope(diagnostic)) => {
+            return emit_failure(&req.request_id, diagnostic);
+        }
+    };
+    if let Some(positional) = &parsed.op {
+        if let Err(diagnostic) = validate_positional_op(positional, &req.op) {
+            return emit_failure(&req.request_id, diagnostic);
+        }
+    }
+
+    let mut stores = StoreSlot::new(parsed.store.clone());
+    let response = dispatch(&req, &mut stores, &registry, registration.as_ref());
+    println!("{}", canonical_json(&response));
+    if response.ok {
+        0
+    } else {
+        1
+    }
+}
+
+fn argument_error(message: &str) -> i32 {
+    eprintln!("ik: {message}");
+    write_usage(|line| eprintln!("{line}"));
+    2
+}
+
+fn request_id_of(value: &Value) -> String {
+    value
+        .get("request_id")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string()
+}
+
+fn protocol_failure(request_id: &str, message: String) -> EnvelopeResponse {
+    EnvelopeResponse::failure(
+        request_id,
+        Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            crate::diagnostic::NO_RULE,
+            message,
+        ),
+    )
+}
+
+/// Decode one envelope. A typed failure (partial effect, unknown field) still
+/// echoes `request_id` from the JSON object so clients can classify the
+/// diagnostic instead of treating an empty id as a transport mismatch.
+fn decode_envelope(input: &str) -> Result<EnvelopeRequest, EnvelopeResponse> {
+    let value: Value = match serde_json::from_str(input) {
+        Ok(value) => value,
+        Err(error) => {
+            return Err(protocol_failure("", format!("malformed request: {error}")));
+        }
+    };
+    let request_id = request_id_of(&value);
+    match serde_json::from_value(value) {
+        Ok(req) => Ok(req),
+        Err(error) => Err(protocol_failure(
+            &request_id,
+            format!("malformed request: {error}"),
+        )),
+    }
+}
+
+fn read_request() -> Result<EnvelopeRequest, i32> {
+    let mut input = String::new();
+    if std::io::stdin().read_to_string(&mut input).is_err() {
+        eprintln!("ik: failed to read request from stdin");
+        return Err(2);
+    }
+    match decode_envelope(&input) {
+        Ok(req) => Ok(req),
+        Err(response) => {
+            println!("{}", canonical_json(&response));
+            Err(1)
+        }
+    }
+}
+
+fn emit_failure(request_id: &str, diagnostic: Diagnostic) -> i32 {
+    let response = EnvelopeResponse::failure(request_id, diagnostic);
+    println!("{}", canonical_json(&response));
+    1
+}
+
+/// Upper bound on steps in one `transaction`; keeps a single store transaction short.
+const MAX_TRANSACTION_STEPS: usize = 64;
+
+fn validate_request(req: &mut EnvelopeRequest, parsed: &Flags) -> Result<(), Diagnostic> {
+    if [
+        req.reducer_worker.as_mut(),
+        req.command.as_mut(),
+        req.observation.as_mut(),
+    ]
+    .into_iter()
+    .flatten()
+    .any(|value| !normalize_shared_numbers(value))
+        || req.commands.iter_mut().flatten().any(|step| {
+            !normalize_shared_numbers(&mut step.command)
+                || step
+                    .observation
+                    .as_mut()
+                    .is_some_and(|o| !normalize_shared_numbers(o))
+        })
+    {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            Some("request.number"),
+            "JSON integer is outside the shared range [-2^63, 2^64-1]",
+        ));
+    }
+    match (&req.op, &req.commands) {
+        (Op::Transaction, Some(steps))
+            if !steps.is_empty()
+                && steps.len() <= MAX_TRANSACTION_STEPS
+                && req.command.is_none()
+                && req.observation.is_none() => {}
+        (Op::Transaction, _) => {
+            return Err(Diagnostic::new(
+                DiagnosticCode::IkProtocolInvalid,
+                Some("request.commands"),
+                format!(
+                    "`transaction` requires 1..={MAX_TRANSACTION_STEPS} `commands` and no top-level `command`/`observation`"
+                ),
+            ));
+        }
+        (Op::LookupOperation, _) => {}
+        (_, Some(_)) => {
+            return Err(Diagnostic::new(
+                DiagnosticCode::IkProtocolInvalid,
+                Some("request.commands"),
+                "`commands` is only valid on op `transaction`",
+            ));
+        }
+        _ => {}
+    }
+    if req.protocol.major != crate::protocol::PROTOCOL_MAJOR {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProtocolVersionUnknown,
+            Some("protocol.major"),
+            format!(
+                "unknown protocol major {} (supported {})",
+                req.protocol.major,
+                crate::protocol::PROTOCOL_MAJOR
+            ),
+        ));
+    }
+    if req.runtime_version != RUNTIME_VERSION {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProtocolVersionUnknown,
+            Some("runtime.version"),
+            format!(
+                "unknown runtime version `{}` (supported `{RUNTIME_VERSION}`)",
+                req.runtime_version
+            ),
+        ));
+    }
+    if parsed.machine.is_some() && req.reducer_worker.is_some() {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            Some("reducer.source"),
+            "`--machine` and request `reducer_worker` are mutually exclusive",
+        ));
+    }
+    if matches!(req.op, Op::Record | Op::Show | Op::LookupOperation) && req.reducer_worker.is_some()
+    {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            Some("request.reducer_worker"),
+            format!(
+                "operation `{}` must not carry `reducer_worker`",
+                req.op.as_str()
+            ),
+        ));
+    }
+    if req.operation_id.is_some()
+        && !matches!(
+            req.op,
+            Op::Command
+                | Op::Transaction
+                | Op::Record
+                | Op::LookupOperation
+                | Op::CreateWithCommand
+        )
+    {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            Some("request.operation_id"),
+            "`operation_id` is only valid on `command`, `transaction`, `record`, `lookup_operation`, and `create_with_command`",
+        ));
+    }
+    Ok(())
+}
+
+enum RegistrationFailure {
+    Configuration(Vec<String>),
+    Registration(Diagnostic),
+    Envelope(Diagnostic),
+}
+
+fn register_reducer(
+    req: &EnvelopeRequest,
+    parsed: &Flags,
+    registry: &mut MachineRegistry,
+) -> Result<Option<RegisteredMachine>, RegistrationFailure> {
+    if matches!(req.op, Op::Record | Op::Show | Op::LookupOperation) {
+        return Ok(None);
+    }
+    match (&parsed.machine, &req.reducer_worker) {
+        (None, None) => Ok(None),
+        (Some(path), None) => {
+            let machine = load_def(path).map_err(RegistrationFailure::Configuration)?;
+            registry
+                .register(Box::new(machine))
+                .map(Some)
+                .map_err(RegistrationFailure::Registration)
+        }
+        (None, Some(spec)) => {
+            let machine = ExternalMachine::from_json(&canonical_json(spec))
+                .map_err(RegistrationFailure::Envelope)?;
+            registry
+                .register(Box::new(machine))
+                .map(Some)
+                .map_err(RegistrationFailure::Envelope)
+        }
+        (Some(_), Some(_)) => Err(RegistrationFailure::Envelope(Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            Some("reducer.source"),
+            "`--machine` and request `reducer_worker` are mutually exclusive",
+        ))),
+    }
+}
+
+fn validate_positional_op(positional: &str, op: &Op) -> Result<(), Diagnostic> {
+    if positional == op.as_str() {
+        return Ok(());
+    }
+    Err(Diagnostic::new(
+        DiagnosticCode::IkProtocolInvalid,
+        Some("request.op"),
+        format!(
+            "positional operation `{positional}` disagrees with envelope op `{}`",
+            op.as_str()
+        ),
+    ))
+}
+
+struct Flags {
+    store: PathBuf,
+    machine: Option<PathBuf>,
+    op: Option<String>,
+    session: bool,
+}
+
+fn parse_args(args: &[String]) -> Result<Option<Flags>, String> {
+    let mut store: Option<PathBuf> = None;
+    let mut machine: Option<PathBuf> = None;
+    let mut op: Option<String> = None;
+    let mut session = false;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--store" => {
+                i += 1;
+                store = Some(PathBuf::from(
+                    args.get(i)
+                        .ok_or_else(|| "--store requires a path".to_string())?,
+                ));
+            }
+            "--machine" => {
+                i += 1;
+                machine = Some(PathBuf::from(
+                    args.get(i)
+                        .ok_or_else(|| "--machine requires a path".to_string())?,
+                ));
+            }
+            "--session" => session = true,
+            "--version" => {
+                println!(
+                    "invariant-kernel {} protocol {}.{}",
+                    RUNTIME_VERSION,
+                    crate::protocol::PROTOCOL_MAJOR,
+                    crate::protocol::PROTOCOL_MINOR
+                );
+                return Ok(None);
+            }
+            "-h" | "--help" => {
+                write_usage(|line| println!("{line}"));
+                return Ok(None);
+            }
+            flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
+            name if op.is_none() => op = Some(name.to_string()),
+            _ => return Err(format!("unexpected argument `{}`", args[i])),
+        }
+        i += 1;
+    }
+    let store = store.ok_or_else(|| "--store <path> is required".to_string())?;
+    Ok(Some(Flags {
+        store,
+        machine,
+        op,
+        session,
+    }))
+}
+
+/// One lazily opened store per process or session. One-shot and session mode share this single
+/// dispatch path; the only difference is how long the store (and reducer worker) stay open.
+struct StoreSlot {
+    path: PathBuf,
+    store: Option<Store>,
+}
+
+impl StoreSlot {
+    fn new(path: PathBuf) -> Self {
+        Self { path, store: None }
+    }
+
+    fn open(&mut self, create: bool) -> Result<&mut Store, Diagnostic> {
+        if self.store.is_none() {
+            self.store = Some(if create {
+                Store::open_or_create(&self.path)?
+            } else {
+                Store::open(&self.path)?
+            });
+        }
+        self.store
+            .as_mut()
+            .ok_or_else(|| Diagnostic::internal("store slot empty after open"))
+    }
+}
+
+/// `ik --session`: newline-delimited canonical JSON requests on stdin, one response line each.
+/// The reducer is registered once and bound for the session; each request is still validated and
+/// dispatched independently, so a failed request never corrupts the session.
+fn run_session(parsed: &Flags) -> i32 {
+    use std::io::BufRead;
+    let mut registry = MachineRegistry::new();
+    let mut cli_machine: Option<RegisteredMachine> = None;
+    if let Some(path) = &parsed.machine {
+        match load_def(path) {
+            Ok(machine) => match registry.register(Box::new(machine)) {
+                Ok(registration) => cli_machine = Some(registration),
+                Err(diagnostic) => {
+                    eprintln!("ik: machine registration failed: {diagnostic}");
+                    return 2;
+                }
+            },
+            Err(errors) => {
+                for error in errors {
+                    eprintln!("ik: machine definition error: {error}");
+                }
+                return 2;
+            }
+        }
+    }
+    let mut bound: Option<(String, RegisteredMachine)> = None;
+    let mut stores = StoreSlot::new(parsed.store.clone());
+    for line in std::io::stdin().lock().lines() {
+        let Ok(line) = line else {
+            eprintln!("ik: failed to read session request");
+            return 2;
+        };
+        if line.trim().is_empty() {
+            continue;
+        }
+        let response = session_request(
+            &line,
+            parsed,
+            &mut registry,
+            &mut bound,
+            cli_machine.as_ref(),
+            &mut stores,
+        );
+        println!("{}", canonical_json(&response));
+    }
+    0
+}
+
+fn session_request(
+    line: &str,
+    parsed: &Flags,
+    registry: &mut MachineRegistry,
+    bound: &mut Option<(String, RegisteredMachine)>,
+    cli_machine: Option<&RegisteredMachine>,
+    stores: &mut StoreSlot,
+) -> EnvelopeResponse {
+    let mut req = match decode_envelope(line) {
+        Ok(req) => req,
+        Err(response) => return response,
+    };
+    if let Err(diagnostic) = validate_request(&mut req, parsed) {
+        return EnvelopeResponse::failure(&req.request_id, diagnostic);
+    }
+    if !matches!(req.op, Op::Record | Op::Show | Op::LookupOperation) {
+        if let Some(spec) = &req.reducer_worker {
+            let key = canonical_json(spec);
+            match bound {
+                Some((bound_key, _)) if *bound_key != key => {
+                    return EnvelopeResponse::failure(
+                        &req.request_id,
+                        Diagnostic::new(
+                            DiagnosticCode::IkMachineMismatch,
+                            Some("session.reducer"),
+                            "session is already bound to a different reducer",
+                        ),
+                    );
+                }
+                Some(_) => {}
+                None => {
+                    let registration = ExternalMachine::from_json(&key)
+                        .and_then(|machine| registry.register(Box::new(machine)));
+                    match registration {
+                        Ok(registration) => *bound = Some((key, registration)),
+                        Err(diagnostic) => {
+                            return EnvelopeResponse::failure(&req.request_id, diagnostic);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let registration = if matches!(req.op, Op::Record | Op::Show | Op::LookupOperation) {
+        None
+    } else {
+        bound
+            .as_ref()
+            .map(|(_, registration)| registration)
+            .or(cli_machine)
+    };
+    dispatch(&req, stores, registry, registration)
+}
+
+fn dispatch(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> EnvelopeResponse {
+    match dispatch_inner(req, stores, registry, registration) {
+        Ok(result) => EnvelopeResponse::success(&req.request_id, result),
+        Err(diagnostic) => EnvelopeResponse::failure(&req.request_id, diagnostic),
+    }
+}
+
+fn required<T>(req: &EnvelopeRequest, field: &str, value: Option<T>) -> Result<T, Diagnostic> {
+    value.ok_or_else(|| {
+        Diagnostic::new(
+            DiagnosticCode::IkProtocolInvalid,
+            Some(format!("request.{:?}.{}", req.op, field)),
+            format!("request for op `{:?}` requires `{field}`", req.op),
+        )
+    })
+}
+
+fn dispatch_inner(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    match req.op {
+        Op::Create => op_create(req, stores, registry, registration),
+        Op::Command => op_command(req, stores, registry, registration),
+        Op::Record => op_record(req, stores),
+        Op::Show => op_show(req, stores),
+        Op::Replay => op_replay(req, stores, registry, registration),
+        Op::Verify => op_verify(req, stores, registry, registration),
+        Op::Transaction => op_transaction(req, stores, registry, registration),
+        Op::LookupOperation => op_lookup_operation(req, stores),
+        Op::CreateWithCommand => op_create_with_command(req, stores, registry, registration),
+    }
+}
+
+/// Resolve the machine only after a successful registration has produced its
+/// unforgeable token. Every Store operation receives a machine from here.
+fn registered_machine<'a>(
+    req: &EnvelopeRequest,
+    registry: &'a MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<&'a dyn Machine, Diagnostic> {
+    let registration = required(req, "machine", registration)?;
+    registry.resolve(registration, registration.identity())
+}
+
+fn op_create(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    let machine = registered_machine(req, registry, registration)?;
+    let aggregate_id = required(req, "aggregate_id", req.aggregate_id.clone())?;
+    let presented = required(req, "machine", req.machine.clone())?;
+    let store = stores.open(true)?;
+    let result = store.create_aggregate(machine, &AggregateId(aggregate_id.clone()), &presented)?;
+    Ok(command_result_view(&result, &aggregate_id))
+}
+
+fn op_create_with_command(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    reject_create_with_extras(req)?;
+    let machine = registered_machine(req, registry, registration)?;
+    let aggregate_id = AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?);
+    let presented = required(req, "machine", req.machine.clone())?;
+    let command = required(req, "command", req.command.clone())?;
+    let operation_id = operation_id_of(req)?;
+    let store = stores.open(true)?;
+    admit_with_command(
+        store,
+        machine,
+        &aggregate_id,
+        &presented,
+        &command,
+        req,
+        operation_id,
+    )
+}
+
+fn reject_create_with_extras(req: &EnvelopeRequest) -> Result<(), Diagnostic> {
+    if req.capability.is_none() && req.commands.is_none() && req.effect.is_none() {
+        return Ok(());
+    }
+    Err(Diagnostic::new(
+        DiagnosticCode::IkProtocolInvalid,
+        Some("request.create_with_command"),
+        "`create_with_command` requires `aggregate_id` and `command` and must not carry `capability`, `commands`, or `effect`",
+    ))
+}
+
+fn admit_with_command(
+    store: &mut Store,
+    machine: &dyn crate::machine::Machine,
+    aggregate_id: &AggregateId,
+    presented: &crate::identity::MachineIdentity,
+    command: &Value,
+    req: &EnvelopeRequest,
+    operation_id: Option<OperationId>,
+) -> Result<Value, Diagnostic> {
+    let observation = req.observation.as_ref();
+    let Some(operation_id) = operation_id else {
+        let outcome = store.create_aggregate_with_command(
+            machine,
+            aggregate_id,
+            presented,
+            command,
+            observation,
+        )?;
+        return Ok(admission_view(aggregate_id, outcome));
+    };
+    match store.create_aggregate_with_command_op(
+        machine,
+        aggregate_id,
+        presented,
+        command,
+        observation,
+        &operation_id,
+    )? {
+        OperationOutcome::Committed(outcome) => Ok(admission_view(aggregate_id, outcome)),
+        OperationOutcome::Historical(history) => Ok(history_view(&aggregate_id.0, &history)),
+    }
+}
+
+fn admission_view(
+    aggregate_id: &AggregateId,
+    outcome: crate::store::CreateWithCommandOutcome,
+) -> Value {
+    use crate::store::CreateWithCommandOutcome;
+    match outcome {
+        CreateWithCommandOutcome::Committed(result)
+        | CreateWithCommandOutcome::ExactDuplicate(result) => {
+            command_result_view(&result, &aggregate_id.0)
+        }
+    }
+}
+
+fn operation_id_of(req: &EnvelopeRequest) -> Result<Option<OperationId>, Diagnostic> {
+    req.operation_id
+        .as_deref()
+        .map(OperationId::parse)
+        .transpose()
+}
+
+fn op_command(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    let machine = registered_machine(req, registry, registration)?;
+    let aggregate_id = AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?);
+    let presented = required(req, "machine", req.machine.clone())?;
+    let capability = required(req, "capability", req.capability.clone())?;
+    let command = required(req, "command", req.command.clone())?;
+    let operation_id = operation_id_of(req)?;
+    let store = stores.open(false)?;
+    let request = CommandRequest {
+        aggregate_id: aggregate_id.clone(),
+        machine: presented,
+        capability,
+        command,
+        observation: req.observation.clone(),
+    };
+    let Some(operation_id) = operation_id else {
+        let result = store.command(machine, &request)?;
+        return Ok(command_result_view(&result, &aggregate_id.0));
+    };
+    match store.command_op(machine, &request, &operation_id)? {
+        OperationOutcome::Committed(result) => Ok(command_result_view(&result, &aggregate_id.0)),
+        OperationOutcome::Historical(history) => Ok(history_view(&aggregate_id.0, &history)),
+    }
+}
+
+fn op_transaction(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    let machine = registered_machine(req, registry, registration)?;
+    let aggregate_id = AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?);
+    let presented = required(req, "machine", req.machine.clone())?;
+    let capability = required(req, "capability", req.capability.clone())?;
+    let steps = required(req, "commands", req.commands.clone())?;
+    let operation_id = operation_id_of(req)?;
+    let store = stores.open(false)?;
+    let request = TransactionRequest {
+        aggregate_id: aggregate_id.clone(),
+        machine: presented,
+        capability,
+        steps,
+    };
+    let results = match operation_id {
+        None => store.transaction(machine, &request)?,
+        Some(operation_id) => match store.transaction_op(machine, &request, &operation_id)? {
+            OperationOutcome::Committed(results) => results,
+            OperationOutcome::Historical(history) => {
+                return Ok(history_view(&aggregate_id.0, &history));
+            }
+        },
+    };
+    let views: Vec<Value> = results
+        .iter()
+        .map(|result| command_result_view(result, &aggregate_id.0))
+        .collect();
+    let mut view = views.last().cloned().unwrap_or(Value::Null);
+    if let Some(map) = view.as_object_mut() {
+        map.insert("steps".to_string(), Value::Array(views));
+    }
+    Ok(view)
+}
+
+fn op_record(req: &EnvelopeRequest, stores: &mut StoreSlot) -> Result<Value, Diagnostic> {
+    let aggregate_id = AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?);
+    let presented = required(req, "machine", req.machine.clone())?;
+    let capability = required(req, "capability", req.capability.clone())?;
+    let effect = required(req, "effect", req.effect.clone())?;
+    let operation_id = operation_id_of(req)?;
+    let store = stores.open(false)?;
+    let request = EffectOutcomeRequest {
+        aggregate_id: aggregate_id.clone(),
+        machine: presented,
+        capability,
+        effect,
+    };
+    let Some(operation_id) = operation_id else {
+        let result = store.record_effect(&request)?;
+        return Ok(command_result_view(&result, &aggregate_id.0));
+    };
+    match store.record_effect_op(&request, &operation_id)? {
+        OperationOutcome::Committed(result) => Ok(command_result_view(&result, &aggregate_id.0)),
+        OperationOutcome::Historical(history) => Ok(history_view(&aggregate_id.0, &history)),
+    }
+}
+
+/// Read-only `lookup_operation`: the same body as the mutation it names, executed
+/// by nothing. The request kind is inferred from which body fields are present.
+fn op_lookup_operation(req: &EnvelopeRequest, stores: &mut StoreSlot) -> Result<Value, Diagnostic> {
+    let operation_id = required(req, "operation_id", operation_id_of(req)?)?;
+    let store = stores.open(false)?;
+    let lookup = if req.commands.is_some() {
+        lookup_transaction(req, store, &operation_id)?
+    } else if req.effect.is_some() {
+        lookup_record(req, store, &operation_id)?
+    } else if req.command.is_some() && req.capability.is_none() {
+        lookup_create_with(req, store, &operation_id)?
+    } else {
+        lookup_command(req, store, &operation_id)?
+    };
+    serde_json::to_value(lookup)
+        .map_err(|e| Diagnostic::internal(format!("lookup encode failed: {e}")))
+}
+
+fn lookup_transaction(
+    req: &EnvelopeRequest,
+    store: &mut Store,
+    operation_id: &OperationId,
+) -> Result<Lookup, Diagnostic> {
+    let request = TransactionRequest {
+        aggregate_id: AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?),
+        machine: required(req, "machine", req.machine.clone())?,
+        capability: required(req, "capability", req.capability.clone())?,
+        steps: required(req, "commands", req.commands.clone())?,
+    };
+    store.lookup_operation(operation_id, &OperationRequest::Transaction(&request))
+}
+
+fn lookup_record(
+    req: &EnvelopeRequest,
+    store: &mut Store,
+    operation_id: &OperationId,
+) -> Result<Lookup, Diagnostic> {
+    let request = EffectOutcomeRequest {
+        aggregate_id: AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?),
+        machine: required(req, "machine", req.machine.clone())?,
+        capability: required(req, "capability", req.capability.clone())?,
+        effect: required(req, "effect", req.effect.clone())?,
+    };
+    store.lookup_operation(operation_id, &OperationRequest::Record(&request))
+}
+
+fn lookup_create_with(
+    req: &EnvelopeRequest,
+    store: &mut Store,
+    operation_id: &OperationId,
+) -> Result<Lookup, Diagnostic> {
+    let aggregate_id = AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?);
+    let machine = required(req, "machine", req.machine.clone())?;
+    let command = required(req, "command", req.command.clone())?;
+    store.lookup_operation(
+        operation_id,
+        &OperationRequest::CreateWithCommand {
+            machine: &machine,
+            aggregate_id: &aggregate_id,
+            command: &command,
+            observation: req.observation.as_ref(),
+        },
+    )
+}
+
+fn lookup_command(
+    req: &EnvelopeRequest,
+    store: &mut Store,
+    operation_id: &OperationId,
+) -> Result<Lookup, Diagnostic> {
+    let request = CommandRequest {
+        aggregate_id: AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?),
+        machine: required(req, "machine", req.machine.clone())?,
+        capability: required(req, "capability", req.capability.clone())?,
+        command: required(req, "command", req.command.clone())?,
+        observation: req.observation.clone(),
+    };
+    store.lookup_operation(operation_id, &OperationRequest::Command(&request))
+}
+
+fn op_show(req: &EnvelopeRequest, stores: &mut StoreSlot) -> Result<Value, Diagnostic> {
+    let aggregate_id = AggregateId(required(req, "aggregate_id", req.aggregate_id.clone())?);
+    let store = stores.open(false)?;
+    let projection = store.show(&aggregate_id)?;
+    serde_json::to_value(projection)
+        .map_err(|e| Diagnostic::internal(format!("projection encode failed: {e}")))
+}
+
+fn op_replay(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    let machine = registered_machine(req, registry, registration)?;
+    let store = stores.open(false)?;
+    let id = req.aggregate_id.clone().map(AggregateId);
+    let summary = store.replay(machine, id.as_ref())?;
+    serde_json::to_value(summary)
+        .map_err(|e| Diagnostic::internal(format!("replay summary encode failed: {e}")))
+}
+
+fn op_verify(
+    req: &EnvelopeRequest,
+    stores: &mut StoreSlot,
+    registry: &MachineRegistry,
+    registration: Option<&RegisteredMachine>,
+) -> Result<Value, Diagnostic> {
+    let machine = registered_machine(req, registry, registration)?;
+    let store = stores.open(false)?;
+    let id = req.aggregate_id.clone().map(AggregateId);
+    let summary = store.verify(machine, id.as_ref())?;
+    serde_json::to_value(summary)
+        .map_err(|e| Diagnostic::internal(format!("verify summary encode failed: {e}")))
+}
+
+fn command_result_view(result: &CommandResult, aggregate_id: &str) -> Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "aggregate_id".to_string(),
+        Value::String(aggregate_id.to_string()),
+    );
+    map.insert("generation".to_string(), json!(result.generation));
+    map.insert("state".to_string(), result.state.clone());
+    map.insert("terminal".to_string(), json!(result.terminal));
+    map.insert(
+        "capability".to_string(),
+        serde_json::to_value(&result.capability).unwrap_or(Value::Null),
+    );
+    map.insert(
+        "effect".to_string(),
+        serde_json::to_value(&result.effect).unwrap_or(Value::Null),
+    );
+    map.insert("mutation".to_string(), json!(result.mutation));
+    if let Some(receipt) = &result.receipt {
+        map.insert(
+            "receipt".to_string(),
+            serde_json::to_value(receipt).unwrap_or(Value::Null),
+        );
+    }
+    if let Some(note) = &result.note {
+        map.insert("note".to_string(), note.clone());
+    }
+    Value::Object(map)
+}
+
+/// An exact repeat of a committed operation. It reports what was recorded and
+/// the aggregate's current coordinates; it carries no state and no capability,
+/// so it cannot be mistaken for a current handle.
+fn history_view(aggregate_id: &str, history: &OperationHistory) -> Value {
+    json!({
+        "aggregate_id": aggregate_id,
+        "historical": true,
+        "mutation": false,
+        "operation": history.record,
+        "current": {
+            "generation": history.current_generation,
+            "sequence": history.current_sequence,
+        },
+    })
+}
+
+fn run_identity(args: &[String]) -> i32 {
+    match run_identity_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik identity: {msg}");
+            eprintln!("usage: ik identity <machine.ik.toml>");
+            2
+        }
+    }
+}
+
+fn run_identity_inner(args: &[String]) -> Result<i32, String> {
+    match args.first().map(String::as_str) {
+        Some("-h") | Some("--help") => {
+            println!("usage: ik identity <machine.ik.toml>");
+            Ok(0)
+        }
+        None => Err("machine definition path is required".into()),
+        Some(flag) if flag.starts_with('-') => Err(format!("unknown flag `{flag}`")),
+        Some(_) if args.len() > 1 => Err(format!("unexpected argument `{}`", args[1])),
+        Some(path) => {
+            let machine = load_def(Path::new(path)).map_err(|errors| errors.join("; "))?;
+            println!("{}", canonical_json(machine.identity()));
+            Ok(0)
+        }
+    }
+}
+
+fn run_schema(args: &[String]) -> i32 {
+    match run_schema_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik schema: {msg}");
+            eprintln!("usage: ik schema <machine.ik.toml>");
+            2
+        }
+    }
+}
+
+/// Machine-derived schema metadata for clients and code generators (`ikaros.machine-schema.v1`).
+fn run_schema_inner(args: &[String]) -> Result<i32, String> {
+    match args.first().map(String::as_str) {
+        Some("-h") | Some("--help") => {
+            println!("usage: ik schema <machine.ik.toml>");
+            Ok(0)
+        }
+        None => Err("machine definition path is required".into()),
+        Some(flag) if flag.starts_with('-') => Err(format!("unknown flag `{flag}`")),
+        Some(_) if args.len() > 1 => Err(format!("unexpected argument `{}`", args[1])),
+        Some(path) => {
+            let compiled = load_def(Path::new(path)).map_err(|errors| errors.join("; "))?;
+            let def = load_definition(Path::new(path)).map_err(|errors| errors.join("; "))?;
+            let schema = crate::declarative::schema::machine_schema(&def, compiled.identity());
+            println!("{}", canonical_json(&schema));
+            Ok(0)
+        }
+    }
+}
+
+fn run_laws(args: &[String]) -> i32 {
+    match run_laws_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik laws: {msg}");
+            eprintln!("usage: ik laws <machine.ik.toml>");
+            2
+        }
+    }
+}
+
+fn run_laws_inner(args: &[String]) -> Result<i32, String> {
+    match args.first().map(String::as_str) {
+        Some("-h") | Some("--help") => {
+            println!("usage: ik laws <machine.ik.toml>");
+            Ok(0)
+        }
+        None => Err("machine definition path is required".into()),
+        Some(flag) if flag.starts_with('-') => Err(format!("unknown flag `{flag}`")),
+        Some(_) if args.len() > 1 => Err(format!("unexpected argument `{}`", args[1])),
+        Some(path) => {
+            let compiled = load_def(Path::new(path)).map_err(|errors| errors.join("; "))?;
+            let def = load_definition(Path::new(path)).map_err(|errors| errors.join("; "))?;
+            let identity = compiled.identity();
+            let plan = crate::declarative::verification_plan(&def);
+            let laws: Vec<Value> = def
+                .invariants
+                .iter()
+                .map(|(name, inv)| {
+                    json!({
+                        "id": name,
+                        "when": inv.when,
+                        "assert": inv.assert,
+                        "enforcement": "runtime",
+                        "evidence": plan
+                            .obligations
+                            .iter()
+                            .find(|o| {
+                                o.kind == "OBL-INV-001"
+                                    && o.coordinate.invariant.as_deref() == Some(name.as_str())
+                            })
+                            .map(|o| json!({
+                                "obligation_id": o.obligation_id,
+                                "kind": o.kind,
+                                "status": "not_examined",
+                                "reason": "`ik check` has no verifier for this obligation kind; runtime enforcement is the only evidence",
+                            })),
+                        "identity": "bound to this machine version",
+                    })
+                })
+                .collect();
+            let commands: Vec<Value> = def
+                .commands
+                .keys()
+                .map(|name| json!({ "name": name, "enforcement": "runtime" }))
+                .collect();
+            println!(
+                "{}",
+                canonical_json(&json!({
+                    "advisory": true,
+                    "machine_id": identity.machine_id,
+                    "version": identity.version,
+                    "spec_hash": identity.spec_hash,
+                    "laws": laws,
+                    "commands": commands,
+                    "unguarded_arguments": crate::declarative::gaps::unguarded_arguments(&def),
+                }))
+            );
+            Ok(0)
+        }
+    }
+}
+
+fn run_check(args: &[String]) -> i32 {
+    match run_check_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik check: {msg}");
+            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]");
+            2
+        }
+    }
+}
+
+struct CheckFlags {
+    path: PathBuf,
+    prior: Option<PathBuf>,
+    corpus: Option<PathBuf>,
+    baseline: Option<PathBuf>,
+    profile: Option<PathBuf>,
+    release: bool,
+    json: bool,
+    plan: bool,
+    template_only: bool,
+}
+
+fn path_value(args: &[String], i: usize, flag: &str) -> Result<PathBuf, String> {
+    args.get(i)
+        .map(PathBuf::from)
+        .ok_or_else(|| format!("{flag} requires a path"))
+}
+
+fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
+    let mut path: Option<PathBuf> = None;
+    let mut values: BTreeMap<&str, PathBuf> = BTreeMap::new();
+    let (mut release, mut json, mut plan) = (false, false, false);
+    let mut template: Option<PathBuf> = None;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "-h" | "--help" => {
+                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]");
+                return Ok(None);
+            }
+            flag @ ("--prior" | "--corpus" | "--baseline" | "--profile") => {
+                i += 1;
+                values.insert(flag, path_value(args, i, flag)?);
+            }
+            "--corpus-template" => {
+                i += 1;
+                template = Some(path_value(args, i, "--corpus-template")?);
+            }
+            "--release" => release = true,
+            "--json" => json = true,
+            "--plan" => plan = true,
+            flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
+            name if path.is_none() => path = Some(PathBuf::from(name)),
+            other => return Err(format!("unexpected argument `{other}`")),
+        }
+        i += 1;
+    }
+    let template_only = template.is_some();
+    let path = match (template, path) {
+        (Some(_), Some(_)) => {
+            return Err(
+                "--corpus-template takes the machine path; do not also pass a positional".into(),
+            );
+        }
+        (Some(template), None) => template,
+        (None, Some(path)) => path,
+        (None, None) => return Err("machine definition path is required".into()),
+    };
+    Ok(Some(CheckFlags {
+        path,
+        prior: values.remove("--prior"),
+        corpus: values.remove("--corpus"),
+        baseline: values.remove("--baseline"),
+        profile: values.remove("--profile"),
+        release,
+        json,
+        plan,
+        template_only,
+    }))
+}
+
+fn load_definition_file(path: &Path) -> Result<crate::declarative::Definition, String> {
+    load_source_file(path).map(|source| source.definition)
+}
+
+fn load_source_file(path: &Path) -> Result<crate::declarative::region::SourceDefinition, String> {
+    let src = std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    crate::declarative::region::parse_source(&src)
+        .map_err(|e| format!("parse {}: {}", path.display(), e.join("; ")))
+}
+
+fn run_check_inner(args: &[String]) -> Result<i32, String> {
+    let Some(flags) = parse_check_args(args)? else {
+        return Ok(0);
+    };
+    if flags.template_only {
+        return emit_corpus_template(&flags.path);
+    }
+    if flags.plan && flags.profile.is_none() {
+        return Err("--plan requires --profile".into());
+    }
+    let source = load_source_file(&flags.path)?;
+    let new = &source.definition;
+    let corpus = load_corpus(&flags.path, flags.corpus.as_deref(), new)?;
+    let profile = load_check_profile(flags.profile.as_deref(), new)?;
+    if flags.plan {
+        return emit_check_plan(profile.as_ref(), new, &corpus, flags.json);
+    }
+    let old = flags
+        .prior
+        .as_deref()
+        .map(load_definition_file)
+        .transpose()?;
+    let baseline = load_baseline(flags.baseline.as_deref(), &new.machine_id)?;
+    let bounds = profile
+        .as_ref()
+        .map(|item| item.limits)
+        .unwrap_or(crate::declarative::Bounds {
+            max_nodes: crate::declarative::profile::DEFAULT_MAX_NODES,
+            max_depth: crate::declarative::profile::DEFAULT_MAX_DEPTH,
+        });
+    let result = crate::declarative::region::check_source(
+        &source,
+        old.as_ref(),
+        &corpus,
+        &baseline,
+        bounds,
+    )?;
+    let mut envelope = profile
+        .as_ref()
+        .map(|item| crate::declarative::profile::evaluate(item, new, &corpus, &result.exploration));
+    attach_profile_baseline(
+        envelope.as_mut(),
+        profile.as_ref(),
+        old.as_ref(),
+        &result,
+        &corpus,
+    )?;
+    let hint = corpus_hint(
+        &flags.path,
+        flags.corpus.as_deref(),
+        result.verdict == "REFUSED",
+    );
+    emit_check(&flags, &result, envelope.as_ref(), hint.as_deref())?;
+    let release_pass = result.flat.release.release.verdict == "release_pass";
+    let accepted = result.verdict == "ACCEPT" && (!flags.release || release_pass);
+    let goals_ok = envelope
+        .as_ref()
+        .map(crate::declarative::profile::required_goals_satisfied)
+        .unwrap_or(true);
+    Ok(if accepted && goals_ok { 0 } else { 1 })
+}
+
+fn load_check_profile(
+    path: Option<&Path>,
+    definition: &crate::declarative::Definition,
+) -> Result<Option<crate::declarative::profile::Profile>, String> {
+    let Some(path) = path else {
+        return Ok(None);
+    };
+    let profile = crate::declarative::profile::load_profile(path)?;
+    crate::declarative::profile::bind_profile(&profile, definition)?;
+    Ok(Some(profile))
+}
+
+fn emit_check_plan(
+    profile: Option<&crate::declarative::profile::Profile>,
+    definition: &crate::declarative::Definition,
+    corpus: &crate::declarative::CaseCorpus,
+    json_output: bool,
+) -> Result<i32, String> {
+    let profile = profile.ok_or("--plan requires --profile")?;
+    let plan = crate::declarative::profile::plan(profile, definition, corpus);
+    if json_output {
+        println!("{}", canonical_json(&plan));
+    } else {
+        print!("{}", crate::declarative::profile::render_plan(&plan));
+    }
+    Ok(0)
+}
+
+fn emit_corpus_template(machine: &Path) -> Result<i32, String> {
+    let source = load_source_file(machine)?;
+    let body = crate::declarative::starter_corpus(&source.definition);
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&body).map_err(|err| err.to_string())?
+    );
+    Ok(0)
+}
+
+fn corpus_hint(machine: &Path, explicit: Option<&Path>, refused: bool) -> Option<String> {
+    if !refused || corpus_file_present(machine, explicit) {
+        return None;
+    }
+    Some(format!(
+        "ik corpus init {} --out {}",
+        machine.display(),
+        machine.with_extension("cases.json").display()
+    ))
+}
+
+fn corpus_file_present(machine: &Path, explicit: Option<&Path>) -> bool {
+    explicit.is_some() || machine.with_extension("cases.json").is_file()
+}
+
+/// Adds the optional `profile` and `next_actions` members to a check JSON object.
+fn attach_check_extras(
+    value: &mut Value,
+    envelope: Option<&crate::declarative::profile::ProfileEnvelope>,
+    hint: Option<&str>,
+) -> Result<(), String> {
+    let profile = match envelope {
+        Some(envelope) => Some(serde_json::to_value(envelope).map_err(|err| err.to_string())?),
+        None => None,
+    };
+    let Some(object) = value.as_object_mut() else {
+        return Ok(());
+    };
+    if let Some(profile) = profile {
+        object.insert("profile".to_string(), profile);
+    }
+    if let Some(hint) = hint {
+        object.insert("next_actions".to_string(), json!([hint]));
+    }
+    Ok(())
+}
+
+fn emit_check(
+    flags: &CheckFlags,
+    result: &crate::declarative::region::RegionCheckResult,
+    envelope: Option<&crate::declarative::profile::ProfileEnvelope>,
+    hint: Option<&str>,
+) -> Result<(), String> {
+    if flags.json {
+        let mut value = json!({
+            "verdict": result.verdict,
+            "judgment": result.flat.judgment,
+            "release": result.flat.release,
+            "report": result.flat.report,
+            "invariant_witnesses": crate::declarative::region::invariant_witness_json(&result.invariant_refusals),
+        });
+        attach_check_extras(&mut value, envelope, hint)?;
+        if let Some(definition) = &result.flat.definition {
+            if let Some(object) = value.as_object_mut() {
+                object.insert(
+                    "definition".into(),
+                    serde_json::to_value(definition).map_err(|err| err.to_string())?,
+                );
+            }
+        }
+        println!("{}", canonical_json(&value));
+    } else {
+        print!("{}", result.text);
+        if let Some(envelope) = envelope {
+            print!("{}", crate::declarative::profile::render_profile(envelope));
+        }
+        if let Some(hint) = hint {
+            println!("NEXT COMMAND\n  {hint}");
+        }
+    }
+    Ok(())
+}
+
+fn run_corpus(args: &[String]) -> i32 {
+    match run_corpus_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik corpus: {msg}");
+            eprintln!("usage: ik corpus init <machine.ik.toml> --out <cases.json>");
+            2
+        }
+    }
+}
+
+fn run_corpus_inner(args: &[String]) -> Result<i32, String> {
+    if args.iter().any(|arg| arg == "-h" || arg == "--help") {
+        println!("usage: ik corpus init <machine.ik.toml> --out <cases.json>");
+        return Ok(0);
+    }
+    if args.first().map(String::as_str) != Some("init") {
+        return Err("corpus command is required".into());
+    }
+    let mut machine = None;
+    let mut out = None;
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--out" => {
+                i += 1;
+                out = Some(path_value(args, i, "--out")?);
+            }
+            flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
+            name if machine.is_none() => machine = Some(PathBuf::from(name)),
+            other => return Err(format!("unexpected argument `{other}`")),
+        }
+        i += 1;
+    }
+    let machine = machine.ok_or("machine definition path is required")?;
+    let out = out.ok_or("--out requires a path")?;
+    let source = load_source_file(&machine)?;
+    let body = crate::declarative::starter_corpus(&source.definition);
+    let text = serde_json::to_string_pretty(&body).map_err(|err| err.to_string())?;
+    std::fs::write(&out, format!("{text}\n"))
+        .map_err(|err| format!("write {}: {err}", out.display()))?;
+    Ok(0)
+}
+
+fn load_corpus(
+    machine: &Path,
+    explicit: Option<&Path>,
+    def: &crate::declarative::Definition,
+) -> Result<crate::declarative::CaseCorpus, String> {
+    let sibling = machine.with_extension("cases.json");
+    let path = explicit.or_else(|| sibling.exists().then_some(sibling.as_path()));
+    let mut corpus = if let Some(path) = path {
+        let text =
+            std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+        serde_json::from_str(&text).map_err(|e| format!("corpus {}: {e}", path.display()))?
+    } else {
+        crate::declarative::CaseCorpus::new()
+    };
+    for (name, cmd) in &def.commands {
+        if cmd.args.as_ref().map(|a| a.is_empty()).unwrap_or(true)
+            && !corpus.commands.contains_key(name)
+        {
+            corpus.insert(name.clone(), "default", std::collections::BTreeMap::new());
+        }
+    }
+    Ok(corpus)
+}
+
+fn load_baseline(explicit: Option<&Path>, machine_id: &str) -> Result<Vec<String>, String> {
+    let default = PathBuf::from("validation/verification_baseline.json");
+    let path = explicit.or_else(|| default.exists().then_some(default.as_path()));
+    let Some(path) = path else {
+        return Ok(Vec::new());
+    };
+    let text =
+        std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    let file: BaselineFile =
+        serde_json::from_str(&text).map_err(|e| format!("baseline {}: {e}", path.display()))?;
+    if file.machine_id != machine_id {
+        return Ok(Vec::new());
+    }
+    Ok(file.uncovered_mandatory)
+}
+
+#[derive(serde::Deserialize)]
+struct BaselineFile {
+    machine_id: String,
+    uncovered_mandatory: Vec<String>,
+}
+
+fn attach_profile_baseline(
+    envelope: Option<&mut crate::declarative::profile::ProfileEnvelope>,
+    profile: Option<&crate::declarative::profile::Profile>,
+    prior: Option<&crate::declarative::Definition>,
+    result: &crate::declarative::region::RegionCheckResult,
+    corpus: &crate::declarative::CaseCorpus,
+) -> Result<(), String> {
+    let (Some(envelope), Some(profile), Some(prior)) = (envelope, profile, prior) else {
+        return Ok(());
+    };
+    let prior_run = result
+        .prior_exploration
+        .as_ref()
+        .ok_or("prior exploration was not produced")?;
+    let baseline =
+        crate::declarative::profile::baseline_against(profile, envelope, prior, prior_run, corpus);
+    envelope.baseline = Some(baseline);
+    Ok(())
+}
+
+fn run_profile(args: &[String]) -> i32 {
+    match run_profile_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik profile: {msg}");
+            eprintln!("usage: ik profile diff <old.toml> <new.toml> [--json]");
+            2
+        }
+    }
+}
+
+fn run_profile_inner(args: &[String]) -> Result<i32, String> {
+    if args.iter().any(|arg| arg == "-h" || arg == "--help") {
+        println!("usage: ik profile diff <old.toml> <new.toml> [--json]");
+        return Ok(0);
+    }
+    if args.is_empty() {
+        return Err("profile command is required".into());
+    }
+    if args.first().map(String::as_str) != Some("diff") {
+        return Err(format!("unknown profile command `{}`", args[0]));
+    }
+    let (old, new, json_output) = parse_profile_diff(&args[1..])?;
+    let old = crate::declarative::profile::load_profile(&old)?;
+    let new = crate::declarative::profile::load_profile(&new)?;
+    let diff = crate::declarative::profile::diff_profiles(&old, &new);
+    if json_output {
+        println!("{}", canonical_json(&diff));
+    } else {
+        print!(
+            "{}",
+            crate::declarative::profile::render_profile_diff(&diff)
+        );
+    }
+    Ok(0)
+}
+
+fn parse_profile_diff(args: &[String]) -> Result<(PathBuf, PathBuf, bool), String> {
+    let mut paths = Vec::new();
+    let mut json_output = false;
+    for arg in args {
+        match arg.as_str() {
+            "--json" => json_output = true,
+            flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
+            path => paths.push(PathBuf::from(path)),
+        }
+    }
+    if paths.len() != 2 {
+        return Err("diff requires <old.toml> <new.toml>".into());
+    }
+    Ok((paths.remove(0), paths.remove(0), json_output))
+}
+
+fn run_evidence(args: &[String]) -> i32 {
+    match run_evidence_inner(args) {
+        Ok(code) => code,
+        Err(msg) => {
+            eprintln!("ik evidence: {msg}");
+            eprintln!("usage: ik evidence verify <evidence.json> --machine <m.ik.toml> [--profile <p.toml>] [--corpus <c.json>] [--runtime-binary <path>] [--json]");
+            2
+        }
+    }
+}
+
+fn run_evidence_inner(args: &[String]) -> Result<i32, String> {
+    if args.iter().any(|arg| arg == "-h" || arg == "--help") {
+        println!("usage: ik evidence verify <evidence.json> --machine <m.ik.toml> [--profile <p.toml>] [--corpus <c.json>] [--runtime-binary <path>] [--json]");
+        return Ok(0);
+    }
+    if args.is_empty() {
+        return Err("evidence command is required".into());
+    }
+    if args.first().map(String::as_str) != Some("verify") {
+        return Err(format!("unknown evidence command `{}`", args[0]));
+    }
+    let flags = parse_evidence_flags(&args[1..])?;
+    let evidence = read_evidence(&flags.evidence)?;
+    let current = current_view(&flags)?;
+    let report = crate::evidence_verify::verify(&evidence, &current)?;
+    emit_evidence(&report, flags.json);
+    Ok(if report.overall == "current" { 0 } else { 1 })
+}
+
+struct EvidenceFlags {
+    evidence: PathBuf,
+    machine: PathBuf,
+    profile: Option<PathBuf>,
+    corpus: Option<PathBuf>,
+    runtime_binary: Option<PathBuf>,
+    json: bool,
+}
+
+fn parse_evidence_flags(args: &[String]) -> Result<EvidenceFlags, String> {
+    let mut evidence = None;
+    let mut values: BTreeMap<&str, PathBuf> = BTreeMap::new();
+    let mut json_output = false;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--json" => json_output = true,
+            flag @ ("--machine" | "--profile" | "--corpus" | "--runtime-binary") => {
+                i += 1;
+                values.insert(flag, path_value(args, i, flag)?);
+            }
+            flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
+            path if evidence.is_none() => evidence = Some(PathBuf::from(path)),
+            other => return Err(format!("unexpected argument `{other}`")),
+        }
+        i += 1;
+    }
+    Ok(EvidenceFlags {
+        evidence: evidence.ok_or("evidence path is required")?,
+        machine: values.remove("--machine").ok_or("--machine is required")?,
+        profile: values.remove("--profile"),
+        corpus: values.remove("--corpus"),
+        runtime_binary: values.remove("--runtime-binary"),
+        json: json_output,
+    })
+}
+
+fn read_evidence(path: &Path) -> Result<Value, String> {
+    let text =
+        std::fs::read_to_string(path).map_err(|err| format!("read {}: {err}", path.display()))?;
+    serde_json::from_str(&text).map_err(|err| format!("evidence {}: {err}", path.display()))
+}
+
+fn current_view(flags: &EvidenceFlags) -> Result<crate::evidence_verify::CurrentView, String> {
+    let machine = load_def(&flags.machine).map_err(|errors| errors.join("; "))?;
+    let identity = machine.identity();
+    let definition = load_definition(&flags.machine).map_err(|errors| errors.join("; "))?;
+    let profile = flags
+        .profile
+        .as_deref()
+        .map(crate::declarative::profile::load_profile)
+        .transpose()?;
+    let identity_profile = profile
+        .as_ref()
+        .map(crate::declarative::profile::profile_identity);
+    let profile_digest = identity_profile.as_ref().map(|item| item.digest.clone());
+    let goal_digests = identity_profile.map(|item| item.goals).unwrap_or_default();
+    let corpus = load_corpus(&flags.machine, flags.corpus.as_deref(), &definition)?;
+    Ok(crate::evidence_verify::CurrentView {
+        machine_id: identity.machine_id.clone(),
+        machine_version: identity.version.0,
+        spec_hash: identity.spec_hash.0.clone(),
+        profile_digest,
+        goal_digests,
+        corpus_digest: Some(corpus.digest()),
+        scenario_digest: sibling_scenario_digest(&flags.evidence)?,
+        runtime_sha256: flags
+            .runtime_binary
+            .as_deref()
+            .map(file_sha256)
+            .transpose()?,
+    })
+}
+
+fn sibling_scenario_digest(evidence: &Path) -> Result<Option<String>, String> {
+    let Some(parent) = evidence.parent() else {
+        return Ok(None);
+    };
+    let path = parent.join("scenario.json");
+    if !path.is_file() {
+        return Ok(None);
+    }
+    file_sha256(&path).map(Some)
+}
+
+fn file_sha256(path: &Path) -> Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|err| format!("read {}: {err}", path.display()))?;
+    Ok(crate::canonical::sha256_hex(&bytes))
+}
+
+fn emit_evidence(report: &crate::evidence_verify::VerifyReport, json_output: bool) {
+    if json_output {
+        println!("{}", canonical_json(report));
+    } else {
+        print!("{}", crate::evidence_verify::render_text(report));
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "_note": "example cases, not an exhaustive domain",
+  "commands": {
+    "approve": [
+      {"name": "example", "args": {"revision": 1}}
+    ],
+    "authorize": [
+      {"name": "example", "args": {}}
+    ],
+    "edit": [
+      {"name": "example", "args": {"artifact_digest": "doc-1"}}
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "string_gt_bounded_unknown"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+when = '$s > "a"'
+to = "done"
+

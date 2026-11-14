@@ -1,0 +1,47 @@
+{
+  "steps": [
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 0
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "effect": {
+          "status": "pending"
+        },
+        "generation": 1
+      }
+    },
+    {
+      "diagnostic": {
+        "code": "IK_EFFECT_MISMATCH"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_EFFECT_OUTCOME_CONFLICT"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "effect": {
+          "outcome_digest": "o1",
+          "status": "recorded"
+        },
+        "generation": 2,
+        "mutation": true
+      }
+    }
+  ]
+}

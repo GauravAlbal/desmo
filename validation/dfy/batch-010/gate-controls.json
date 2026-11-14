@@ -1,0 +1,23 @@
+{
+ "baseline_uncovered": {
+  "exit": 3,
+  "out": "NOT COVERED: no accepted receipt for ff5cce16dd28. Remediate by mode. Conducted: wait for operator/Conductor to land after `<gate> ready <<work-item>> --worktree <path> --epic <epic>`; do not submit by hand. Standalone: `<gate> submit --packet <packet> --workspace /tmp/"
+ },
+ "forged_minimal_line": {
+  "exit": 3,
+  "out": "NOT COVERED: no accepted receipt for ff5cce16dd28. Remediate by mode. Conducted: wait for operator/Conductor to land after `<gate> ready <<work-item>> --worktree <path> --epic <epic>`; do not submit by hand. Standalone: `<gate> submit --packet <packet> --workspace /tmp/"
+ },
+ "forged_copied_real_line": {
+  "exit": 0,
+  "out": "COVERED: ff5cce16dd28 accepted (receipt: <repo>/runs/c2/jobs/accept-<work-item>-dfy-batch-010-frozen-manifest-and-rules-f24f2fb2-b33f533fafef/out)",
+  "swapped_field_found": true
+ },
+ "real_line_for_other_revision": {
+  "exit": 3,
+  "out": "NOT COVERED: no accepted receipt for ff5cce16dd28. Remediate by mode. Conducted: wait for operator/Conductor to land after `<gate> ready <<work-item>> --worktree <path> --epic <epic>`; do not submit by hand. Standalone: `<gate> submit --packet <packet> --workspace /tmp/"
+ },
+ "approve_unaccepted_revision": {
+  "exit": 0,
+  "out": "approved ff5cce16dd28"
+ }
+}

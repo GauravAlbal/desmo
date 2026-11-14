@@ -1,0 +1,54 @@
+# N26
+selftest positive pass True c2fail [] OK
+selftest alt-surface-reference pass True c2fail [] OK
+selftest alt-surface-echo-ref pass True c2fail [] OK
+selftest state-invariant pass True c2fail [] OK
+selftest create-time-grammar pass True c2fail [] OK
+selftest derived-ref pass True c2fail [] OK
+selftest effect-ref pass True c2fail [] OK
+selftest status-before-value pass True c2fail [] OK
+selftest host-only pass False c2fail ['bin_code', 'care_note', 'checkout_gate', 'crate_bound', 'extra_grams', 'loan_grams', 'loaned_n', 'plot_id', 'plot_set', 'shed_id', 'soak_at', 'steward_id', 'tender_id', 'void_clear', 'void_code', 'warden_id'] OK
+selftest alt-surface-host-only pass False c2fail ['bin_code', 'care_note', 'checkout_gate', 'crate_bound', 'extra_grams', 'loan_grams', 'loaned_n', 'plot_id', 'plot_set', 'shed_id', 'soak_at', 'steward_id', 'tender_id', 'void_clear', 'void_code', 'warden_id'] OK
+selftest alt-surface-echo-host-only pass False c2fail ['bin_code', 'care_note', 'checkout_gate', 'crate_bound', 'extra_grams', 'loan_grams', 'loaned_n', 'plot_id', 'plot_set', 'shed_id', 'soak_at', 'steward_id', 'tender_id', 'void_clear', 'void_code', 'warden_id'] OK
+selftest derived-host-only pass False c2fail ['bin_code', 'care_note', 'checkout_gate', 'crate_bound', 'extra_grams', 'loan_grams', 'loaned_n', 'plot_id', 'plot_set', 'shed_id', 'soak_at', 'steward_id', 'tender_id', 'void_clear', 'void_code', 'warden_id'] OK
+selftest effect-host-only pass False c2fail ['bin_code', 'care_note', 'checkout_gate', 'crate_bound', 'extra_grams', 'loan_grams', 'loaned_n', 'plot_id', 'plot_set', 'shed_id', 'soak_at', 'steward_id', 'tender_id', 'void_clear', 'void_code', 'warden_id'] OK
+selftest missing-input pass False c2fail ['bin_code', 'care_note', 'crate_bound', 'plot_id', 'plot_set', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest alt-surface-missing-input pass False c2fail ['bin_code', 'care_note', 'crate_bound', 'plot_id', 'plot_set', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest alt-surface-echo-missing-input pass False c2fail ['bin_code', 'care_note', 'crate_bound', 'plot_id', 'plot_set', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest derived-missing-input pass False c2fail ['bin_code', 'care_note', 'crate_bound', 'plot_id', 'plot_set', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest effect-missing-input pass False c2fail ['bin_code', 'care_note', 'crate_bound', 'plot_id', 'plot_set', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest shared-type-only-missing pass False c2fail ['plot_id', 'shed_id', 'steward_id', 'tender_id', 'warden_id'] OK
+selftest grammar-nonempty-only pass False c2fail ['bin_code', 'care_note', 'plot_id', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest grammar-length-only pass False c2fail ['bin_code', 'plot_id', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest derived-length-only pass False c2fail ['bin_code', 'plot_id', 'shed_id', 'steward_id', 'tender_id', 'void_code', 'warden_id'] OK
+selftest over-constrained pass False c2fail ['hedge_mark', 'nick', 'shed_label'] OK
+selftest stale pass False c2fail [] OK
+selftest refuse pass False c2fail [] OK
+selftest breaks-old pass False c2fail [] OK
+SELFTEST OK
+# N27
+selftest positive pass True c2fail [] OK
+selftest alt-surface-reference pass True c2fail [] OK
+selftest alt-surface-echo-ref pass True c2fail [] OK
+selftest state-invariant pass True c2fail [] OK
+selftest create-time-grammar pass True c2fail [] OK
+selftest derived-ref pass True c2fail [] OK
+selftest status-before-value pass True c2fail [] OK
+selftest effect-then-record pass True c2fail [] OK
+selftest host-only pass False c2fail ['bay_id', 'billed_n', 'bin_id', 'clerk_id', 'dispatch_gate', 'extra_labor', 'frame_set', 'hours_bound', 'labor_total', 'ready_at', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_clear', 'void_note'] OK
+selftest alt-surface-host-only pass False c2fail ['bay_id', 'billed_n', 'bin_id', 'clerk_id', 'dispatch_gate', 'extra_labor', 'frame_set', 'hours_bound', 'labor_total', 'ready_at', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_clear', 'void_note'] OK
+selftest alt-surface-echo-host-only pass False c2fail ['bay_id', 'billed_n', 'bin_id', 'clerk_id', 'dispatch_gate', 'extra_labor', 'frame_set', 'hours_bound', 'labor_total', 'ready_at', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_clear', 'void_note'] OK
+selftest derived-host-only pass False c2fail ['bay_id', 'billed_n', 'bin_id', 'clerk_id', 'dispatch_gate', 'extra_labor', 'frame_set', 'hours_bound', 'labor_total', 'ready_at', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_clear', 'void_note'] OK
+selftest missing-input pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'frame_set', 'hours_bound', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_note'] OK
+selftest alt-surface-missing-input pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'frame_set', 'hours_bound', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_note'] OK
+selftest alt-surface-echo-missing-input pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'frame_set', 'hours_bound', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_note'] OK
+selftest derived-missing-input pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'frame_set', 'hours_bound', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_note'] OK
+selftest shared-type-only-missing pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'rider_id', 'tech_id'] OK
+selftest grammar-nonempty-only pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'rider_id', 'seal_code', 'shop_note', 'tech_id', 'void_note'] OK
+selftest grammar-length-only pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'rider_id', 'seal_code', 'tech_id'] OK
+selftest derived-length-only pass False c2fail ['bay_id', 'bin_id', 'clerk_id', 'rider_id', 'seal_code', 'tech_id'] OK
+selftest over-constrained pass False c2fail ['bin_mark', 'rack_nick', 'scrap_tag'] OK
+selftest stale pass False c2fail [] OK
+selftest refuse pass False c2fail [] OK
+selftest breaks-old pass False c2fail [] OK
+SELFTEST OK

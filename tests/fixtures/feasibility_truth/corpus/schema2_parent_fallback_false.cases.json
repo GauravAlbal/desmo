@@ -1,0 +1,18 @@
+{
+  "commands": {
+    "halt": [
+      {
+        "name": "t",
+        "args": {
+          "force": true
+        }
+      },
+      {
+        "name": "f",
+        "args": {
+          "force": false
+        }
+      }
+    ]
+  }
+}

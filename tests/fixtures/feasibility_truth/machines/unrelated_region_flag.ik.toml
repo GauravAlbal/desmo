@@ -1,0 +1,17 @@
+schema_version = 2
+machine_id = "unrelated_region_flag"
+machine_version = 1
+
+[regions.lane.states]
+start = { initial = true }
+ok = {}
+[regions.lane.commands.go]
+from = ["start"]
+to = "ok"
+[regions.flag.states]
+off = { initial = true }
+on = {}
+[regions.flag.commands.flip]
+from = ["off"]
+to = "on"
+

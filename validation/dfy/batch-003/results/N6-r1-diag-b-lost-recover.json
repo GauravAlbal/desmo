@@ -1,0 +1,18 @@
+1
+
+
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file://<work>/projects/N6/diagnose/diagnose-eval.mjs:5:648 {
+  [cause]: Error: connect ECONNREFUSED 127.0.0.1:52117
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+    errno: -61,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 52117
+  }
+}
+
+Node.js v22.17.1
+

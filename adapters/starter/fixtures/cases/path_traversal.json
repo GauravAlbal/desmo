@@ -1,0 +1,11 @@
+{
+  "id": "path_traversal",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "fault": "path_traversal",
+  "expect": {
+    "result_accepted": false,
+    "rejection_reason": "path_traversal"
+  }
+}

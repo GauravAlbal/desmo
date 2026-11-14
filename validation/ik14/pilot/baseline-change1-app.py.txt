@@ -1,0 +1,274 @@
+"""Durable refund approval state machine."""
+
+import json
+import sqlite3
+
+
+class Refused(Exception):
+    """A business rule forbids the action."""
+
+
+class Stale(Refused):
+    """Caller's expected_version is not the current version."""
+
+
+class Conflict(Refused):
+    """Same operation id or effect key reused with different content."""
+
+
+_VIEW_KEYS = ("state", "amount_cents", "version", "approver", "paid_digest")
+
+
+def _canon(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _dump_view(view):
+    # Preserve the public key order so a replay equals the original dict.
+    return json.dumps(view, ensure_ascii=False, separators=(",", ":"))
+
+
+def _id_key(value):
+    if isinstance(value, str):
+        return "s:" + value
+    return "j:" + _canon(value)
+
+
+class Refunds:
+    def __init__(self, path: str):
+        self._conn = sqlite3.connect(path, isolation_level=None, timeout=30.0)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=DELETE").fetchall()
+        self._conn.execute("PRAGMA synchronous=FULL").fetchall()
+        self._conn.execute("PRAGMA busy_timeout=30000").fetchall()
+        self._conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS refunds (
+                refund_id TEXT PRIMARY KEY,
+                requester TEXT,
+                amount_cents INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                version INTEGER NOT NULL,
+                approver TEXT,
+                paid_digest TEXT,
+                approvals TEXT NOT NULL DEFAULT '[]'
+            );
+            CREATE TABLE IF NOT EXISTS operations (
+                operation_id TEXT PRIMARY KEY,
+                fingerprint TEXT NOT NULL,
+                result_json TEXT NOT NULL
+            );
+            """
+        )
+
+    def submit(self, refund_id, requester, amount_cents, operation_id=None):
+        return self._run(
+            operation_id,
+            ["submit", refund_id, requester, amount_cents],
+            lambda: self._submit(refund_id, requester, amount_cents),
+        )
+
+    def edit(self, refund_id, amount_cents, expected_version=None, operation_id=None):
+        return self._run(
+            operation_id,
+            ["edit", refund_id, amount_cents, expected_version],
+            lambda: self._edit(refund_id, amount_cents, expected_version),
+        )
+
+    def approve(self, refund_id, approver, amount_cents, expected_version=None, operation_id=None):
+        return self._run(
+            operation_id,
+            ["approve", refund_id, approver, amount_cents, expected_version],
+            lambda: self._approve(refund_id, approver, amount_cents, expected_version),
+        )
+
+    def authorize_payout(self, refund_id, amount_cents, expected_version=None, operation_id=None):
+        return self._run(
+            operation_id,
+            ["authorize_payout", refund_id, amount_cents, expected_version],
+            lambda: self._authorize_payout(refund_id, amount_cents, expected_version),
+        )
+
+    def record_payout(self, refund_id, outcome_digest, operation_id=None):
+        return self._run(
+            operation_id,
+            ["record_payout", refund_id, outcome_digest],
+            lambda: self._record_payout(refund_id, outcome_digest),
+        )
+
+    def get(self, refund_id):
+        return self._view(self._load(refund_id))
+
+    def _run(self, operation_id, fingerprint_parts, fn):
+        fingerprint = _canon(fingerprint_parts)
+        op_key = None if operation_id is None else _canon(operation_id)
+        self._conn.execute("BEGIN IMMEDIATE")
+        try:
+            if op_key is not None:
+                existing = self._conn.execute(
+                    "SELECT fingerprint, result_json FROM operations WHERE operation_id = ?",
+                    (op_key,),
+                ).fetchone()
+                if existing is not None:
+                    if existing["fingerprint"] != fingerprint:
+                        raise Conflict("operation id reused with different content")
+                    result = json.loads(existing["result_json"])
+                    self._conn.execute("COMMIT")
+                    return result
+            result = fn()
+            if op_key is not None:
+                self._conn.execute(
+                    "INSERT INTO operations(operation_id, fingerprint, result_json) VALUES (?, ?, ?)",
+                    (op_key, fingerprint, _dump_view(result)),
+                )
+            self._conn.execute("COMMIT")
+            return result
+        except Exception:
+            self._conn.execute("ROLLBACK")
+            raise
+
+    def _submit(self, refund_id, requester, amount_cents):
+        key = _id_key(refund_id)
+        found = self._conn.execute(
+            "SELECT 1 FROM refunds WHERE refund_id = ?",
+            (key,),
+        ).fetchone()
+        if found is not None:
+            raise Refused("refund already exists")
+        self._conn.execute(
+            "INSERT INTO refunds(refund_id, requester, amount_cents, state, version, approver, paid_digest, approvals)"
+            " VALUES (?, ?, ?, 'draft', 1, NULL, NULL, '[]')",
+            (key, _encode_nullable(requester), amount_cents),
+        )
+        return self._view(self._load(refund_id))
+
+    def _edit(self, refund_id, amount_cents, expected_version):
+        row = self._load(refund_id)
+        self._check_version(row, expected_version)
+        if row["state"] not in ("draft", "approved"):
+            raise Refused("edit is refused in this state")
+        self._update(
+            "UPDATE refunds SET amount_cents = ?, state = 'draft', approver = NULL, approvals = '[]',"
+            " version = version + 1 WHERE refund_id = ? AND version = ?",
+            (amount_cents, row["refund_id"], row["version"]),
+        )
+        return self._view(self._load(refund_id))
+
+    def _approve(self, refund_id, approver, amount_cents, expected_version):
+        row = self._load(refund_id)
+        self._check_version(row, expected_version)
+        if row["state"] != "draft":
+            raise Refused("approve is only valid from draft")
+        if amount_cents != row["amount_cents"]:
+            raise Refused("approval must bind the exact amount")
+        if approver == _decode_nullable(row["requester"]):
+            raise Refused("approver may not be the requester")
+        recorded = _decode_approvals(row["approvals"])
+        if any(_canon(approver) == _canon(existing) for existing in recorded):
+            raise Refused("the same approver cannot approve twice")
+        recorded.append(approver)
+        if len(recorded) >= 2:
+            self._update(
+                "UPDATE refunds SET state = 'approved', approver = ?, approvals = ?, version = version + 1"
+                " WHERE refund_id = ? AND version = ?",
+                (
+                    _encode_nullable(approver),
+                    _encode_approvals(recorded),
+                    row["refund_id"],
+                    row["version"],
+                ),
+            )
+        else:
+            self._update(
+                "UPDATE refunds SET approver = NULL, approvals = ?, version = version + 1"
+                " WHERE refund_id = ? AND version = ?",
+                (_encode_approvals(recorded), row["refund_id"], row["version"]),
+            )
+        return self._view(self._load(refund_id))
+
+    def _authorize_payout(self, refund_id, amount_cents, expected_version):
+        row = self._load(refund_id)
+        self._check_version(row, expected_version)
+        if row["state"] != "approved":
+            raise Refused("authorize_payout is only valid from approved")
+        if amount_cents != row["amount_cents"]:
+            raise Refused("authorize_payout amount must equal the approved amount")
+        if row["paid_digest"] is not None:
+            raise Refused("a payout is already pending or completed")
+        self._update(
+            "UPDATE refunds SET state = 'payout_pending', version = version + 1"
+            " WHERE refund_id = ? AND version = ?",
+            (row["refund_id"], row["version"]),
+        )
+        return self._view(self._load(refund_id))
+
+    def _record_payout(self, refund_id, outcome_digest):
+        row = self._load(refund_id)
+        if row["state"] == "paid":
+            existing = json.loads(row["paid_digest"])
+            if _canon(existing) == _canon(outcome_digest):
+                return self._view(row)
+            # The payout outcome is the effect key for this refund.
+            raise Conflict("effect key reused with different content")
+        if row["state"] != "payout_pending":
+            raise Refused("record_payout is only valid from payout_pending")
+        self._update(
+            "UPDATE refunds SET state = 'paid', paid_digest = ?, version = version + 1"
+            " WHERE refund_id = ? AND version = ?",
+            (_canon(outcome_digest), row["refund_id"], row["version"]),
+        )
+        return self._view(self._load(refund_id))
+
+    def _update(self, sql, params):
+        cur = self._conn.execute(sql, params)
+        if cur.rowcount != 1:
+            raise Refused("refund changed during update")
+
+    def _check_version(self, row, expected_version):
+        if expected_version is not None and row["version"] != expected_version:
+            raise Stale("expected_version does not match current version")
+
+    def _load(self, refund_id):
+        row = self._conn.execute(
+            "SELECT refund_id, requester, amount_cents, state, version, approver, paid_digest, approvals"
+            " FROM refunds WHERE refund_id = ?",
+            (_id_key(refund_id),),
+        ).fetchone()
+        if row is None:
+            raise Refused("unknown refund")
+        return row
+
+    def _view(self, row):
+        paid = None
+        if row["state"] == "paid":
+            paid = json.loads(row["paid_digest"])
+        view = {
+            "state": row["state"],
+            "amount_cents": row["amount_cents"],
+            "version": row["version"],
+            "approver": _decode_nullable(row["approver"]),
+            "paid_digest": paid,
+        }
+        return {key: view[key] for key in _VIEW_KEYS}
+
+
+def _encode_nullable(value):
+    if value is None:
+        return None
+    return _canon(value)
+
+
+def _decode_nullable(value):
+    if value is None:
+        return None
+    return json.loads(value)
+
+
+def _encode_approvals(approvers):
+    return _canon(list(approvers))
+
+
+def _decode_approvals(value):
+    if not value:
+        return []
+    return json.loads(value)

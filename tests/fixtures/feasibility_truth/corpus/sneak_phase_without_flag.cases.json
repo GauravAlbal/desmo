@@ -1,0 +1,22 @@
+{
+  "commands": {
+    "begin": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "sneak": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "finish": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

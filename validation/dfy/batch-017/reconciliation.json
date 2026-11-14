@@ -1,0 +1,550 @@
+{
+  "first_scoring": {
+    "N24/r1/build": {
+      "accepted": false,
+      "failed": [
+        "clerk_id:2",
+        "skipper_id:2",
+        "slip_tag:2"
+      ],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "fail"
+    },
+    "N24/r1/change": {
+      "accepted": false,
+      "failed": [
+        "clerk_id:2",
+        "skipper_id:2",
+        "slip_tag:2"
+      ],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "fail"
+    },
+    "N24/r2/build": {
+      "accepted": false,
+      "failed": [
+        "boarded_n:2",
+        "launch_gate:2",
+        "launch_slots:2"
+      ],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "fail"
+    },
+    "N24/r2/change": {
+      "accepted": false,
+      "failed": [
+        "boarded_n:2",
+        "extra_berth:2",
+        "launch_gate:2",
+        "launch_slots:2"
+      ],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "fail"
+    },
+    "N25/r1/build": {
+      "accepted": false,
+      "failed": [
+        "deploy_gate:2",
+        "issued_n:2",
+        "kit_mass:2"
+      ],
+      "missing": [
+        "cache_label:1",
+        "callsign:1"
+      ],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "incomplete"
+    },
+    "N25/r1/change": {
+      "accepted": false,
+      "failed": [
+        "deploy_gate:2",
+        "extra_mass:2",
+        "issued_n:2",
+        "kit_mass:2"
+      ],
+      "missing": [
+        "cache_label:1",
+        "callsign:1",
+        "trail_mark:1"
+      ],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "incomplete"
+    },
+    "N25/r2/build": {
+      "accepted": false,
+      "failed": [
+        "deploy_gate:2",
+        "issued_n:2",
+        "kit_mass:2"
+      ],
+      "missing": [
+        "cache_label:1",
+        "callsign:1"
+      ],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "incomplete"
+    },
+    "N25/r2/change": {
+      "accepted": false,
+      "failed": [
+        "deploy_gate:2",
+        "extra_mass:2",
+        "issued_n:2",
+        "kit_mass:2"
+      ],
+      "missing": [
+        "cache_label:1",
+        "callsign:1",
+        "trail_mark:1"
+      ],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "incomplete"
+    }
+  },
+  "note": "Stored per-rule results re-evaluated against the preregistered required coordinates (BUILD criteria 1 and 2, CHANGE 1 to 4, every rule including benign labels, no exemption). Stored rows do not retain the failure reason, so first-scoring failures are reported as failed here; their diagnosis (all twin_failed, inconclusive) is in DECISION.md.",
+  "rescoring_v2": {
+    "N24/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/build": {
+      "accepted": false,
+      "failed": [],
+      "missing": [
+        "cache_label:1",
+        "callsign:1"
+      ],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "incomplete"
+    },
+    "N25/r1/change": {
+      "accepted": false,
+      "failed": [],
+      "missing": [
+        "cache_label:1",
+        "callsign:1",
+        "trail_mark:1"
+      ],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "incomplete"
+    },
+    "N25/r2/build": {
+      "accepted": false,
+      "failed": [],
+      "missing": [
+        "cache_label:1",
+        "callsign:1"
+      ],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "incomplete"
+    },
+    "N25/r2/change": {
+      "accepted": false,
+      "failed": [],
+      "missing": [
+        "cache_label:1",
+        "callsign:1",
+        "trail_mark:1"
+      ],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "incomplete"
+    }
+  },
+  "rescoring_v3_n25_complete_rows": {
+    "N25/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    }
+  },
+  "rescoring_v4_capture_replay_parallel2_run1": {
+    "N24/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    }
+  },
+  "rescoring_v4_capture_replay_parallel2_run2": {
+    "N24/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    }
+  },
+  "rescoring_v4_capture_replay_parallel4_run1": {
+    "N24/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    }
+  },
+  "rescoring_v4_capture_replay_parallel4_run2": {
+    "N24/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r1/change": {
+      "accepted": false,
+      "failed": [
+        "extra_berth:3"
+      ],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": false,
+      "runner_timeout": false,
+      "status": "fail"
+    },
+    "N24/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N24/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r1/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/build": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    },
+    "N25/r2/change": {
+      "accepted": true,
+      "failed": [],
+      "missing": [],
+      "rc": 0,
+      "recorded_pass": true,
+      "runner_timeout": false,
+      "status": "pass"
+    }
+  }
+}

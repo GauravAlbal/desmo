@@ -1,0 +1,74 @@
+{
+  "steps": [
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "aggregate_id": "agg-1",
+        "effect": {
+          "status": "none"
+        },
+        "generation": 0,
+        "mutation": true,
+        "state": {
+          "attempt_count": 0,
+          "max_attempts": 3,
+          "state": "created"
+        },
+        "terminal": false
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 1,
+        "mutation": true,
+        "state": {
+          "attempt_count": 0,
+          "max_attempts": 3,
+          "state": "running"
+        }
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 2,
+        "mutation": true,
+        "state": {
+          "artifact_digest": "a1",
+          "attempt_count": 0,
+          "baseline_digest": "b1",
+          "max_attempts": 3,
+          "state": "submitted"
+        }
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 3,
+        "mutation": true,
+        "receipt": {
+          "aggregate_id": "agg-1",
+          "generation": 3,
+          "sequence": 3
+        },
+        "state": {
+          "artifact_digest": "a1",
+          "attempt_count": 0,
+          "baseline_digest": "b1",
+          "max_attempts": 3,
+          "receipt_artifact_digest": "a1",
+          "receipt_baseline_digest": "b1",
+          "receipt_digest": "r1",
+          "state": "verified"
+        },
+        "terminal": true
+      }
+    }
+  ]
+}

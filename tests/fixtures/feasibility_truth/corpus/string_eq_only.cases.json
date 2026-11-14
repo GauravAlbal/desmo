@@ -1,0 +1,18 @@
+{
+  "commands": {
+    "step": [
+      {
+        "name": "ok",
+        "args": {
+          "s": "ok"
+        }
+      },
+      {
+        "name": "no",
+        "args": {
+          "s": "no"
+        }
+      }
+    ]
+  }
+}

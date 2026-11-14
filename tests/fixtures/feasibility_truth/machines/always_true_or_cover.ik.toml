@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "always_true_or_cover"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+hit = {}
+miss = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x >= 0 || $x < 0", to = "hit" },
+  { when = "$x == 0", to = "miss" }
+]
+

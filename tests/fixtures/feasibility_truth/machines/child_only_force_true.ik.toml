@@ -1,0 +1,13 @@
+schema_version = 2
+machine_id = "child_only_force_true"
+machine_version = 1
+
+[regions.power.states]
+running = { initial = true }
+stopped = {}
+[regions.power.commands.halt]
+from = ["running"]
+args = { force = "bool" }
+when = "$force == true"
+to = "stopped"
+

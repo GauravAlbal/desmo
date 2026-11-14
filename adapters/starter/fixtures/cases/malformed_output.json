@@ -1,0 +1,11 @@
+{
+  "id": "malformed_output",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "fault": "malformed_output",
+  "expect": {
+    "result_accepted": false,
+    "rejection_reason": "malformed_json"
+  }
+}

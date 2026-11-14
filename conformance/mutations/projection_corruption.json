@@ -1,0 +1,8 @@
+{
+  "trace": "happy_verification_attempt",
+  "machine": "verification_attempt",
+  "mutations": [
+    {"sql": "UPDATE aggregates SET state = '{\"state\":\"cancelled\"}' WHERE aggregate_id = 'agg-1'"}
+  ],
+  "expect_code": "IK_PROJECTION_CORRUPT"
+}

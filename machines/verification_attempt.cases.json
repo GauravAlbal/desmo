@@ -1,0 +1,23 @@
+{
+  "commands": {
+    "submit": [
+      {
+        "name": "happy",
+        "args": {
+          "artifact_digest": "a1",
+          "baseline_digest": "b1"
+        }
+      }
+    ],
+    "verify": [
+      {
+        "name": "match",
+        "args": {
+          "receipt_digest": "r1",
+          "receipt_artifact_digest": "a1",
+          "receipt_baseline_digest": "b1"
+        }
+      }
+    ]
+  }
+}

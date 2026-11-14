@@ -1,0 +1,9 @@
+{
+  "procedure": "Offline install only. Never download at runtime. Replace /absolute/path placeholders and 64-zero digests with the real executable paths and lowercase SHA-256 of those files. A digest mismatch is refused. Missing binaries are tool_unavailable. The pip cvc5 wheel has no CLI; pin adapters/smt/cvc5_stdin.py under the same interpreter that can import cvc5.",
+  "z3": "/absolute/path/to/z3",
+  "z3_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "z3_version": "replace with `z3 --version`",
+  "cvc5": "/absolute/path/to/cvc5",
+  "cvc5_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "cvc5_version": "replace with `cvc5 --version`"
+}

@@ -1,0 +1,12 @@
+schema_version = 1
+machine_id = "linear_ok"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = { terminal = true }
+[commands.go]
+from = ["idle"]
+to = "done"
+

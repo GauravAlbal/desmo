@@ -1,0 +1,15 @@
+schema_version = 1
+machine_id = "true_or_error_ok"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+ok = {}
+[commands.go]
+from = ["idle"]
+args = { x = "int" }
+when = '$x == 0 || token == "x"'
+to = "ok"
+

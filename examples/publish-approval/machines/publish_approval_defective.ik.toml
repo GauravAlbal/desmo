@@ -1,0 +1,44 @@
+# DELIBERATELY DEFECTIVE transition implementation, for the IK-09 law-enforcement control.
+# `revise` keeps the approval and `publish` does not compare digests. The independent law
+# pub_inv_001 is identical to the correct machines and is what must still refuse publication.
+schema_version = 1
+machine_id = "publish_approval_defective"
+machine_version = 1
+name = "PublishApprovalDefective"
+
+[facts]
+artifact_digest = { type = "string", policy = "replace" }
+approved_digest = { type = "string", policy = "replace" }
+
+[states]
+draft = { initial = true }
+approved = {}
+published = { terminal = true }
+
+[commands.edit]
+from = ["draft"]
+to = "draft"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest" }
+
+[commands.approve]
+from = ["draft"]
+to = "approved"
+args = { artifact_digest = "string" }
+when = "exists(artifact_digest) && $artifact_digest == artifact_digest"
+then = { approved_digest = "$artifact_digest" }
+
+[commands.revise]
+from = ["approved"]
+to = "approved"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest" }
+
+[commands.publish]
+from = ["approved"]
+to = "published"
+when = "exists(approved_digest)"
+
+[invariants.pub_inv_001]
+when = "state == 'published'"
+assert = "exists(artifact_digest) && exists(approved_digest) && artifact_digest == approved_digest"

@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "seal_from_wrong_source"
+machine_version = 1
+
+[facts]
+[states]
+edited = { initial = true }
+reviewed = {}
+sealed = {}
+[commands.review]
+from = ["edited"]
+to = "reviewed"
+[commands.seal]
+from = ["edited", "reviewed"]
+when = 'state == "reviewed"'
+to = "sealed"
+

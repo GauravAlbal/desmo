@@ -1,0 +1,913 @@
+{
+  "first_scoring": {
+    "N18/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "chem_volume": {
+          "1": true,
+          "2": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N18/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "chem_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "print_sheets": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N18/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "chem_volume": {
+          "1": true,
+          "2": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N18/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "chem_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "print_sheets": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N19/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "distinct_receiver": {
+          "1": true,
+          "2": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N19/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "distinct_receiver": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "retain_vial": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N19/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "distinct_receiver": {
+          "1": true,
+          "2": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N19/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "distinct_receiver": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "retain_vial": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "note": "Per replica and stage: pass, and per rule criterion results (1 valid path, 2 direct-command refusal, 3 invalidation, 4 existing instances). first_scoring is the record. The two rescoring tiers use repaired evaluators and are reported separately; see DECISION.md.",
+  "rescoring_v2_1": {
+    "N18/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "chem_volume": {
+          "1": true,
+          "2": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N18/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "chem_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "print_sheets": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N18/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "chem_volume": {
+          "1": true,
+          "2": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N18/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "chem_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "print_sheets": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N19/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "distinct_receiver": {
+          "1": true,
+          "2": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N19/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "distinct_receiver": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "retain_vial": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N19/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "distinct_receiver": {
+          "1": true,
+          "2": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N19/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "distinct_receiver": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "retain_vial": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v2_before_n19_twin_repair": {
+    "N18/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "chem_volume": {
+          "1": true,
+          "2": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N18/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "chem_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "print_sheets": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N18/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "chem_volume": {
+          "1": true,
+          "2": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N18/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "chem_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "collector_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "paper_grade": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "print_sheets": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "soak_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "unload_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N19/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "distinct_receiver": {
+          "1": true,
+          "2": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N19/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "distinct_receiver": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "retain_vial": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N19/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "distinct_receiver": {
+          "1": true,
+          "2": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": false
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N19/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "distinct_receiver": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_release_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "freeze_until": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "lane_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pack_mass": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "retain_vial": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "sealed_evaluator_archives_sha256": {
+    "first_scoring": "0fc5de7418598d8f3360c6db157d17aa64ba6c1fb2d710e7a88844a666d75035",
+    "v2_1": "3bcbc7ff1755832ee36cc7c3b99a8b9309d00735fb6d3ca9ea2de45d97da6d14"
+  }
+}

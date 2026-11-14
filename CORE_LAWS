@@ -1,0 +1,15 @@
+DESMO RUNTIME LAW FREEZE
+version=0.2.1
+
+1. The runtime is sole authority for canonical aggregate lifecycle state.
+2. Hosts request named commands, never arbitrary destination states.
+3. Each committed mutation increments generation exactly once and rotates mutation authority.
+4. Capability validation, reduction, invariant validation, journal append, projection update, generation/nonce rotation, effect identity, and receipt commit atomically.
+5. Reducers are deterministic and perform no IO.
+6. Journal replay reproduces projection; disagreement is corruption.
+7. Hard-law inputs are typed. Opaque metadata cannot influence transitions.
+8. Diagnostics and protocol versions are stable machine-readable values.
+9. Reusable modules contain no consumer-specific, package, work-tracking, approval, worktree, scheduler, timer, retry, lease, or worker semantics.
+10. Native reducers and declarative machines use the same runtime transaction path.
+11. Child observations retain source authority; persistence does not transfer ownership.
+12. Effect mechanics bind one exact pending identity and outcome without choosing domain effects.

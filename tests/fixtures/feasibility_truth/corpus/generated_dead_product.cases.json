@@ -1,0 +1,16 @@
+{
+  "commands": {
+    "finish": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ],
+    "flip": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

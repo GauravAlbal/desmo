@@ -1,0 +1,111 @@
+{
+  "scenario_version": 1,
+  "machine": "../machines/publish_approval_v3.ik.toml",
+  "aggregate": "paper-1",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "edit",
+      "name": "edit",
+      "args": {"artifact_digest": "artifact-1"},
+      "handle": "cap-edit",
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "approve",
+      "name": "approve",
+      "args": {"artifact_digest": "artifact-1"},
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "stale",
+      "name": "edit",
+      "args": {"artifact_digest": "artifact-2"},
+      "use_handle": "cap-edit",
+      "expect": "refused:IK_CAPABILITY_STALE"
+    },
+    {
+      "kind": "duplicate",
+      "label": "again",
+      "of": "edit"
+    },
+    {
+      "kind": "command",
+      "label": "conflict",
+      "name": "edit",
+      "operation_id": "op-edit",
+      "args": {"artifact_digest": "artifact-9"},
+      "expect": "refused:IK_OPERATION_CONFLICT"
+    },
+    {
+      "kind": "drop_reply",
+      "label": "lost",
+      "of": "edit"
+    },
+    {
+      "kind": "lookup",
+      "label": "found",
+      "operation_id": "op-edit",
+      "expect": "committed_exact"
+    },
+    {
+      "kind": "lookup",
+      "label": "missing",
+      "operation_id": "op-never",
+      "expect": "not_recorded"
+    },
+    {
+      "kind": "reopen",
+      "label": "restart"
+    },
+    {
+      "kind": "command",
+      "label": "plan",
+      "name": "authorize_publish",
+      "args": {
+        "effect_id": "eff-1",
+        "payload_digest": "artifact-1",
+        "idempotency_key": "key-1"
+      },
+      "expect": "committed"
+    },
+    {
+      "kind": "effect_outcome",
+      "label": "record",
+      "effect_id": "eff-1",
+      "payload_digest": "artifact-1",
+      "idempotency_key": "key-1",
+      "planned_generation": 3,
+      "outcome_digest": "outcome-1",
+      "expect": "committed"
+    },
+    {
+      "kind": "lookup",
+      "label": "record-found",
+      "operation_id": "op-record",
+      "expect": "committed_exact"
+    },
+    {
+      "kind": "effect_outcome",
+      "label": "replay-outcome",
+      "effect_id": "eff-1",
+      "payload_digest": "artifact-1",
+      "idempotency_key": "key-1",
+      "planned_generation": 3,
+      "outcome_digest": "outcome-1",
+      "expect": "noop"
+    },
+    {
+      "kind": "effect_outcome",
+      "label": "conflict-outcome",
+      "effect_id": "eff-1",
+      "payload_digest": "artifact-1",
+      "idempotency_key": "key-1",
+      "planned_generation": 3,
+      "outcome_digest": "outcome-2",
+      "expect": "refused:IK_EFFECT_OUTCOME_CONFLICT"
+    }
+  ]
+}

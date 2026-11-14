@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "bool_partition"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+yes = {}
+no = {}
+[commands.go]
+from = ["idle"]
+args = { ok = "bool" }
+outcomes = [
+  { when = "$ok == true", to = "yes" },
+  { when = "$ok == false", to = "no" }
+]
+

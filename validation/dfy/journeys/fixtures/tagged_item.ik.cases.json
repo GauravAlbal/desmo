@@ -1,0 +1,36 @@
+{
+  "commands": {
+    "tag": [
+      {
+        "name": "valid",
+        "args": { "id": "item_1", "label": "AMBER" }
+      },
+      {
+        "name": "empty",
+        "args": { "id": "", "label": "AMBER" }
+      },
+      {
+        "name": "overlong",
+        "args": {
+          "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "label": "x"
+        }
+      },
+      {
+        "name": "slash",
+        "args": { "id": "a/b", "label": "x" }
+      },
+      {
+        "name": "space-label",
+        "args": { "id": "ok", "label": "x y" }
+      },
+      {
+        "name": "long-label",
+        "args": {
+          "id": "ok",
+          "label": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      }
+    ]
+  }
+}

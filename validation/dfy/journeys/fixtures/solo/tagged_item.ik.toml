@@ -1,0 +1,20 @@
+# Isolated copy: no sibling corpus. Used to witness a missing-evidence check.
+schema_version = 1
+machine_id = "tagged_item"
+machine_version = 1
+name = "TaggedItem"
+
+[facts]
+item_id = { type = "string", policy = "replace" }
+label = { type = "string", policy = "replace" }
+
+[states]
+idle = { initial = true }
+tagged = { terminal = true }
+
+[commands.tag]
+from = ["idle"]
+to = "tagged"
+args = { id = "string", label = "string" }
+when = "text_in($id, 'A-Za-z0-9._-', 1, 64)"
+then = { item_id = "$id", label = "$label" }

@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "int_eq_ne_other"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+hit = {}
+miss = {}
+[commands.go]
+from = ["idle"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x == 7", to = "hit" },
+  { when = "$x != 7", to = "miss" }
+]
+

@@ -1,0 +1,893 @@
+{
+  "schema": "ikaros.ik07.contention.v1",
+  "environment": {
+    "platform": "macOS-14.7.7-arm64-arm-64bit",
+    "machine": "arm64",
+    "python": "3.9.6",
+    "cpu_count": 8,
+    "rss_units": "ru_maxrss: bytes on macOS, KiB on Linux",
+    "ik": "target/release/ik",
+    "quick": false
+  },
+  "workload": {
+    "topology": "one persistent local SQLite store, one host, several writer processes",
+    "writers": 4,
+    "aggregates_per_store": 100,
+    "offered_write_load": "<= 2 commits/s sustained across <= 4 writers, bursts <= 5/s",
+    "external_reducer_latency_ms": 50,
+    "worker_timeout_ms": 1000,
+    "busy_timeout_ms": 5000
+  },
+  "budgets": {
+    "caller_wait_p99_ms_normal": 2000,
+    "hung_worker_fails_within_ms": 2500,
+    "other_writer_blocked_by_hang_at_most_ms": 2500,
+    "recovery_within_ms": 5000
+  },
+  "results": [
+    {
+      "experiment": "uncontended",
+      "mode": "declarative",
+      "client": "cold_one_shot",
+      "writers": 1,
+      "same_aggregate": false,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 0.0,
+      "requests": 60,
+      "completed": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "latency_ms_all_requests": {
+        "p50": 96.39,
+        "p95": 138.66,
+        "p99": 234.62,
+        "max": 245.84
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 93.58,
+        "p95": 93.58,
+        "p99": 93.58,
+        "max": 93.58
+      },
+      "latency_ms_steady_state": {
+        "p50": 96.39,
+        "p95": 138.66,
+        "p99": 234.62,
+        "max": 245.84
+      },
+      "wall_s": 6.111,
+      "completed_per_s": 9.82,
+      "child_peak_rss_raw": 13320192,
+      "journal_growth": {
+        "journal_rows": 60,
+        "operation_rows": 60,
+        "store_bytes_incl_wal": 118784
+      },
+      "store_verifies": true,
+      "verify_ms": 172.0
+    },
+    {
+      "experiment": "uncontended",
+      "mode": "external",
+      "client": "cold_one_shot",
+      "writers": 1,
+      "same_aggregate": false,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 0.0,
+      "requests": 60,
+      "completed": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "latency_ms_all_requests": {
+        "p50": 550.17,
+        "p95": 728.33,
+        "p99": 768.47,
+        "max": 830.35
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 521.69,
+        "p95": 521.69,
+        "p99": 521.69,
+        "max": 521.69
+      },
+      "latency_ms_steady_state": {
+        "p50": 550.17,
+        "p95": 728.33,
+        "p99": 768.47,
+        "max": 830.35
+      },
+      "wall_s": 34.067,
+      "completed_per_s": 1.76,
+      "child_peak_rss_raw": 31670272,
+      "journal_growth": {
+        "journal_rows": 60,
+        "operation_rows": 60,
+        "store_bytes_incl_wal": 131072
+      },
+      "store_verifies": true,
+      "verify_ms": 4771.5
+    },
+    {
+      "experiment": "uncontended",
+      "mode": "external",
+      "client": "cold_one_shot",
+      "writers": 1,
+      "same_aggregate": false,
+      "reducer_delay_ms": 50,
+      "think_time_ms": 0.0,
+      "requests": 60,
+      "completed": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "latency_ms_all_requests": {
+        "p50": 585.64,
+        "p95": 783.3,
+        "p99": 837.16,
+        "max": 1054.9
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 610.69,
+        "p95": 610.69,
+        "p99": 610.69,
+        "max": 610.69
+      },
+      "latency_ms_steady_state": {
+        "p50": 582.93,
+        "p95": 783.3,
+        "p99": 837.16,
+        "max": 1054.9
+      },
+      "wall_s": 36.388,
+      "completed_per_s": 1.65,
+      "child_peak_rss_raw": 34373632,
+      "journal_growth": {
+        "journal_rows": 60,
+        "operation_rows": 60,
+        "store_bytes_incl_wal": 131072
+      },
+      "store_verifies": true,
+      "verify_ms": 5229.3
+    },
+    {
+      "experiment": "uncontended",
+      "mode": "declarative",
+      "client": "warm_session",
+      "writers": 1,
+      "same_aggregate": false,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 0.0,
+      "requests": 60,
+      "completed": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "latency_ms_all_requests": {
+        "p50": 0.35,
+        "p95": 0.7,
+        "p99": 0.81,
+        "max": 13.62
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 13.62,
+        "p95": 13.62,
+        "p99": 13.62,
+        "max": 13.62
+      },
+      "latency_ms_steady_state": {
+        "p50": 0.34,
+        "p95": 0.58,
+        "p99": 0.73,
+        "max": 0.81
+      },
+      "wall_s": 0.036,
+      "completed_per_s": 1656.54,
+      "child_peak_rss_raw": 7995392,
+      "journal_growth": {
+        "journal_rows": 60,
+        "operation_rows": 60,
+        "store_bytes_incl_wal": 118784
+      },
+      "store_verifies": true,
+      "verify_ms": 222.3
+    },
+    {
+      "experiment": "uncontended",
+      "mode": "external",
+      "client": "warm_session",
+      "writers": 1,
+      "same_aggregate": false,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 0.0,
+      "requests": 60,
+      "completed": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "latency_ms_all_requests": {
+        "p50": 122.29,
+        "p95": 186.96,
+        "p99": 222.73,
+        "max": 346.29
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 346.29,
+        "p95": 346.29,
+        "p99": 346.29,
+        "max": 346.29
+      },
+      "latency_ms_steady_state": {
+        "p50": 121.88,
+        "p95": 184.58,
+        "p99": 200.09,
+        "max": 222.73
+      },
+      "wall_s": 7.939,
+      "completed_per_s": 7.56,
+      "child_peak_rss_raw": 28098560,
+      "journal_growth": {
+        "journal_rows": 60,
+        "operation_rows": 60,
+        "store_bytes_incl_wal": 131072
+      },
+      "store_verifies": true,
+      "verify_ms": 4600.8
+    },
+    {
+      "experiment": "uncontended",
+      "mode": "external",
+      "client": "warm_session",
+      "writers": 1,
+      "same_aggregate": false,
+      "reducer_delay_ms": 50,
+      "think_time_ms": 0.0,
+      "requests": 60,
+      "completed": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "latency_ms_all_requests": {
+        "p50": 189.9,
+        "p95": 259.09,
+        "p99": 330.25,
+        "max": 444.42
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 444.42,
+        "p95": 444.42,
+        "p99": 444.42,
+        "max": 444.42
+      },
+      "latency_ms_steady_state": {
+        "p50": 189.61,
+        "p95": 254.94,
+        "p99": 262.05,
+        "max": 330.25
+      },
+      "wall_s": 11.871,
+      "completed_per_s": 5.05,
+      "child_peak_rss_raw": 31948800,
+      "journal_growth": {
+        "journal_rows": 60,
+        "operation_rows": 60,
+        "store_bytes_incl_wal": 131072
+      },
+      "store_verifies": true,
+      "verify_ms": 4079.3
+    },
+    {
+      "experiment": "offered_load_2_per_s",
+      "mode": "external",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": false,
+      "reducer_delay_ms": 50,
+      "think_time_ms": 1800,
+      "requests": 80,
+      "completed": 80,
+      "outcomes": {
+        "ok": 80
+      },
+      "latency_ms_all_requests": {
+        "p50": 168.59,
+        "p95": 335.05,
+        "p99": 1896.28,
+        "max": 2478.25
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 1896.28,
+        "p95": 2478.25,
+        "p99": 2478.25,
+        "max": 2478.25
+      },
+      "latency_ms_steady_state": {
+        "p50": 168.45,
+        "p95": 270.29,
+        "p99": 306.05,
+        "max": 335.05
+      },
+      "wall_s": 39.918,
+      "completed_per_s": 2.0,
+      "child_peak_rss_raw": 30900224,
+      "journal_growth": {
+        "journal_rows": 80,
+        "operation_rows": 80,
+        "store_bytes_incl_wal": 167936
+      },
+      "store_verifies": true,
+      "verify_ms": 4518.7
+    },
+    {
+      "experiment": "offered_load_5_per_s",
+      "mode": "external",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": false,
+      "reducer_delay_ms": 50,
+      "think_time_ms": 650,
+      "requests": 80,
+      "completed": 80,
+      "outcomes": {
+        "ok": 80
+      },
+      "latency_ms_all_requests": {
+        "p50": 169.29,
+        "p95": 531.54,
+        "p99": 1253.78,
+        "max": 2077.82
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 1253.78,
+        "p95": 2077.82,
+        "p99": 2077.82,
+        "max": 2077.82
+      },
+      "latency_ms_steady_state": {
+        "p50": 168.03,
+        "p95": 358.54,
+        "p99": 531.54,
+        "max": 779.52
+      },
+      "wall_s": 17.914,
+      "completed_per_s": 4.47,
+      "child_peak_rss_raw": 32702464,
+      "journal_growth": {
+        "journal_rows": 80,
+        "operation_rows": 80,
+        "store_bytes_incl_wal": 167936
+      },
+      "store_verifies": true,
+      "verify_ms": 4416.5
+    },
+    {
+      "experiment": "offered_load_2_per_s",
+      "mode": "declarative",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": false,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 1800,
+      "requests": 80,
+      "completed": 80,
+      "outcomes": {
+        "ok": 80
+      },
+      "latency_ms_all_requests": {
+        "p50": 3.15,
+        "p95": 14.41,
+        "p99": 20.45,
+        "max": 23.04
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 2.96,
+        "p95": 5.59,
+        "p99": 5.59,
+        "max": 5.59
+      },
+      "latency_ms_steady_state": {
+        "p50": 3.41,
+        "p95": 14.41,
+        "p99": 20.45,
+        "max": 23.04
+      },
+      "wall_s": 34.39,
+      "completed_per_s": 2.33,
+      "child_peak_rss_raw": 9601024,
+      "journal_growth": {
+        "journal_rows": 80,
+        "operation_rows": 80,
+        "store_bytes_incl_wal": 151552
+      },
+      "store_verifies": true,
+      "verify_ms": 173.7
+    },
+    {
+      "experiment": "saturation_same_aggregate",
+      "mode": "declarative",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": true,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 0.0,
+      "requests": 240,
+      "completed": 217,
+      "outcomes": {
+        "stale_refusal": 23,
+        "ok": 217
+      },
+      "latency_ms_all_requests": {
+        "p50": 0.4,
+        "p95": 8.08,
+        "p99": 38.23,
+        "max": 40.49
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 8.4,
+        "p95": 25.99,
+        "p99": 25.99,
+        "max": 25.99
+      },
+      "latency_ms_steady_state": {
+        "p50": 0.4,
+        "p95": 5.33,
+        "p99": 38.23,
+        "max": 40.49
+      },
+      "wall_s": 0.138,
+      "completed_per_s": 1574.52,
+      "child_peak_rss_raw": 11501568,
+      "journal_growth": {
+        "journal_rows": 217,
+        "operation_rows": 217,
+        "store_bytes_incl_wal": 421888
+      },
+      "store_verifies": true,
+      "verify_ms": 156.9
+    },
+    {
+      "experiment": "saturation_same_aggregate",
+      "mode": "external",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": true,
+      "reducer_delay_ms": 50,
+      "think_time_ms": 0.0,
+      "requests": 240,
+      "completed": 227,
+      "outcomes": {
+        "stale_refusal": 4,
+        "store_busy": 9,
+        "ok": 227
+      },
+      "latency_ms_all_requests": {
+        "p50": 178.24,
+        "p95": 570.82,
+        "p99": 5732.25,
+        "max": 5803.25
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 5552.8,
+        "p95": 5555.15,
+        "p99": 5555.15,
+        "max": 5555.15
+      },
+      "latency_ms_steady_state": {
+        "p50": 177.17,
+        "p95": 381.99,
+        "p99": 5732.25,
+        "max": 5803.25
+      },
+      "wall_s": 42.388,
+      "completed_per_s": 5.36,
+      "child_peak_rss_raw": 35356672,
+      "journal_growth": {
+        "journal_rows": 227,
+        "operation_rows": 227,
+        "store_bytes_incl_wal": 483328
+      },
+      "store_verifies": true,
+      "verify_ms": 18299.9
+    },
+    {
+      "experiment": "saturation_unrelated_aggregates",
+      "mode": "declarative",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": false,
+      "reducer_delay_ms": 0,
+      "think_time_ms": 0.0,
+      "requests": 240,
+      "completed": 240,
+      "outcomes": {
+        "ok": 240
+      },
+      "latency_ms_all_requests": {
+        "p50": 0.44,
+        "p95": 4.78,
+        "p99": 41.8,
+        "max": 67.0
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 11.13,
+        "p95": 24.5,
+        "p99": 24.5,
+        "max": 24.5
+      },
+      "latency_ms_steady_state": {
+        "p50": 0.43,
+        "p95": 3.74,
+        "p99": 41.8,
+        "max": 67.0
+      },
+      "wall_s": 0.177,
+      "completed_per_s": 1357.93,
+      "child_peak_rss_raw": 12337152,
+      "journal_growth": {
+        "journal_rows": 240,
+        "operation_rows": 240,
+        "store_bytes_incl_wal": 462848
+      },
+      "store_verifies": true,
+      "verify_ms": 203.8
+    },
+    {
+      "experiment": "saturation_unrelated_aggregates",
+      "mode": "external",
+      "client": "warm_session",
+      "writers": 4,
+      "same_aggregate": false,
+      "reducer_delay_ms": 50,
+      "think_time_ms": 0.0,
+      "requests": 240,
+      "completed": 229,
+      "outcomes": {
+        "store_busy": 10,
+        "refused:IK_INTERNAL": 1,
+        "ok": 229
+      },
+      "latency_ms_all_requests": {
+        "p50": 174.25,
+        "p95": 930.81,
+        "p99": 6186.61,
+        "max": 6202.13
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 5940.66,
+        "p95": 5942.73,
+        "p99": 5942.73,
+        "max": 5942.73
+      },
+      "latency_ms_steady_state": {
+        "p50": 172.98,
+        "p95": 398.9,
+        "p99": 6186.61,
+        "max": 6202.13
+      },
+      "wall_s": 45.898,
+      "completed_per_s": 4.99,
+      "child_peak_rss_raw": 32407552,
+      "journal_growth": {
+        "journal_rows": 229,
+        "operation_rows": 229,
+        "store_bytes_incl_wal": 491520
+      },
+      "store_verifies": true,
+      "verify_ms": 17005.0
+    },
+    {
+      "experiment": "hung_reducer_with_unrelated_writer",
+      "worker_timeout_ms": 1000,
+      "hung_request": [
+        {
+          "writer": "hung",
+          "first": true,
+          "at_s": 0.0,
+          "ms": 2076.17,
+          "outcome": "refused:IK_INTERNAL",
+          "detail": "IK_INTERNAL rule=reducer.timeout: reducer worker exceeded its timeout"
+        }
+      ],
+      "bystander": {
+        "requests": 40,
+        "completed": 40,
+        "outcomes": {
+          "ok": 40
+        },
+        "latency_ms_all_requests": {
+          "p50": 145.33,
+          "p95": 348.91,
+          "p99": 2012.87,
+          "max": 2012.87
+        },
+        "latency_ms_first_request_per_writer": {
+          "p50": 349.33,
+          "p95": 349.33,
+          "p99": 349.33,
+          "max": 349.33
+        },
+        "latency_ms_steady_state": {
+          "p50": 142.99,
+          "p95": 292.76,
+          "p99": 2012.87,
+          "max": 2012.87
+        },
+        "wall_s": 12.217,
+        "completed_per_s": 3.27
+      },
+      "bystander_max_block_ms": 2012.87,
+      "recovery_probe": {
+        "ok": true,
+        "ms": 1462.09,
+        "detail": ""
+      },
+      "store_verifies": true,
+      "store": {
+        "journal_rows": 43,
+        "operation_rows": 41,
+        "store_bytes_incl_wal": 172032
+      },
+      "child_peak_rss_raw": 30883840
+    },
+    {
+      "experiment": "worker_killed_mid_decision",
+      "killed_request": [
+        {
+          "writer": "killer",
+          "first": true,
+          "at_s": 0.001,
+          "ms": 257.44,
+          "outcome": "refused:IK_INTERNAL",
+          "detail": "IK_INTERNAL rule=reducer.exit: reducer exited with signal: 9 (SIGKILL)"
+        }
+      ],
+      "recovery_probe": {
+        "ok": true,
+        "ms": 2238.56,
+        "detail": ""
+      },
+      "store_verifies": true,
+      "child_peak_rss_raw": 29769728
+    },
+    {
+      "experiment": "overload_simultaneous_hung_reducers",
+      "writers": 8,
+      "worker_timeout_ms": 1000,
+      "requests": 8,
+      "completed": 0,
+      "outcomes": {
+        "store_busy": 4,
+        "refused:IK_INTERNAL": 4
+      },
+      "latency_ms_all_requests": {
+        "p50": 5724.05,
+        "p95": 6579.57,
+        "p99": 6579.57,
+        "max": 6579.57
+      },
+      "latency_ms_first_request_per_writer": {
+        "p50": 5724.05,
+        "p95": 6579.57,
+        "p99": 6579.57,
+        "max": 6579.57
+      },
+      "latency_ms_steady_state": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "wall_s": 6.581,
+      "completed_per_s": 0.0,
+      "recovery_probe": {
+        "ok": true,
+        "ms": 983.26,
+        "detail": ""
+      },
+      "store_verifies": true,
+      "child_peak_rss_raw": 33161216
+    },
+    {
+      "experiment": "verify_cost_scaling",
+      "mode": "declarative",
+      "points": [
+        {
+          "events": 100,
+          "verify_ms": 2.2,
+          "ms_per_event": 0.02,
+          "outcome": "ok"
+        },
+        {
+          "events": 1000,
+          "verify_ms": 48.4,
+          "ms_per_event": 0.05,
+          "outcome": "ok"
+        }
+      ]
+    },
+    {
+      "experiment": "verify_cost_scaling",
+      "mode": "external",
+      "points": [
+        {
+          "events": 25,
+          "verify_ms": 1803.6,
+          "ms_per_event": 72.14,
+          "outcome": "ok"
+        },
+        {
+          "events": 50,
+          "verify_ms": 3351.9,
+          "ms_per_event": 67.04,
+          "outcome": "ok"
+        },
+        {
+          "events": 100,
+          "verify_ms": 5465.3,
+          "ms_per_event": 54.65,
+          "outcome": "ok"
+        }
+      ]
+    }
+  ],
+  "evaluation": [
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "uncontended/declarative/cold_one_shot/delay=0",
+      "observed": 234.62,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 234.62,
+      "first_request_p99_ms": 93.58,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "uncontended/external/cold_one_shot/delay=0",
+      "observed": 768.47,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 768.47,
+      "first_request_p99_ms": 521.69,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "uncontended/external/cold_one_shot/delay=50",
+      "observed": 837.16,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 837.16,
+      "first_request_p99_ms": 610.69,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "uncontended/declarative/warm_session/delay=0",
+      "observed": 0.81,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 0.73,
+      "first_request_p99_ms": 13.62,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "uncontended/external/warm_session/delay=0",
+      "observed": 222.73,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 200.09,
+      "first_request_p99_ms": 346.29,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "uncontended/external/warm_session/delay=50",
+      "observed": 330.25,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 262.05,
+      "first_request_p99_ms": 444.42,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "offered_load_2_per_s/external/warm_session/delay=50",
+      "observed": 1896.28,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 306.05,
+      "first_request_p99_ms": 2478.25,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "offered_load_5_per_s/external/warm_session/delay=50",
+      "observed": 1253.78,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 531.54,
+      "first_request_p99_ms": 2077.82,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "caller_wait_p99_ms_normal",
+      "case": "offered_load_2_per_s/declarative/warm_session/delay=0",
+      "observed": 20.45,
+      "limit": 2000,
+      "pass": true,
+      "steady_state_p99_ms": 20.45,
+      "first_request_p99_ms": 5.59,
+      "non_ok_outcomes": {}
+    },
+    {
+      "budget": "capacity_observation_not_judged",
+      "case": "saturation_same_aggregate/declarative",
+      "completed_per_s": 1574.52,
+      "steady_p99_ms": 38.23,
+      "non_ok_outcomes": {
+        "stale_refusal": 23
+      },
+      "pass": null
+    },
+    {
+      "budget": "capacity_observation_not_judged",
+      "case": "saturation_same_aggregate/external",
+      "completed_per_s": 5.36,
+      "steady_p99_ms": 5732.25,
+      "non_ok_outcomes": {
+        "stale_refusal": 4,
+        "store_busy": 9
+      },
+      "pass": null
+    },
+    {
+      "budget": "capacity_observation_not_judged",
+      "case": "saturation_unrelated_aggregates/declarative",
+      "completed_per_s": 1357.93,
+      "steady_p99_ms": 41.8,
+      "non_ok_outcomes": {},
+      "pass": null
+    },
+    {
+      "budget": "capacity_observation_not_judged",
+      "case": "saturation_unrelated_aggregates/external",
+      "completed_per_s": 4.99,
+      "steady_p99_ms": 6186.61,
+      "non_ok_outcomes": {
+        "store_busy": 10,
+        "refused:IK_INTERNAL": 1
+      },
+      "pass": null
+    },
+    {
+      "budget": "hung_worker_fails_within_ms",
+      "observed": 2076.17,
+      "limit": 2500,
+      "pass": true,
+      "diagnostic": "IK_INTERNAL rule=reducer.timeout: reducer worker exceeded its timeout"
+    },
+    {
+      "budget": "other_writer_blocked_by_hang_at_most_ms",
+      "observed": 2012.87,
+      "limit": 2500,
+      "pass": true
+    },
+    {
+      "budget": "recovery_within_ms",
+      "case": "hung_reducer_with_unrelated_writer",
+      "observed": 1462.09,
+      "limit": 5000,
+      "pass": true
+    },
+    {
+      "budget": "recovery_within_ms",
+      "case": "worker_killed_mid_decision",
+      "observed": 2238.56,
+      "limit": 5000,
+      "pass": true
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+selftest N22 positive build True change True c2fail [] OK
+selftest N22 alt-surface-reference build True change True c2fail [] OK
+selftest N22 state-invariant build True change True c2fail [] OK
+selftest N22 host-only build True change False c2fail ['air_at', 'air_gate', 'band_set', 'cart_total', 'engineer_id', 'extra_cart', 'host_id', 'kill_clear', 'kill_note', 'mic_bound', 'producer_id', 'studio_matches'] OK
+selftest N22 alt-surface-host-only build True change False c2fail ['air_at', 'air_gate', 'band_set', 'cart_total', 'engineer_id', 'extra_cart', 'host_id', 'kill_clear', 'kill_note', 'mic_bound', 'producer_id', 'studio_matches'] OK
+selftest N22 missing-input build True change False c2fail ['band_set', 'engineer_id', 'host_id', 'kill_note', 'mic_bound', 'producer_id'] OK
+selftest N22 alt-surface-missing-input build True change False c2fail ['band_set', 'engineer_id', 'host_id', 'kill_note', 'mic_bound', 'producer_id'] OK
+selftest N22 shared-type-only-missing build True change False c2fail ['engineer_id', 'host_id', 'producer_id'] OK
+selftest N22 status-before-value build True change True c2fail [] OK
+selftest N22 over-constrained build True change False c2fail ['air_gate', 'cart_total', 'extra_cart', 'host_id', 'mic_bound', 'studio_matches'] OK
+selftest N22 stale build True change False c2fail ['kill_clear'] OK
+selftest N22 refuse build True change False c2fail ['air_at', 'air_gate', 'band_set', 'cart_total', 'engineer_id', 'extra_cart', 'host_id', 'kill_clear', 'kill_note', 'mic_bound', 'producer_id', 'studio_matches'] OK
+selftest N22 breaks-old build True change False c2fail [] OK
+selftest N22 build-negative host-only-checks False OK
+selftest N22 build-negative missing-input-validity False OK
+selftest N22 build-negative shared-type-only-missing False OK
+selftest N22 build-negative over-constrained False OK
+selftest N23 positive build True change True c2fail [] OK
+selftest N23 alt-surface-reference build True change True c2fail [] OK
+selftest N23 state-invariant build True change True c2fail [] OK
+selftest N23 host-only build True change False c2fail ['carton_bound', 'clerk_id', 'due_at', 'extra_buffer', 'fill_units', 'item_set', 'pharmacist_id', 'receive_gate', 'received_n', 'reviewer_id', 'void_clear', 'void_note'] OK
+selftest N23 alt-surface-host-only build True change False c2fail ['carton_bound', 'clerk_id', 'due_at', 'extra_buffer', 'fill_units', 'item_set', 'pharmacist_id', 'receive_gate', 'received_n', 'reviewer_id', 'void_clear', 'void_note'] OK
+selftest N23 missing-input build True change False c2fail ['carton_bound', 'clerk_id', 'item_set', 'pharmacist_id', 'reviewer_id', 'void_note'] OK
+selftest N23 alt-surface-missing-input build True change False c2fail ['carton_bound', 'clerk_id', 'item_set', 'pharmacist_id', 'reviewer_id', 'void_note'] OK
+selftest N23 shared-type-only-missing build True change False c2fail ['clerk_id', 'pharmacist_id', 'reviewer_id'] OK
+selftest N23 status-before-value build True change True c2fail [] OK
+selftest N23 over-constrained build True change False c2fail ['carton_bound', 'extra_buffer', 'fill_units', 'receive_gate', 'received_n'] OK
+selftest N23 stale build True change False c2fail ['void_clear'] OK
+selftest N23 refuse build True change False c2fail ['carton_bound', 'clerk_id', 'due_at', 'extra_buffer', 'fill_units', 'item_set', 'pharmacist_id', 'receive_gate', 'received_n', 'reviewer_id', 'void_clear', 'void_note'] OK
+selftest N23 breaks-old build True change False c2fail [] OK
+selftest N23 build-negative host-only-checks False OK
+selftest N23 build-negative missing-input-validity False OK
+selftest N23 build-negative shared-type-only-missing False OK
+selftest N23 build-negative over-constrained False OK
+SELFTEST OK

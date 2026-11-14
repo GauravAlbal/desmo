@@ -1,0 +1,16 @@
+VERDICT
+  ACCEPT
+ASSURANCE
+  class bounded_checked
+  exploration complete_within_corpus
+  ACCEPT is corpus-relative, not a proof
+
+RELEASE POLICY (strict; separate from developer ACCEPT)
+  verdict release_pass
+  obligation status: not_examined=11 satisfied=16
+  corpus 89163d94f2243f62f94f0d9810e3d0bc363fb573dbbc076e5bf5fd6796051b6c (8 cases), exploration complete within the supplied corpus, nodes 6
+  excluded: evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof
+  excluded: runtime artifact digest is unavailable: this report is not bound to a specific binary
+  excluded: external reducers, hosts, and effect executors are outside this check
+  excluded: obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EFFECT-001, OBL-EFFECT-002, OBL-EFFECT-003, OBL-EFFECT-004, OBL-EVENT-001, OBL-INV-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002
+  excluded: no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)

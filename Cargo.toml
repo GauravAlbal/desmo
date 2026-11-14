@@ -1,0 +1,36 @@
+[package]
+name = "invariant-kernel"
+version = "0.5.0"
+edition = "2021"
+description = "Reusable pure invariant runtime: machine contract, declarative machines, durable SQLite store, strict canonical JSON CLI"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "ik"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ik"
+path = "src/bin/ik.rs"
+
+[features]
+default = []
+# Test-only crash-injection seam: `CrashHook`, `Store::open_with_crash_hook`, the
+# `Store.crash_hook` field, the `fire_crash` plumbing, and the real process-crash
+# matrix in tests/crash_matrix.rs. Off by default so a normal `cargo build` /
+# `cargo test` compiles the crate with NO crash-arming API; run the matrix with
+# `cargo test --all-features`.
+test-support = []
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["arbitrary_precision"] }
+toml = "0.8"
+rusqlite = { version = "0.31", features = ["bundled"] }
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3"
+proptest = "1"
+hegeltest = "=0.30.0"

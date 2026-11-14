@@ -1,0 +1,3 @@
+#!/bin/sh
+export DEFECT=duplicate-effect
+exec node "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/../_lib/desk.mjs" "$@"

@@ -1,0 +1,11 @@
+{
+  "id": "wrong_request_id",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "fault": "wrong_request_id",
+  "expect": {
+    "result_accepted": false,
+    "rejection_reason": "request_id_mismatch"
+  }
+}

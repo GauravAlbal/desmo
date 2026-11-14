@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "covering_earlier_arm"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+nonneg = {}
+exact = {}
+neg = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x >= 0", to = "nonneg" },
+  { when = "$x == 3", to = "exact" },
+  { when = "$x < 0", to = "neg" }
+]
+

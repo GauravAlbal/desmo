@@ -1,0 +1,1 @@
+Contract: v2 checkin is a guarded command (`$now_ms <= loan_until_ms || recall_placed == 1`); 7-day span is `$loan_until_ms == $checkout_ms + 604800000`. Legit: checkout 1000/604801000 then on-time checkin commits; overdue checkin after place_recall commits. Forbidden: overdue checkin with recall_placed=0, and a 14-day span 1209601000, both refused IK_INVARIANT_FAILED.

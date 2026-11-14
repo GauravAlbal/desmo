@@ -1,0 +1,14 @@
+{
+  "scenario_version": 1,
+  "machine": "../desk.ik.toml",
+  "aggregate": "loan-span-lie",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "checkout-14d-lie",
+      "name": "checkout",
+      "args": { "checkout_ms": 1000, "loan_until_ms": 1209601000 },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "findings": [
+    {
+      "status": "committed",
+      "evidence_class": "observed_trace",
+      "attempted": "{\"operation_id\":\"op-tag\"}"
+    },
+    {
+      "status": "reply_dropped",
+      "evidence_class": "observed_trace"
+    },
+    {
+      "status": "committed_exact",
+      "evidence_class": "observed_trace"
+    },
+    {
+      "status": "historical",
+      "evidence_class": "observed_trace"
+    }
+  ]
+}

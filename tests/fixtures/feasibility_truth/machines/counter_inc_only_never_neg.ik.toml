@@ -1,0 +1,18 @@
+schema_version = 1
+machine_id = "counter_inc_only_never_neg"
+machine_version = 1
+
+[facts]
+n = { type = "int", policy = "counter", initial = 0 }
+[states]
+s = { initial = true }
+neg = {}
+[commands.inc]
+from = ["s"]
+then = { n = "+1" }
+to = "s"
+[commands.see_neg]
+from = ["s"]
+when = "n < 0"
+to = "neg"
+

@@ -1,0 +1,52 @@
+{
+  "batch": "012",
+  "purpose": "requalification of repaired bytes and finite transfer check (see PREREG.md); frozen before any agent ran",
+  "candidate_source": "a241e5cb70cecf7a9b4ce71c6c0445ed4c658a4b",
+  "includes": "coverage-contract repair 0f41079 (record and discharge proved-impossible command/source success obligations)",
+  "superseded_candidate": "d0927f4 (built and passed targeted regressions; superseded by the coverage repair, not the subject of this check)",
+  "host": "macOS arm64",
+  "ik_version": "invariant-kernel 0.5.0 protocol 1.0",
+  "ik_binary_sha256": "f431bcf5ddeb96d29e4b87573d2f3ad385a837523e2aef52cba73b6eae6430d4",
+  "binary_identical_in_release_build_and_packed_npm_package": true,
+  "npm_tarballs_sha256": {
+    "ikaros-darwin-arm64-0.5.0.tgz": "b5536aa32f1bbae0a63d4c52d0355b79e70790248daf7986f19438f0234fe5d7",
+    "ikaros-runtime-0.5.0.tgz": "042ea5cbedf03ec5348228c294fc1d4f65e58f70338a03f6e642393d028f0856"
+  },
+  "targeted_regressions_on_packed_binary": {
+    "artifact_qualification": "scripts/qualify_artifacts.py exit 0, negative controls behaved",
+    "seam_fixtures": "all seams matched (validation/dfy/regressions/run.py)",
+    "typescript_client_and_skill_tests": "66 passed, 0 failed",
+    "python_client_tests": "149 passed, 1 skipped",
+    "rust_suite_on_source": "523 passed, 0 failed (at the coverage repair; later source differences are records only)",
+    "coverage_repair_consumer_models": "model A ACCEPT with 3 discharged records; model H REFUSED with 25 discharged and 26 unwitnessed retained (as scoped; the other 26 await an owner coverage-policy decision)"
+  },
+  "builder_visible_sha256": {
+    "N16/brief.md": "c4dd8b673383f1d6cb2b6c9cf168f4b11de467b27fb99285825bab2cdf4d6bbc",
+    "N16/change.md": "c81b6ba7377cb39b8596dad8c3602ab0c20f9309d189820e637aeb26035e55be",
+    "N16/stub/server.mjs": "530c90a3915296b71d0966e87cfe328c471aea39cae39d9f1079f0e265a72022",
+    "N16/stub/CONTRACT.md": "a28d654714aec7d0f21c55cbcafb7a3256830772cd20d7d84b4536045db64ea1",
+    "N17/brief.md": "c0c25a19c79b879c9fc606b6574c37d7d496da64959109986e20a3a8e3686ece",
+    "N17/change.md": "f35d8e235f4a8cd5590ee2e39e3550f9d4d6e3e0a06c14185d0c0214c0456344",
+    "N17/stub/server.mjs": "17b2364533b8b3729044e97641b7e99c6df87ea70cf224855d01300ad277752b",
+    "N17/stub/CONTRACT.md": "85416bab07dfb1376c406308454a8782b9b24652160542804d286458b3986a31"
+  },
+  "prompt_sha256": {
+    "common.md": "33d0599d1f1ab047ca2275898881e0d3bc72d675dfdb4a40d071d560664c1c3a",
+    "stage-build.md": "8202bc5f3095bd300ee5c88dce55c1bc227bd0ada77e56806e966df2bfa59546",
+    "stage-change.md": "7a7e50a856b830321ef136537889d002844a6f91d2b4944cc42a1023e919562c",
+    "tool-py.md": "9d2c4c4119279acbacb17720f32c936cd7df7230c994cdf15bc881483e725c7a",
+    "tool-ts.md": "f9d1c3bec7a4b939b5814579bda02968f1be4a3fe4d8cbbb7841ee1f0f938c41"
+  },
+  "staged_prompts_sha256": {
+    "N16/r1": "2ff3b4e2994e6882e92585996e11f8fc469b319b842e0ea21c9fb98c0cd6f806",
+    "N16/r2": "d55db83318e92560f1bac3539f78d38ac01e62a3068ac18f1de4c1c59bd637c4",
+    "N17/r1": "71a043d85ecc64f3b8138d88b7905e56d616f611de4f887d6898b8f78a0d06af",
+    "N17/r2": "b9473f8d22cd77064c511b47e25a9403e4087ac6d3624c4e50b94246e8cf1909"
+  },
+  "scorer_sha256": "0e8c1e65d4022e61a0141caa9620345797a3913ec02dbeea9cebd13bf6523b6d",
+  "sealed_evaluator_archive_sha256": "bf2a22e2898412c3f1c69ebae800692c29a209bc14513c7db5b5af666f61a5ee",
+  "isolation": "evaluators, reference toys, controls and attack harness are one encrypted archive with a fresh key held in the lead's process memory only (never written to disk); plaintext deleted before dispatch; decrypted only after all agent waves. Same-account isolation limits from the custody check still apply: no general sandbox is claimed.",
+  "instrument_selftest": "positives pass and negatives fail through the scorer path on cand13 bytes (N16: reference, host-only (build and change), stale, always-refuse, breaks-old; N17: reference, host-only, stale, always-refuse, breaks-old). N17 has no host-only BUILD-stage toy, so its build-stage negative rests on the change-stage run of the same attack code.",
+  "what_this_supports": "a finite transfer check on the repaired bytes; not a rate, a comparison, DFYJourneyQualified or any claim about other families",
+  "limits": "no Linux x64, no human participants, agent model identity not exposed, both families TypeScript"
+}

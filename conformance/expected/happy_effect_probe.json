@@ -1,0 +1,62 @@
+{
+  "steps": [
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 0,
+        "state": {
+          "state": "idle"
+        }
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "effect": {
+          "intent": {
+            "aggregate_id": "agg-1",
+            "effect_id": "e1",
+            "effect_kind": "WORK",
+            "generation": 1,
+            "idempotency_key": "k1",
+            "payload_digest": "p1"
+          },
+          "status": "pending"
+        },
+        "generation": 1,
+        "mutation": true,
+        "state": {
+          "payload_digest": "p1",
+          "state": "planned"
+        }
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "effect": {
+          "outcome_digest": "o1",
+          "status": "recorded"
+        },
+        "generation": 2,
+        "mutation": true
+      }
+    },
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 3,
+        "state": {
+          "payload_digest": "p1",
+          "result_digest": "r1",
+          "state": "finished"
+        },
+        "terminal": true
+      }
+    }
+  ]
+}

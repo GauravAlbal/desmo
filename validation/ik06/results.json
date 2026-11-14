@@ -1,0 +1,778 @@
+{
+  "schema": "ikaros.qualification-results.v1",
+  "provenance": {
+    "source_revision": "899b0b805df7761651446a38db958d3e6a9cdb66",
+    "dirty": true,
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "platform": "macOS-14.7.7-arm64-arm-64bit",
+    "python": "3.9.6"
+  },
+  "scope": "alpha slice: single worker, persistent local SQLite, cooperative callers. Not hostile agents, not other platforms.",
+  "gaps": [
+    {
+      "id": "client-walls-not-mutation-controlled",
+      "text": "Client transport claims have positive and refusal tests but no deleted-wall (mutation) control; the constitutional mutants live in the Rust kernel only."
+    },
+    {
+      "id": "independent-review-not-performed",
+      "text": "The IK-06 independent-reviewer task (false greens, bypasses, uncertainty semantics, integration omissions) requires an independent agent or human; none was available in this run. See validation/ik06/SELF_REVIEW.md for the non-independent author review."
+    },
+    {
+      "id": "single-platform",
+      "text": "Executed on macOS arm64 only. Linux was not run."
+    }
+  ],
+  "results": [
+    {
+      "claim": "currentness",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::stale_request_without_an_operation_id_still_refuses",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact stale_request_without_an_operation_id_still_refuses",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.45,
+      "passed": true
+    },
+    {
+      "claim": "currentness",
+      "kind": "kill:AcceptStaleCapability",
+      "row": "tests/vfy_adopt.rs::capability_stale_accepted_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact capability_stale_accepted_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.19,
+      "passed": true
+    },
+    {
+      "claim": "currentness",
+      "kind": "kill:SkipGenerationIncrement",
+      "row": "tests/vfy_adopt.rs::generation_skip_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact generation_skip_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "currentness",
+      "kind": "kill:SkipNonceRotation",
+      "row": "tests/vfy_adopt.rs::nonce_skip_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact nonce_skip_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "terminal",
+      "kind": "evidence",
+      "row": "tests/vfy_adopt.rs::terminal_mutation_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact terminal_mutation_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "terminal",
+      "kind": "kill:AllowTerminalMutation",
+      "row": "tests/vfy_adopt.rs::terminal_mutation_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact terminal_mutation_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "valid-genesis",
+      "kind": "evidence",
+      "row": "tests/genesis_validity.rs::false_initial_invariant_is_refused_without_rows",
+      "command": "cargo test --offline --all-features --test genesis_validity -- --exact false_initial_invariant_is_refused_without_rows",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.18,
+      "passed": true
+    },
+    {
+      "claim": "valid-genesis",
+      "kind": "evidence",
+      "row": "tests/genesis_validity.rs::valid_genesis_succeeds_on_both_paths",
+      "command": "cargo test --offline --all-features --test genesis_validity -- --exact valid_genesis_succeeds_on_both_paths",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "valid-genesis",
+      "kind": "evidence",
+      "row": "tests/genesis_validity.rs::skipping_genesis_validation_is_killed_for_create_with_command",
+      "command": "cargo test --offline --all-features --test genesis_validity -- --exact skipping_genesis_validation_is_killed_for_create_with_command",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.15,
+      "passed": true
+    },
+    {
+      "claim": "valid-genesis",
+      "kind": "kill:SkipGenesisValidation",
+      "row": "tests/genesis_validity.rs::skipping_genesis_validation_is_killed",
+      "command": "cargo test --offline --all-features --test genesis_validity -- --exact skipping_genesis_validation_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "invariants",
+      "kind": "evidence",
+      "row": "tests/flat_invariant_witness.rs::defective_flat_machine_is_refused_with_the_shortest_witness_path",
+      "command": "cargo test --offline --all-features --test flat_invariant_witness -- --exact defective_flat_machine_is_refused_with_the_shortest_witness_path",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.24,
+      "passed": true
+    },
+    {
+      "claim": "invariants",
+      "kind": "evidence",
+      "row": "python/tests/test_publish_approval_app.py::test_defective_revise_is_refused_at_runtime_and_by_a_bounded_witness",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 -m pytest -q python/tests/test_publish_approval_app.py::test_defective_revise_is_refused_at_runtime_and_by_a_bounded_witness",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.75,
+      "passed": true
+    },
+    {
+      "claim": "invariants",
+      "kind": "kill:SkipInvariantValidation",
+      "row": "tests/vfy_adopt.rs::invariant_skip_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact invariant_skip_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "atomicity",
+      "kind": "evidence",
+      "row": "tests/crash_matrix.rs::command_after_journal_abort",
+      "command": "cargo test --offline --all-features --test crash_matrix -- --exact command_after_journal_abort",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.26,
+      "passed": true
+    },
+    {
+      "claim": "atomicity",
+      "kind": "evidence",
+      "row": "tests/crash_matrix.rs::admit_after_projection_exit",
+      "command": "cargo test --offline --all-features --test crash_matrix -- --exact admit_after_projection_exit",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.25,
+      "passed": true
+    },
+    {
+      "claim": "atomicity",
+      "kind": "evidence",
+      "row": "tests/crash_matrix.rs::record_after_receipts_abort",
+      "command": "cargo test --offline --all-features --test crash_matrix -- --exact record_after_receipts_abort",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.26,
+      "passed": true
+    },
+    {
+      "claim": "atomicity",
+      "kind": "evidence",
+      "row": "tests/crash_matrix.rs::genesis_after_aggregates_insert_exit",
+      "command": "cargo test --offline --all-features --test crash_matrix -- --exact genesis_after_aggregates_insert_exit",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.25,
+      "passed": true
+    },
+    {
+      "claim": "atomicity",
+      "kind": "kill:PersistOnRefusal",
+      "row": "tests/vfy_adopt.rs::partial_persist_on_refusal_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact partial_persist_on_refusal_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "atomicity",
+      "kind": "kill:CommitPartialTransaction",
+      "row": "tests/transaction.rs::ik_prop_013_mutation_control_commit_partial_transaction_is_detected",
+      "command": "cargo test --offline --all-features --test transaction -- --exact ik_prop_013_mutation_control_commit_partial_transaction_is_detected",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.2,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::lost_response_then_other_writer_is_reconciled_by_exact_repeat",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact lost_response_then_other_writer_is_reconciled_by_exact_repeat",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::reusing_an_id_for_different_semantics_or_a_refreshed_capability_conflicts",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact reusing_an_id_for_different_semantics_or_a_refreshed_capability_conflicts",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::refused_requests_leave_no_operation_row_and_lookup_is_not_recorded",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact refused_requests_leave_no_operation_row_and_lookup_is_not_recorded",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::concurrent_identical_operations_commit_exactly_once",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact concurrent_identical_operations_commit_exactly_once",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.18,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::real_process_crash::crash_before_commit_at_each_attribution_boundary_leaves_no_binding",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact real_process_crash::crash_before_commit_at_each_attribution_boundary_leaves_no_binding",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.19,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::wall_mutants::a_mutant_whose_seam_is_not_reached_reports_zero_firings",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::a_mutant_whose_seam_is_not_reached_reports_zero_firings",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::wall_mutants::skipping_the_duplicate_gate_is_killed_for_transactions",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::skipping_the_duplicate_gate_is_killed_for_transactions",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::wall_mutants::skipping_the_duplicate_gate_is_killed_for_effect_records",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::skipping_the_duplicate_gate_is_killed_for_effect_records",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::wall_mutants::skipping_the_duplicate_gate_is_killed_for_create_with_command",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::skipping_the_duplicate_gate_is_killed_for_create_with_command",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed_for_transactions",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed_for_transactions",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed_for_effect_records",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed_for_effect_records",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "kill:SkipOperationBinding",
+      "row": "tests/operation_attribution.rs::wall_mutants::skipping_operation_binding_is_killed",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::skipping_operation_binding_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "kill:SkipDuplicateGate",
+      "row": "tests/operation_attribution.rs::wall_mutants::skipping_the_duplicate_gate_is_killed",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::skipping_the_duplicate_gate_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "operation-attribution",
+      "kind": "kill:OmitCapabilityFromFingerprint",
+      "row": "tests/operation_attribution.rs::wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact wall_mutants::omitting_the_capability_from_the_fingerprint_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "replay",
+      "kind": "evidence",
+      "row": "tests/ik_props.rs::ik_prop_001_replay_reconstructs_exact_semantic_state",
+      "command": "cargo test --offline --all-features --test ik_props -- --exact ik_prop_001_replay_reconstructs_exact_semantic_state",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.2,
+      "passed": true
+    },
+    {
+      "claim": "replay",
+      "kind": "evidence",
+      "row": "tests/k1.rs::replay_reconstructs_projection_and_verify_passes",
+      "command": "cargo test --offline --all-features --test k1 -- --exact replay_reconstructs_projection_and_verify_passes",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.19,
+      "passed": true
+    },
+    {
+      "claim": "replay",
+      "kind": "evidence",
+      "row": "tests/k1.rs::altered_domain_state_digest_refuses_replay",
+      "command": "cargo test --offline --all-features --test k1 -- --exact altered_domain_state_digest_refuses_replay",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "replay",
+      "kind": "kill:RerunLiveGuardsOnReplay",
+      "row": "tests/vfy_adopt.rs::frozen_event_store_replay_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact frozen_event_store_replay_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "effect-binding",
+      "kind": "evidence",
+      "row": "tests/operation_attribution.rs::effect_outcome_attribution_is_independent_of_effect_deduplication",
+      "command": "cargo test --offline --all-features --test operation_attribution -- --exact effect_outcome_attribution_is_independent_of_effect_deduplication",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "effect-binding",
+      "kind": "evidence",
+      "row": "python/tests/test_publish_approval_app.py::test_effect_outcome_is_idempotent_and_a_conflicting_outcome_is_refused",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 -m pytest -q python/tests/test_publish_approval_app.py::test_effect_outcome_is_idempotent_and_a_conflicting_outcome_is_refused",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 1.25,
+      "passed": true
+    },
+    {
+      "claim": "effect-binding",
+      "kind": "kill:AllowSecondPendingEffect",
+      "row": "tests/vfy_adopt.rs::second_pending_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact second_pending_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.17,
+      "passed": true
+    },
+    {
+      "claim": "effect-binding",
+      "kind": "kill:AllowEffectConflict",
+      "row": "tests/vfy_adopt.rs::effect_conflict_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact effect_conflict_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "effect-binding",
+      "kind": "kill:MutateOnDuplicate",
+      "row": "tests/vfy_adopt.rs::duplicate_mutation_is_killed",
+      "command": "cargo test --offline --all-features --test vfy_adopt -- --exact duplicate_mutation_is_killed",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.16,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "python/tests/test_operation_recovery.py::test_dropped_reply_then_other_writer_is_recovered_by_a_fresh_client",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 -m pytest -q python/tests/test_operation_recovery.py::test_dropped_reply_then_other_writer_is_recovered_by_a_fresh_client",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.67,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "python/tests/test_operation_recovery.py::test_timeout_after_dispatch_is_submission_unknown_and_never_retried",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 -m pytest -q python/tests/test_operation_recovery.py::test_timeout_after_dispatch_is_submission_unknown_and_never_retried",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.84,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "typescript/src/operation.test.ts::a timeout after dispatch is submission-unknown and is never retried",
+      "command": "node --test --test-name-pattern=^a\\ timeout\\ after\\ dispatch\\ is\\ submission\\-unknown\\ and\\ is\\ never\\ retried$ dist/operation.test.js",
+      "cwd": "typescript",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 5.23,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "typescript/src/operation.test.ts::a missing binary is pre-dispatch, keeps the operation id, and commits nothing",
+      "command": "node --test --test-name-pattern=^a\\ missing\\ binary\\ is\\ pre\\-dispatch,\\ keeps\\ the\\ operation\\ id,\\ and\\ commits\\ nothing$ dist/operation.test.js",
+      "cwd": "typescript",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.21,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "python/tests/test_operation_recovery.py::test_a_dead_session_keeps_an_in_flight_operation_id_unknown_not_unsent",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 -m pytest -q python/tests/test_operation_recovery.py::test_a_dead_session_keeps_an_in_flight_operation_id_unknown_not_unsent",
+      "cwd": ".",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.53,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "go/operation_test.go::TestTimeoutAfterDispatchIsSubmissionUnknownAndNeverRetried",
+      "command": "go test -count=1 -v -run ^TestTimeoutAfterDispatchIsSubmissionUnknownAndNeverRetried$ ./...",
+      "cwd": "go",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 5.85,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "go/operation_test.go::TestPlainCommandAndRecordAlsoCarryAnOperationIDAfterAnUncertainTimeout",
+      "command": "go test -count=1 -v -run ^TestPlainCommandAndRecordAlsoCarryAnOperationIDAfterAnUncertainTimeout$ ./...",
+      "cwd": "go",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 10.37,
+      "passed": true
+    },
+    {
+      "claim": "client-transport",
+      "kind": "evidence",
+      "row": "go/operation_test.go::TestMissingBinaryIsUnsentKeepsTheIDAndCommitsNothing",
+      "command": "go test -count=1 -v -run ^TestMissingBinaryIsUnsentKeepsTheIDAndCommitsNothing$ ./...",
+      "cwd": "go",
+      "exit_code": 0,
+      "counts": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "seconds": 0.32,
+      "passed": true
+    }
+  ],
+  "all_passed": true
+}

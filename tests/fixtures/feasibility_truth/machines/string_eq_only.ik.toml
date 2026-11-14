@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "string_eq_only"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+yes = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+when = '$s == "ok"'
+to = "yes"
+

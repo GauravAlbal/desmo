@@ -1,0 +1,8 @@
+{
+  "trace": "happy_verification_attempt",
+  "machine": "verification_attempt",
+  "mutations": [
+    {"sql": "UPDATE journal SET sequence = 99 WHERE aggregate_id = 'agg-1' AND sequence = 1"}
+  ],
+  "expect_code": "IK_JOURNAL_CORRUPT"
+}

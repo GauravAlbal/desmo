@@ -1,0 +1,1 @@
+Contract: fill checks `$remain_after == remaining_qty - $units`, `$deadline == $now_ms + hold_ms`, and `$amount == $units * 175`. Legit: intake qty=10 hold_ms=5000 then fill units=4 remain_after=6 now_ms=1000 deadline=6000 amount=700 commits. Forbidden: remain_after=99, deadline=0, or amount=1, each refused IK_INVARIANT_FAILED.

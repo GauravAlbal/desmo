@@ -1,0 +1,9 @@
+{
+  "scenario_version": 1,
+  "machine": "../approval_revision.ik.toml",
+  "aggregate": "doc-missed-drop",
+  "steps": [
+    {"kind": "command", "label": "blocked", "name": "authorize", "expect": "refused:IK_INVARIANT_FAILED"},
+    {"kind": "drop_reply", "label": "lost", "of": "blocked"}
+  ]
+}

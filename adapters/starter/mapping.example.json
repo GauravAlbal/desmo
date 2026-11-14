@@ -1,0 +1,13 @@
+{
+  "subject": "ik.graph.v1",
+  "question": "dead_end_count",
+  "property_class": "finite_scope_stuck",
+  "node": "graph node id (n plus the canonical state digest). A source label alone does not identify the node.",
+  "command": "A named command is a graph edge, not a stuckness claim. Only outcome committed is a continuation.",
+  "refusal": "A refused or noop edge is a self-loop. It does not leave the node.",
+  "stuck": "Non-terminal, not listed in frontier, and no committed outgoing edge.",
+  "frontier": "A frontier node was not fully expanded. It is not counted as a dead end.",
+  "evidence": "exhaustive_finite_model only when graph.complete is true and frontier is empty. Otherwise bounded_paths.",
+  "finding": "Zero dead ends on a closed graph is holds_in_scope for this question only. Zero dead ends on an incomplete graph is inconclusive, not unreachable and not holds_in_scope.",
+  "unsupported": "Any question other than dead_end_count, and any property_class other than finite_scope_stuck."
+}

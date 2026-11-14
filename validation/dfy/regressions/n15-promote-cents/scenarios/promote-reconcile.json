@@ -1,0 +1,46 @@
+{
+  "scenario_version": 1,
+  "machine": "../listing.ik.toml",
+  "aggregate": "L1",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "open",
+      "name": "open",
+      "args": { "amount": 10000, "deposit_window_ms": 5000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "accept",
+      "name": "accept",
+      "args": { "deposit_cents": 200, "accepted_ms": 1000, "deposit_deadline_ms": 6000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "deposit",
+      "name": "deposit",
+      "args": { "deposit_id": "dep-1" },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "fallthrough",
+      "name": "fallthrough",
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "promote",
+      "name": "promote",
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "reconcile",
+      "name": "reconcile",
+      "expect": "committed"
+    }
+  ]
+}

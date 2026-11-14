@@ -1,0 +1,13 @@
+schema_version = 1
+machine_id = "missing_authored_branch"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+done = {}
+other = {}
+[commands.go]
+from = ["idle"]
+to = "done"
+

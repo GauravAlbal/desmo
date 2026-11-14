@@ -1,0 +1,1225 @@
+{
+  "first_scoring": {
+    "N20/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "bed_limit": {
+          "1": true,
+          "2": false
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false
+        },
+        "water_volume": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N20/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bed_limit": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plants_boost": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "water_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N20/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "bed_limit": {
+          "1": true,
+          "2": false
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false
+        },
+        "water_volume": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N20/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bed_limit": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plants_boost": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "water_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N21/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": false
+        },
+        "board_gate": {
+          "1": true,
+          "2": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": false
+        },
+        "dest_set": {
+          "1": true,
+          "2": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N21/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "coordinator_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": false
+        },
+        "extra_lunch": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": false
+        }
+      }
+    },
+    "N21/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": false
+        },
+        "dest_set": {
+          "1": true,
+          "2": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N21/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "coordinator_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": false
+        },
+        "extra_lunch": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": false
+        }
+      }
+    }
+  },
+  "note": "Per replica and stage: pass, and per rule criterion results (1 valid path, 2 direct-command refusal, 3 invalidation, 4 existing instances). first_scoring is the record. The two rescoring tiers use repaired evaluators and are reported separately; see DECISION.md.",
+  "rescoring_v2_1": {
+    "N20/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "bed_limit": {
+          "1": true,
+          "2": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false
+        },
+        "water_volume": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N20/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bed_limit": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plants_boost": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "water_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N20/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "bed_limit": {
+          "1": true,
+          "2": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false
+        },
+        "water_volume": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N20/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bed_limit": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plants_boost": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "water_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N21/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": false
+        },
+        "board_gate": {
+          "1": true,
+          "2": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N21/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "coordinator_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_lunch": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N21/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N21/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "coordinator_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_lunch": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "rescoring_v2_before_discovery_fix": {
+    "N20/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "bed_limit": {
+          "1": true,
+          "2": false
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false
+        },
+        "water_volume": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N20/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bed_limit": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plants_boost": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "water_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N20/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "bed_limit": {
+          "1": true,
+          "2": false
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false
+        },
+        "water_volume": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N20/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "abort_clear": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "abort_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "bed_limit": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "crop_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "harvest_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "picker_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "plants_boost": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "rest_ready": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "steward_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "water_volume": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N21/r1/build": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": false
+        },
+        "board_gate": {
+          "1": true,
+          "2": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N21/r1/change": {
+      "pass": false,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "coordinator_id": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_lunch": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N21/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N21/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "aide_differs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "aide_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "board_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cancel_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "coordinator_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "depart_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "dest_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_lunch": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "lunch_packs": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "seat_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "sealed_evaluator_archives_sha256": {
+    "first_scoring": "a02b2b39f323d18453c644a7a0c835e0eb2a0f2e3a566e9ad7c0816eb0d3aee1",
+    "v2_1": "c9a256693ad5a6dd37881e88781d7bd306ea09105d5ee6780e2f3ac5c24c9aae"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "batch": "015",
+  "purpose": "focused transfer check of input-validity enforcement with the ik laws advisory and corrected guide dispositions (see PREREG.md); frozen before any agent ran",
+  "candidate_source": "ac94b1b3b22b3b3390f7416bc44f43ba5f87583c",
+  "includes": "unguarded_arguments advisory in ik laws, the BUILD and CHANGE guide dispositions, the batch 013 coverage contract and optional adapter (off), pinned-adapter enforcement",
+  "host": "macOS arm64",
+  "ik_version": "invariant-kernel 0.5.0 protocol 1.0",
+  "ik_binary_sha256": "4c5fadbc118d111d2b98cda3baed1cd836be8db5f52884dafffcb7903760bb71",
+  "binary_identical_in_release_build_and_packed_npm_package": true,
+  "npm_tarballs_sha256": {
+    "ikaros-darwin-arm64-0.5.0.tgz": "7aada012ffb582535cd41f6980bcb371275b60d72f2c11148f249b71486fc06d",
+    "ikaros-runtime-0.5.0.tgz": "736381f20e99ab48572f1d6327e44c9b834be9b6ed0af49a62c2f6b6d2bd4cc4"
+  },
+  "targeted_regressions_on_packed_binary": {
+    "seam_fixtures": "all seams matched",
+    "typescript_client_and_skill_tests": "66 passed, 0 failed",
+    "python_client_tests": "149 passed, 1 skipped in 130.03s (0:02:10)",
+    "artifact_qualification": "scripts/qualify_artifacts.py exit 0, negative controls behaved",
+    "rust_suite_on_source": "run by the acceptance gate on the source revision; not re-run separately for this record"
+  },
+  "builder_visible_sha256": {
+    "N20/brief.md": "fd78fa18c7d82c3f1391c650aa5ed6b80f428e2760a980fb1785a9ef26251d29",
+    "N20/change.md": "fb26d45d6e0b51285fe1e0f81cc7ac8c8acbe4887905d0b5e79efb7b98b16c70",
+    "N20/stub/server.mjs": "f823d2874be28b10cd9b8ccfc247e0d8d443e0192bc806cbc3b535ddeb55d5c9",
+    "N20/stub/CONTRACT.md": "e1fd75a6330d1032e19f1c2245c15950bda816fe25df275acc63190bca2f7dc8",
+    "N21/brief.md": "ade231cf10799b6877d23dd57ba7b74362a44f2c9bb3e6ea48386bad3b7b79cf",
+    "N21/change.md": "4d8c6ab6be8225432e69beefb34e2b282eabbfb046e2fff4176f77ca8cb2b6a7",
+    "N21/stub/server.mjs": "0533130188debcb9b9304aa53b421c2bfb536d80c316ae0fb7326d7b150b266b",
+    "N21/stub/CONTRACT.md": "f62bc4e9e249d6ef289843eaca59c322a596a0caafb092c66c1338d9e9f8d9b6"
+  },
+  "prompt_sha256": {
+    "common.md": "33d0599d1f1ab047ca2275898881e0d3bc72d675dfdb4a40d071d560664c1c3a",
+    "stage-build.md": "8202bc5f3095bd300ee5c88dce55c1bc227bd0ada77e56806e966df2bfa59546",
+    "stage-change.md": "7a7e50a856b830321ef136537889d002844a6f91d2b4944cc42a1023e919562c",
+    "tool-py.md": "9d2c4c4119279acbacb17720f32c936cd7df7230c994cdf15bc881483e725c7a",
+    "tool-ts.md": "f9d1c3bec7a4b939b5814579bda02968f1be4a3fe4d8cbbb7841ee1f0f938c41"
+  },
+  "staged_prompts_sha256": {
+    "N20/r1": "42ddc532b3e1f2e560418df985b18053f0650f6def59654d282f5db5271e39c7",
+    "N20/r2": "b9d5632ca0a6d5e2d272b23cb5960ad859bfd7555df78a1943f8c948f7dc0149",
+    "N21/r1": "dc1f6efce69fe1d01ef752c5af99abe30453d87dcbe7c8f8b002eac04fec980a",
+    "N21/r2": "18a8cad26928a44b50f932bfb3adf001f71b0951aab7896233269ea0e112a1b0"
+  },
+  "staged_skill_sha256": {
+    "N20/r1/build.md": "f8c912c815cb537561ddca8a68733ce129ca1fd43d3a7f1725b12e7fdbf6e518",
+    "N20/r1/change.md": "2d17bb7c9615d00e77055516430a1e38325976427f7b98be3cabd7013dd0f0d9",
+    "N20/r2/build.md": "f8c912c815cb537561ddca8a68733ce129ca1fd43d3a7f1725b12e7fdbf6e518",
+    "N20/r2/change.md": "2d17bb7c9615d00e77055516430a1e38325976427f7b98be3cabd7013dd0f0d9",
+    "N21/r1/build.md": "f8c912c815cb537561ddca8a68733ce129ca1fd43d3a7f1725b12e7fdbf6e518",
+    "N21/r1/change.md": "2d17bb7c9615d00e77055516430a1e38325976427f7b98be3cabd7013dd0f0d9",
+    "N21/r2/build.md": "f8c912c815cb537561ddca8a68733ce129ca1fd43d3a7f1725b12e7fdbf6e518",
+    "N21/r2/change.md": "2d17bb7c9615d00e77055516430a1e38325976427f7b98be3cabd7013dd0f0d9"
+  },
+  "scorer_sha256": "8c57d2d9530806388b364704257d24cc8b717d7b2050fca2cd8edaf3f293175e",
+  "sealed_evaluator_archive_sha256": "a02b2b39f323d18453c644a7a0c835e0eb2a0f2e3a566e9ad7c0816eb0d3aee1",
+  "isolation": "evaluators, reference toys, defect controls and attack harness are one encrypted archive; its key is held in a private file in the lead's home configuration, outside the experiment tree; all plaintext was deleted before dispatch (oracle authors' own sessions retain their transcripts). Same-account isolation limits from the custody check still apply: no general sandbox is claimed.",
+  "instrument_selftest": "SELFTEST OK",
+  "what_this_supports": "a finite check of whether fresh agents given the advisory deliver input-validity rules enforced by the runtime without over-constraining benign arguments, on two fresh families; not a rate, a comparison, DFYJourneyQualified or any claim about other families",
+  "limits": "no Linux x64, no human participants, agent model identity not exposed, both families TypeScript, n=2 per family, feasibility adapter off"
+}

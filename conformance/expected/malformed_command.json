@@ -1,0 +1,46 @@
+{
+  "steps": [
+    {
+      "exit": 0,
+      "ok": true,
+      "result": {
+        "generation": 0
+      }
+    },
+    {
+      "diagnostic": {
+        "code": "IK_COMMAND_INVALID"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_COMMAND_INVALID"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_COMMAND_INVALID"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_COMMAND_INVALID"
+      },
+      "exit": 1,
+      "ok": false
+    },
+    {
+      "diagnostic": {
+        "code": "IK_PROTOCOL_INVALID"
+      },
+      "exit": 1,
+      "ok": false
+    }
+  ]
+}

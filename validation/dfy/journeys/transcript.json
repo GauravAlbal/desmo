@@ -1,0 +1,2987 @@
+{
+  "failed": [],
+  "ik": "$IK",
+  "passed": 18,
+  "runtime": "0.5.0",
+  "schema": "ik.journey-transcript.v1",
+  "steps": [
+    {
+      "argv": [
+        "--version"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "runtime.version",
+      "parsed": null,
+      "pass": true,
+      "stderr": "",
+      "stdout": "invariant-kernel 0.5.0 protocol 1.0\n"
+    },
+    {
+      "argv": [
+        "identity",
+        "fixtures/tagged_item.ik.toml"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "build.identity",
+      "parsed": {
+        "machine_id": "tagged_item",
+        "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+        "version": 1
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"machine_id\":\"tagged_item\",\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"version\":1}\n"
+    },
+    {
+      "argv": [
+        "laws",
+        "fixtures/tagged_item.ik.toml"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "build.laws",
+      "parsed": {
+        "advisory": true,
+        "commands": [
+          {
+            "enforcement": "runtime",
+            "name": "tag"
+          }
+        ],
+        "laws": [],
+        "machine_id": "tagged_item",
+        "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+        "unguarded_arguments": [
+          {
+            "advice": "no guard reads this argument; a rule on its value (non-empty, bounded, in a set, related to a fact) is enforced only by host code",
+            "argument": "label",
+            "command": "tag",
+            "type": "string"
+          }
+        ],
+        "version": 1
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"advisory\":true,\"commands\":[{\"enforcement\":\"runtime\",\"name\":\"tag\"}],\"laws\":[],\"machine_id\":\"tagged_item\",\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"unguarded_arguments\":[{\"advice\":\"no guard reads this argument; a rule on its value (non-empty, bounded, in a set, related to a fact) is enforced only by host code\",\"argument\":\"label\",\"command\":\"tag\",\"type\":\"string\"}],\"version\":1}\n"
+    },
+    {
+      "argv": [
+        "check",
+        "fixtures/tagged_item.ik.toml",
+        "--profile",
+        "fixtures/tagged_item.ik.checks.toml",
+        "--plan",
+        "--json"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "build.check_plan",
+      "parsed": {
+        "bounds": {
+          "max_depth": 8,
+          "max_nodes": 64
+        },
+        "corpus_digest": "6d607ce7a815e81b109d2961ec78e793117505e289d0c46ba321deca0e72d93e",
+        "goals": [
+          {
+            "content_digest": "fcd46959cc2cd898a3ad9c2d2c5f903e1b4b9043c5488eca7a72e46c6b8723d8",
+            "id": "tagged",
+            "kind": "reach_terminal",
+            "required": true
+          }
+        ],
+        "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+        "profile_digest": "edb45f69c3d75931eba54eb8f71e330e5f9ad122e8d1f1f7e19a80681a2432ed",
+        "schema": "ik.check.plan.v1",
+        "scope": "search up to 64 nodes / depth 8 over the supplied corpus; a witness proves reachability, absence of a witness does not prove unreachability unless the search is complete"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"bounds\":{\"max_depth\":8,\"max_nodes\":64},\"corpus_digest\":\"6d607ce7a815e81b109d2961ec78e793117505e289d0c46ba321deca0e72d93e\",\"goals\":[{\"content_digest\":\"fcd46959cc2cd898a3ad9c2d2c5f903e1b4b9043c5488eca7a72e46c6b8723d8\",\"id\":\"tagged\",\"kind\":\"reach_terminal\",\"required\":true}],\"machine_spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"profile_digest\":\"edb45f69c3d75931eba54eb8f71e330e5f9ad122e8d1f1f7e19a80681a2432ed\",\"schema\":\"ik.check.plan.v1\",\"scope\":\"search up to 64 nodes / depth 8 over the supplied corpus; a witness proves reachability, absence of a witness does not prove unreachability unless the search is complete\"}\n"
+    },
+    {
+      "argv": [
+        "check",
+        "fixtures/tagged_item.ik.toml",
+        "--corpus",
+        "fixtures/tagged_item.ik.cases.json",
+        "--profile",
+        "fixtures/tagged_item.ik.checks.toml",
+        "--json"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "build.check_accept",
+      "parsed": {
+        "invariant_witnesses": [],
+        "judgment": {
+          "reasons": [],
+          "status": "accepted",
+          "verdict": "accept"
+        },
+        "profile": {
+          "bounds": {
+            "max_depth": 8,
+            "max_nodes": 64
+          },
+          "corpus_digest": "6d607ce7a815e81b109d2961ec78e793117505e289d0c46ba321deca0e72d93e",
+          "goals": [
+            {
+              "content_digest": "fcd46959cc2cd898a3ad9c2d2c5f903e1b4b9043c5488eca7a72e46c6b8723d8",
+              "id": "tagged",
+              "kind": "reach_terminal",
+              "required": true,
+              "status": "witness_found",
+              "witness": [
+                {
+                  "case": "valid",
+                  "command": "tag",
+                  "outcome_index": 0
+                }
+              ]
+            }
+          ],
+          "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+          "profile_digest": "edb45f69c3d75931eba54eb8f71e330e5f9ad122e8d1f1f7e19a80681a2432ed",
+          "schema": "ik.check.profile.v1",
+          "search_complete": true
+        },
+        "release": {
+          "obligations": [
+            {
+              "kind": "OBL-CAP-001",
+              "obligation_id": "capability/stale",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/tag/from/idle/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-DETERMINISM-001",
+              "obligation_id": "determinism/fold",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-EVENT-001",
+              "obligation_id": "event/frozen_choice",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/tag/0/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-REFUSE-001",
+              "obligation_id": "refusal/immutability",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-REPLAY-001",
+              "obligation_id": "replay/equivalence",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-STATE-001",
+              "obligation_id": "state/tagged/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-TERM-002",
+              "obligation_id": "terminal/tagged/mutation_refused",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-TERM-001",
+              "obligation_id": "terminal/tagged/reachable",
+              "status": "satisfied"
+            }
+          ],
+          "provenance": {
+            "bounds": {
+              "max_depth": 8,
+              "max_nodes": 64
+            },
+            "completion_reason": null,
+            "corpus_cases": 6,
+            "corpus_digest": "6d607ce7a815e81b109d2961ec78e793117505e289d0c46ba321deca0e72d93e",
+            "engine_versions": [
+              [
+                "ik",
+                "0.5.0"
+              ]
+            ],
+            "exploration_complete": true,
+            "explored_nodes": 1,
+            "machine_id": "tagged_item",
+            "plan_digest": "79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9",
+            "runtime_artifact_digest": null,
+            "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6"
+          },
+          "release": {
+            "excluded_assumptions": [
+              "evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof",
+              "runtime artifact digest is unavailable: this report is not bound to a specific binary",
+              "external reducers, hosts, and effect executors are outside this check",
+              "obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002",
+              "no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)"
+            ],
+            "reasons": [],
+            "required_evidence": [
+              "exploration_complete",
+              "something_executed",
+              "no_falsified_obligation",
+              "no_incomplete_obligation",
+              "no_unwitnessed_or_debt_obligation_in_standard_lane",
+              "no_surviving_challenge",
+              "verification_infrastructure_healthy"
+            ],
+            "verdict": "release_pass"
+          },
+          "schema": "ikaros.release-evidence.v1",
+          "status_counts": {
+            "not_examined": 6,
+            "satisfied": 4
+          }
+        },
+        "report": {
+          "bounds": "bounded",
+          "challenges": {
+            "incomplete": 0,
+            "killed": 0,
+            "survived": 0,
+            "total": 0
+          },
+          "counterexamples": [],
+          "coverage": "bounded",
+          "engine_versions": [
+            [
+              "ik",
+              "0.5.0"
+            ]
+          ],
+          "engines": [
+            "explore",
+            "mutation"
+          ],
+          "machine_id": "tagged_item",
+          "obligations": {
+            "falsified": 0,
+            "falsified_ids": [],
+            "incomplete": 0,
+            "satisfied": 4,
+            "total": 10,
+            "uncovered": 6,
+            "uncovered_ids": [
+              "capability/stale",
+              "determinism/fold",
+              "event/frozen_choice",
+              "refusal/immutability",
+              "replay/equivalence",
+              "terminal/tagged/mutation_refused"
+            ]
+          },
+          "plan_digest": "79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9",
+          "schema_version": 1,
+          "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+          "survivors": []
+        },
+        "verdict": "ACCEPT"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"invariant_witnesses\":[],\"judgment\":{\"reasons\":[],\"status\":\"accepted\",\"verdict\":\"accept\"},\"profile\":{\"bounds\":{\"max_depth\":8,\"max_nodes\":64},\"corpus_digest\":\"6d607ce7a815e81b109d2961ec78e793117505e289d0c46ba321deca0e72d93e\",\"goals\":[{\"content_digest\":\"fcd46959cc2cd898a3ad9c2d2c5f903e1b4b9043c5488eca7a72e46c6b8723d8\",\"id\":\"tagged\",\"kind\":\"reach_terminal\",\"required\":true,\"status\":\"witness_found\",\"witness\":[{\"case\":\"valid\",\"command\":\"tag\",\"outcome_index\":0}]}],\"machine_spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"profile_digest\":\"edb45f69c3d75931eba54eb8f71e330e5f9ad122e8d1f1f7e19a80681a2432ed\",\"schema\":\"ik.check.profile.v1\",\"search_complete\":true},\"release\":{\"obligations\":[{\"kind\":\"OBL-CAP-001\",\"obligation_id\":\"capability/stale\",\"status\":\"not_examined\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/tag/from/idle/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-DETERMINISM-001\",\"obligation_id\":\"determinism/fold\",\"status\":\"not_examined\"},{\"kind\":\"OBL-EVENT-001\",\"obligation_id\":\"event/frozen_choice\",\"status\":\"not_examined\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/tag/0/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-REFUSE-001\",\"obligation_id\":\"refusal/immutability\",\"status\":\"not_examined\"},{\"kind\":\"OBL-REPLAY-001\",\"obligation_id\":\"replay/equivalence\",\"status\":\"not_examined\"},{\"kind\":\"OBL-STATE-001\",\"obligation_id\":\"state/tagged/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-TERM-002\",\"obligation_id\":\"terminal/tagged/mutation_refused\",\"status\":\"not_examined\"},{\"kind\":\"OBL-TERM-001\",\"obligation_id\":\"terminal/tagged/reachable\",\"status\":\"satisfied\"}],\"provenance\":{\"bounds\":{\"max_depth\":8,\"max_nodes\":64},\"completion_reason\":null,\"corpus_cases\":6,\"corpus_digest\":\"6d607ce7a815e81b109d2961ec78e793117505e289d0c46ba321deca0e72d93e\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"exploration_complete\":true,\"explored_nodes\":1,\"machine_id\":\"tagged_item\",\"plan_digest\":\"79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9\",\"runtime_artifact_digest\":null,\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\"},\"release\":{\"excluded_assumptions\":[\"evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof\",\"runtime artifact digest is unavailable: this report is not bound to a specific binary\",\"external reducers, hosts, and effect executors are outside this check\",\"obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002\",\"no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)\"],\"reasons\":[],\"required_evidence\":[\"exploration_complete\",\"something_executed\",\"no_falsified_obligation\",\"no_incomplete_obligation\",\"no_unwitnessed_or_debt_obligation_in_standard_lane\",\"no_surviving_challenge\",\"verification_infrastructure_healthy\"],\"verdict\":\"release_pass\"},\"schema\":\"ikaros.release-evidence.v1\",\"status_counts\":{\"not_examined\":6,\"satisfied\":4}},\"report\":{\"bounds\":\"bounded\",\"challenges\":{\"incomplete\":0,\"killed\":0,\"survived\":0,\"total\":0},\"counterexamples\":[],\"coverage\":\"bounded\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"engines\":[\"explore\",\"mutation\"],\"machine_id\":\"tagged_item\",\"obligations\":{\"falsified\":0,\"falsified_ids\":[],\"incomplete\":0,\"satisfied\":4,\"total\":10,\"uncovered\":6,\"uncovered_ids\":[\"capability/stale\",\"determinism/fold\",\"event/frozen_choice\",\"refusal/immutability\",\"replay/equivalence\",\"terminal/tagged/mutation_refused\"]},\"plan_digest\":\"79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9\",\"schema_version\":1,\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"survivors\":[]},\"verdict\":\"ACCEPT\"}\n"
+    },
+    {
+      "argv": [
+        "scenario",
+        "run",
+        "fixtures/tagged_item.ik.toml",
+        "fixtures/scenarios/honest-tag.json",
+        "--out",
+        "$TMP/out/sc-build"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "build.scenario",
+      "parsed": {
+        "aggregate": "item-1",
+        "all_expectations_met": true,
+        "faults_applied": [],
+        "machine_id": "tagged_item",
+        "runtime": {
+          "binary_sha256": "8366feba1f3b994db0c74ff2c3e970e91176142d9f0a71c309c2d48de43d61df",
+          "ik_version": "0.5.0",
+          "store_schema": 4
+        },
+        "scenario_digest": "7cba70d7687fa7583cf37430b50554adb1beb2c90a08c0593ceafe3e8edb2412",
+        "schema": "ik.scenario.result.v1",
+        "seams_fired": [],
+        "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+        "steps": [
+          {
+            "expectation": "committed",
+            "kind": "create",
+            "label": "genesis",
+            "request": {
+              "aggregate": "item-1"
+            },
+            "response": {
+              "outcome": "committed"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {},
+              "generation": 0,
+              "state": "idle"
+            },
+            "verdict": "pass"
+          },
+          {
+            "expectation": "committed",
+            "kind": "command",
+            "label": "tag",
+            "request": {
+              "args": {
+                "id": "item_1",
+                "label": "AMBER"
+              },
+              "name": "tag",
+              "operation_id": "op-tag",
+              "use_handle": null
+            },
+            "response": {
+              "outcome": "committed"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "verdict": "pass"
+          }
+        ]
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "all expectations met\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "tagged.sqlite",
+        "--machine",
+        "fixtures/tagged_item.ik.toml",
+        "create|command|show"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "build.operate",
+      "parsed": {
+        "last": {
+          "ok": true,
+          "protocol": {
+            "major": 1,
+            "minor": 0
+          },
+          "request_id": "s1",
+          "result": {
+            "aggregate_id": "item-1",
+            "capability": {
+              "generation": 1,
+              "nonce": "ca55071d8f0fdeaf21ebce55b7782776f235e2f5140c7d40dd18efe420f8fb3f"
+            },
+            "effect": {
+              "status": "none"
+            },
+            "generation": 1,
+            "last_event_hash": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+            "last_receipt": {
+              "aggregate_id": "item-1",
+              "effect": {
+                "type": "none"
+              },
+              "event_hash": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+              "generation": 1,
+              "machine_id": "tagged_item",
+              "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+              "machine_version": 1,
+              "receipt_id": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+              "sequence": 1,
+              "state_digest": "861aa7dbefe49f0c8d5511380d312301494a76e31f5f8c1662ea7f5fb17d0263"
+            },
+            "machine": {
+              "machine_id": "tagged_item",
+              "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+              "version": 1
+            },
+            "sequence": 1,
+            "state": {
+              "item_id": "item_1",
+              "label": "AMBER",
+              "state": "tagged"
+            },
+            "terminal": true
+          },
+          "runtime_version": "0.5.0"
+        },
+        "ops": [
+          {
+            "exit": 0,
+            "failures": [],
+            "op": "create",
+            "parsed": {
+              "ok": true,
+              "protocol": {
+                "major": 1,
+                "minor": 0
+              },
+              "request_id": "c1",
+              "result": {
+                "aggregate_id": "item-1",
+                "capability": {
+                  "generation": 0,
+                  "nonce": "73242c9141b1066cd7bac6cd773d98c43ed4d1c6621f5761fdb3c4b1099980da"
+                },
+                "effect": {
+                  "status": "none"
+                },
+                "generation": 0,
+                "mutation": true,
+                "receipt": {
+                  "aggregate_id": "item-1",
+                  "effect": {
+                    "type": "none"
+                  },
+                  "event_hash": "f6d9d19f99abdffcf2ea37dc0e0af55040714248523d5fd7978a052f0b3b22be",
+                  "generation": 0,
+                  "machine_id": "tagged_item",
+                  "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+                  "machine_version": 1,
+                  "receipt_id": "f6d9d19f99abdffcf2ea37dc0e0af55040714248523d5fd7978a052f0b3b22be",
+                  "sequence": 0,
+                  "state_digest": "5abf1e875b221bbdd4946cfaf8a6ace49cc4631ddca8a292e14e4727ba8075af"
+                },
+                "state": {
+                  "state": "idle"
+                },
+                "terminal": false
+              },
+              "runtime_version": "0.5.0"
+            },
+            "pass": true
+          },
+          {
+            "exit": 0,
+            "failures": [],
+            "op": "create",
+            "parsed": {
+              "ok": true,
+              "protocol": {
+                "major": 1,
+                "minor": 0
+              },
+              "request_id": "cg",
+              "result": {
+                "aggregate_id": "item-g",
+                "capability": {
+                  "generation": 0,
+                  "nonce": "2052379484634f3fde0b3c886af1840abcf8aace40a4f902b5dbc15593253c66"
+                },
+                "effect": {
+                  "status": "none"
+                },
+                "generation": 0,
+                "mutation": true,
+                "receipt": {
+                  "aggregate_id": "item-g",
+                  "effect": {
+                    "type": "none"
+                  },
+                  "event_hash": "b52c3dcaa24b687b26e1bbb4855e89d9d95295a550b5a73eefdea79fc08cac07",
+                  "generation": 0,
+                  "machine_id": "tagged_item",
+                  "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+                  "machine_version": 1,
+                  "receipt_id": "b52c3dcaa24b687b26e1bbb4855e89d9d95295a550b5a73eefdea79fc08cac07",
+                  "sequence": 0,
+                  "state_digest": "5abf1e875b221bbdd4946cfaf8a6ace49cc4631ddca8a292e14e4727ba8075af"
+                },
+                "state": {
+                  "state": "idle"
+                },
+                "terminal": false
+              },
+              "runtime_version": "0.5.0"
+            },
+            "pass": true
+          },
+          {
+            "exit": 0,
+            "failures": [],
+            "op": "command",
+            "parsed": {
+              "ok": true,
+              "protocol": {
+                "major": 1,
+                "minor": 0
+              },
+              "request_id": "t1",
+              "result": {
+                "aggregate_id": "item-1",
+                "capability": {
+                  "generation": 1,
+                  "nonce": "ca55071d8f0fdeaf21ebce55b7782776f235e2f5140c7d40dd18efe420f8fb3f"
+                },
+                "effect": {
+                  "status": "none"
+                },
+                "generation": 1,
+                "mutation": true,
+                "receipt": {
+                  "aggregate_id": "item-1",
+                  "effect": {
+                    "type": "none"
+                  },
+                  "event_hash": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+                  "generation": 1,
+                  "machine_id": "tagged_item",
+                  "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+                  "machine_version": 1,
+                  "receipt_id": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+                  "sequence": 1,
+                  "state_digest": "861aa7dbefe49f0c8d5511380d312301494a76e31f5f8c1662ea7f5fb17d0263"
+                },
+                "state": {
+                  "item_id": "item_1",
+                  "label": "AMBER",
+                  "state": "tagged"
+                },
+                "terminal": true
+              },
+              "runtime_version": "0.5.0"
+            },
+            "pass": true
+          },
+          {
+            "exit": 0,
+            "failures": [],
+            "op": "show",
+            "parsed": {
+              "ok": true,
+              "protocol": {
+                "major": 1,
+                "minor": 0
+              },
+              "request_id": "s1",
+              "result": {
+                "aggregate_id": "item-1",
+                "capability": {
+                  "generation": 1,
+                  "nonce": "ca55071d8f0fdeaf21ebce55b7782776f235e2f5140c7d40dd18efe420f8fb3f"
+                },
+                "effect": {
+                  "status": "none"
+                },
+                "generation": 1,
+                "last_event_hash": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+                "last_receipt": {
+                  "aggregate_id": "item-1",
+                  "effect": {
+                    "type": "none"
+                  },
+                  "event_hash": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+                  "generation": 1,
+                  "machine_id": "tagged_item",
+                  "machine_spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+                  "machine_version": 1,
+                  "receipt_id": "84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c",
+                  "sequence": 1,
+                  "state_digest": "861aa7dbefe49f0c8d5511380d312301494a76e31f5f8c1662ea7f5fb17d0263"
+                },
+                "machine": {
+                  "machine_id": "tagged_item",
+                  "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+                  "version": 1
+                },
+                "sequence": 1,
+                "state": {
+                  "item_id": "item_1",
+                  "label": "AMBER",
+                  "state": "tagged"
+                },
+                "terminal": true
+              },
+              "runtime_version": "0.5.0"
+            },
+            "pass": true
+          }
+        ]
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"ok\":true,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"s1\",\"result\":{\"aggregate_id\":\"item-1\",\"capability\":{\"generation\":1,\"nonce\":\"ca55071d8f0fdeaf21ebce55b7782776f235e2f5140c7d40dd18efe420f8fb3f\"},\"effect\":{\"status\":\"none\"},\"generation\":1,\"last_event_hash\":\"84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c\",\"last_receipt\":{\"aggregate_id\":\"item-1\",\"effect\":{\"type\":\"none\"},\"event_hash\":\"84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c\",\"generation\":1,\"machine_id\":\"tagged_item\",\"machine_spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"machine_version\":1,\"receipt_id\":\"84525204de62b250f194132f86f07ce90e03b891109b1fcad4729a810373817c\",\"sequence\":1,\"state_digest\":\"861aa7dbefe49f0c8d5511380d312301494a76e31f5f8c1662ea7f5fb17d0263\"},\"machine\":{\"machine_id\":\"tagged_item\",\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"version\":1},\"sequence\":1,\"state\":{\"item_id\":\"item_1\",\"label\":\"AMBER\",\"state\":\"tagged\"},\"terminal\":true},\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "check",
+        "fixtures/solo/tagged_item.ik.toml",
+        "--json"
+      ],
+      "exit": 1,
+      "failures": [],
+      "id": "unhappy.check_missing_corpus",
+      "parsed": {
+        "invariant_witnesses": [],
+        "judgment": {
+          "reasons": [
+            "uncovered newly introduced mandatory obligation"
+          ],
+          "status": "missing_evidence",
+          "verdict": "refused"
+        },
+        "next_actions": [
+          "ik corpus init fixtures/solo/tagged_item.ik.toml --out fixtures/solo/tagged_item.ik.cases.json"
+        ],
+        "release": {
+          "obligations": [
+            {
+              "kind": "OBL-CAP-001",
+              "obligation_id": "capability/stale",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/tag/from/idle/executable",
+              "status": "uncovered"
+            },
+            {
+              "kind": "OBL-DETERMINISM-001",
+              "obligation_id": "determinism/fold",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-EVENT-001",
+              "obligation_id": "event/frozen_choice",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/tag/0/executable",
+              "status": "uncovered"
+            },
+            {
+              "kind": "OBL-REFUSE-001",
+              "obligation_id": "refusal/immutability",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-REPLAY-001",
+              "obligation_id": "replay/equivalence",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-STATE-001",
+              "obligation_id": "state/tagged/executable",
+              "status": "uncovered"
+            },
+            {
+              "kind": "OBL-TERM-002",
+              "obligation_id": "terminal/tagged/mutation_refused",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-TERM-001",
+              "obligation_id": "terminal/tagged/reachable",
+              "status": "uncovered"
+            }
+          ],
+          "provenance": {
+            "bounds": {
+              "max_depth": 16,
+              "max_nodes": 4096
+            },
+            "completion_reason": null,
+            "corpus_cases": 0,
+            "corpus_digest": "c0b8b77943375e18c011738da710bfd6c782959668a44efc1c64911cc15e6674",
+            "engine_versions": [
+              [
+                "ik",
+                "0.5.0"
+              ]
+            ],
+            "exploration_complete": true,
+            "explored_nodes": 1,
+            "machine_id": "tagged_item",
+            "plan_digest": "79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9",
+            "runtime_artifact_digest": null,
+            "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6"
+          },
+          "release": {
+            "excluded_assumptions": [
+              "evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof",
+              "runtime artifact digest is unavailable: this report is not bound to a specific binary",
+              "external reducers, hosts, and effect executors are outside this check",
+              "obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002",
+              "no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)"
+            ],
+            "reasons": [
+              "developer acceptance is refused",
+              "nothing was executed: no command outcome was witnessed",
+              "4 obligation(s) unwitnessed"
+            ],
+            "required_evidence": [
+              "exploration_complete",
+              "something_executed",
+              "no_falsified_obligation",
+              "no_incomplete_obligation",
+              "no_unwitnessed_or_debt_obligation_in_standard_lane",
+              "no_surviving_challenge",
+              "verification_infrastructure_healthy"
+            ],
+            "verdict": "release_refused"
+          },
+          "schema": "ikaros.release-evidence.v1",
+          "status_counts": {
+            "not_examined": 6,
+            "uncovered": 4
+          }
+        },
+        "report": {
+          "bounds": "bounded",
+          "challenges": {
+            "incomplete": 0,
+            "killed": 0,
+            "survived": 0,
+            "total": 0
+          },
+          "counterexamples": [],
+          "coverage": "bounded",
+          "engine_versions": [
+            [
+              "ik",
+              "0.5.0"
+            ]
+          ],
+          "engines": [
+            "explore",
+            "mutation"
+          ],
+          "machine_id": "tagged_item",
+          "obligations": {
+            "falsified": 0,
+            "falsified_ids": [],
+            "incomplete": 0,
+            "satisfied": 0,
+            "total": 10,
+            "uncovered": 10,
+            "uncovered_ids": [
+              "capability/stale",
+              "command/tag/from/idle/executable",
+              "determinism/fold",
+              "event/frozen_choice",
+              "outcome/tag/0/executable",
+              "refusal/immutability",
+              "replay/equivalence",
+              "state/tagged/executable",
+              "terminal/tagged/mutation_refused",
+              "terminal/tagged/reachable"
+            ]
+          },
+          "plan_digest": "79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9",
+          "schema_version": 1,
+          "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+          "survivors": []
+        },
+        "verdict": "REFUSED"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"invariant_witnesses\":[],\"judgment\":{\"reasons\":[\"uncovered newly introduced mandatory obligation\"],\"status\":\"missing_evidence\",\"verdict\":\"refused\"},\"next_actions\":[\"ik corpus init fixtures/solo/tagged_item.ik.toml --out fixtures/solo/tagged_item.ik.cases.json\"],\"release\":{\"obligations\":[{\"kind\":\"OBL-CAP-001\",\"obligation_id\":\"capability/stale\",\"status\":\"not_examined\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/tag/from/idle/executable\",\"status\":\"uncovered\"},{\"kind\":\"OBL-DETERMINISM-001\",\"obligation_id\":\"determinism/fold\",\"status\":\"not_examined\"},{\"kind\":\"OBL-EVENT-001\",\"obligation_id\":\"event/frozen_choice\",\"status\":\"not_examined\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/tag/0/executable\",\"status\":\"uncovered\"},{\"kind\":\"OBL-REFUSE-001\",\"obligation_id\":\"refusal/immutability\",\"status\":\"not_examined\"},{\"kind\":\"OBL-REPLAY-001\",\"obligation_id\":\"replay/equivalence\",\"status\":\"not_examined\"},{\"kind\":\"OBL-STATE-001\",\"obligation_id\":\"state/tagged/executable\",\"status\":\"uncovered\"},{\"kind\":\"OBL-TERM-002\",\"obligation_id\":\"terminal/tagged/mutation_refused\",\"status\":\"not_examined\"},{\"kind\":\"OBL-TERM-001\",\"obligation_id\":\"terminal/tagged/reachable\",\"status\":\"uncovered\"}],\"provenance\":{\"bounds\":{\"max_depth\":16,\"max_nodes\":4096},\"completion_reason\":null,\"corpus_cases\":0,\"corpus_digest\":\"c0b8b77943375e18c011738da710bfd6c782959668a44efc1c64911cc15e6674\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"exploration_complete\":true,\"explored_nodes\":1,\"machine_id\":\"tagged_item\",\"plan_digest\":\"79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9\",\"runtime_artifact_digest\":null,\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\"},\"release\":{\"excluded_assumptions\":[\"evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof\",\"runtime artifact digest is unavailable: this report is not bound to a specific binary\",\"external reducers, hosts, and effect executors are outside this check\",\"obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002\",\"no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)\"],\"reasons\":[\"developer acceptance is refused\",\"nothing was executed: no command outcome was witnessed\",\"4 obligation(s) unwitnessed\"],\"required_evidence\":[\"exploration_complete\",\"something_executed\",\"no_falsified_obligation\",\"no_incomplete_obligation\",\"no_unwitnessed_or_debt_obligation_in_standard_lane\",\"no_surviving_challenge\",\"verification_infrastructure_healthy\"],\"verdict\":\"release_refused\"},\"schema\":\"ikaros.release-evidence.v1\",\"status_counts\":{\"not_examined\":6,\"uncovered\":4}},\"report\":{\"bounds\":\"bounded\",\"challenges\":{\"incomplete\":0,\"killed\":0,\"survived\":0,\"total\":0},\"counterexamples\":[],\"coverage\":\"bounded\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"engines\":[\"explore\",\"mutation\"],\"machine_id\":\"tagged_item\",\"obligations\":{\"falsified\":0,\"falsified_ids\":[],\"incomplete\":0,\"satisfied\":0,\"total\":10,\"uncovered\":10,\"uncovered_ids\":[\"capability/stale\",\"command/tag/from/idle/executable\",\"determinism/fold\",\"event/frozen_choice\",\"outcome/tag/0/executable\",\"refusal/immutability\",\"replay/equivalence\",\"state/tagged/executable\",\"terminal/tagged/mutation_refused\",\"terminal/tagged/reachable\"]},\"plan_digest\":\"79bb9ebb62bf46c4e86723279adca9b824d7067ce16063865f9c8fc201cf9df9\",\"schema_version\":1,\"spec_hash\":\"f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6\",\"survivors\":[]},\"verdict\":\"REFUSED\"}\n"
+    },
+    {
+      "argv": [
+        "check",
+        "fixtures/probe.ik.toml",
+        "--json"
+      ],
+      "exit": 1,
+      "failures": [],
+      "id": "unhappy.check_invariant_witness",
+      "parsed": {
+        "invariant_witnesses": [
+          {
+            "diagnostic": {
+              "code": "IK_INVARIANT_FAILED",
+              "message": "global invariant `x_limit` violated",
+              "rule": "x_limit"
+            },
+            "steps": [
+              {
+                "command": "violate",
+                "outcome_index": 0
+              }
+            ]
+          }
+        ],
+        "judgment": {
+          "reasons": [
+            "uncovered newly introduced mandatory obligation",
+            "model transition violates invariant x_limit; runtime blocked the proposal"
+          ],
+          "status": "witnessed_violation",
+          "verdict": "refused"
+        },
+        "next_actions": [
+          "ik corpus init fixtures/probe.ik.toml --out fixtures/probe.ik.cases.json"
+        ],
+        "release": {
+          "obligations": [
+            {
+              "kind": "OBL-CAP-001",
+              "obligation_id": "capability/stale",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/violate/from/s/executable",
+              "status": "uncovered"
+            },
+            {
+              "kind": "OBL-DETERMINISM-001",
+              "obligation_id": "determinism/fold",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-EVENT-001",
+              "obligation_id": "event/frozen_choice",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-INV-001",
+              "obligation_id": "invariant/x_limit/evaluated",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/violate/0/executable",
+              "status": "uncovered"
+            },
+            {
+              "kind": "OBL-REFUSE-001",
+              "obligation_id": "refusal/immutability",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-REPLAY-001",
+              "obligation_id": "replay/equivalence",
+              "status": "not_examined"
+            }
+          ],
+          "provenance": {
+            "bounds": {
+              "max_depth": 16,
+              "max_nodes": 4096
+            },
+            "completion_reason": null,
+            "corpus_cases": 1,
+            "corpus_digest": "8a19ad07db1a9c4193f6a6cc3920fd9b8144eddb8e98e2314ed85b40582ac737",
+            "engine_versions": [
+              [
+                "ik",
+                "0.5.0"
+              ]
+            ],
+            "exploration_complete": true,
+            "explored_nodes": 1,
+            "machine_id": "invariant_probe",
+            "plan_digest": "98168de504020425690a427c0a8c5825a3cfcc6005353cec812f259ef6c43bf6",
+            "runtime_artifact_digest": null,
+            "spec_hash": "b7531c646e90c2c613243cc3a8531832f8a75dfbc5dc722f2db0659f1bf2858e"
+          },
+          "release": {
+            "excluded_assumptions": [
+              "evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof",
+              "runtime artifact digest is unavailable: this report is not bound to a specific binary",
+              "external reducers, hosts, and effect executors are outside this check",
+              "obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-INV-001, OBL-REFUSE-001, OBL-REPLAY-001",
+              "no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)"
+            ],
+            "reasons": [
+              "developer acceptance is refused",
+              "nothing was executed: no command outcome was witnessed",
+              "2 obligation(s) unwitnessed"
+            ],
+            "required_evidence": [
+              "exploration_complete",
+              "something_executed",
+              "no_falsified_obligation",
+              "no_incomplete_obligation",
+              "no_unwitnessed_or_debt_obligation_in_standard_lane",
+              "no_surviving_challenge",
+              "verification_infrastructure_healthy"
+            ],
+            "verdict": "release_refused"
+          },
+          "schema": "ikaros.release-evidence.v1",
+          "status_counts": {
+            "not_examined": 6,
+            "uncovered": 2
+          }
+        },
+        "report": {
+          "bounds": "bounded",
+          "challenges": {
+            "incomplete": 0,
+            "killed": 0,
+            "survived": 0,
+            "total": 0
+          },
+          "counterexamples": [],
+          "coverage": "bounded",
+          "engine_versions": [
+            [
+              "ik",
+              "0.5.0"
+            ]
+          ],
+          "engines": [
+            "explore",
+            "mutation"
+          ],
+          "machine_id": "invariant_probe",
+          "obligations": {
+            "falsified": 0,
+            "falsified_ids": [],
+            "incomplete": 0,
+            "satisfied": 0,
+            "total": 8,
+            "uncovered": 8,
+            "uncovered_ids": [
+              "capability/stale",
+              "command/violate/from/s/executable",
+              "determinism/fold",
+              "event/frozen_choice",
+              "invariant/x_limit/evaluated",
+              "outcome/violate/0/executable",
+              "refusal/immutability",
+              "replay/equivalence"
+            ]
+          },
+          "plan_digest": "98168de504020425690a427c0a8c5825a3cfcc6005353cec812f259ef6c43bf6",
+          "schema_version": 1,
+          "spec_hash": "b7531c646e90c2c613243cc3a8531832f8a75dfbc5dc722f2db0659f1bf2858e",
+          "survivors": []
+        },
+        "verdict": "REFUSED"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"invariant_witnesses\":[{\"diagnostic\":{\"code\":\"IK_INVARIANT_FAILED\",\"message\":\"global invariant `x_limit` violated\",\"rule\":\"x_limit\"},\"steps\":[{\"command\":\"violate\",\"outcome_index\":0}]}],\"judgment\":{\"reasons\":[\"uncovered newly introduced mandatory obligation\",\"model transition violates invariant x_limit; runtime blocked the proposal\"],\"status\":\"witnessed_violation\",\"verdict\":\"refused\"},\"next_actions\":[\"ik corpus init fixtures/probe.ik.toml --out fixtures/probe.ik.cases.json\"],\"release\":{\"obligations\":[{\"kind\":\"OBL-CAP-001\",\"obligation_id\":\"capability/stale\",\"status\":\"not_examined\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/violate/from/s/executable\",\"status\":\"uncovered\"},{\"kind\":\"OBL-DETERMINISM-001\",\"obligation_id\":\"determinism/fold\",\"status\":\"not_examined\"},{\"kind\":\"OBL-EVENT-001\",\"obligation_id\":\"event/frozen_choice\",\"status\":\"not_examined\"},{\"kind\":\"OBL-INV-001\",\"obligation_id\":\"invariant/x_limit/evaluated\",\"status\":\"not_examined\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/violate/0/executable\",\"status\":\"uncovered\"},{\"kind\":\"OBL-REFUSE-001\",\"obligation_id\":\"refusal/immutability\",\"status\":\"not_examined\"},{\"kind\":\"OBL-REPLAY-001\",\"obligation_id\":\"replay/equivalence\",\"status\":\"not_examined\"}],\"provenance\":{\"bounds\":{\"max_depth\":16,\"max_nodes\":4096},\"completion_reason\":null,\"corpus_cases\":1,\"corpus_digest\":\"8a19ad07db1a9c4193f6a6cc3920fd9b8144eddb8e98e2314ed85b40582ac737\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"exploration_complete\":true,\"explored_nodes\":1,\"machine_id\":\"invariant_probe\",\"plan_digest\":\"98168de504020425690a427c0a8c5825a3cfcc6005353cec812f259ef6c43bf6\",\"runtime_artifact_digest\":null,\"spec_hash\":\"b7531c646e90c2c613243cc3a8531832f8a75dfbc5dc722f2db0659f1bf2858e\"},\"release\":{\"excluded_assumptions\":[\"evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof\",\"runtime artifact digest is unavailable: this report is not bound to a specific binary\",\"external reducers, hosts, and effect executors are outside this check\",\"obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-INV-001, OBL-REFUSE-001, OBL-REPLAY-001\",\"no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)\"],\"reasons\":[\"developer acceptance is refused\",\"nothing was executed: no command outcome was witnessed\",\"2 obligation(s) unwitnessed\"],\"required_evidence\":[\"exploration_complete\",\"something_executed\",\"no_falsified_obligation\",\"no_incomplete_obligation\",\"no_unwitnessed_or_debt_obligation_in_standard_lane\",\"no_surviving_challenge\",\"verification_infrastructure_healthy\"],\"verdict\":\"release_refused\"},\"schema\":\"ikaros.release-evidence.v1\",\"status_counts\":{\"not_examined\":6,\"uncovered\":2}},\"report\":{\"bounds\":\"bounded\",\"challenges\":{\"incomplete\":0,\"killed\":0,\"survived\":0,\"total\":0},\"counterexamples\":[],\"coverage\":\"bounded\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"engines\":[\"explore\",\"mutation\"],\"machine_id\":\"invariant_probe\",\"obligations\":{\"falsified\":0,\"falsified_ids\":[],\"incomplete\":0,\"satisfied\":0,\"total\":8,\"uncovered\":8,\"uncovered_ids\":[\"capability/stale\",\"command/violate/from/s/executable\",\"determinism/fold\",\"event/frozen_choice\",\"invariant/x_limit/evaluated\",\"outcome/violate/0/executable\",\"refusal/immutability\",\"replay/equivalence\"]},\"plan_digest\":\"98168de504020425690a427c0a8c5825a3cfcc6005353cec812f259ef6c43bf6\",\"schema_version\":1,\"spec_hash\":\"b7531c646e90c2c613243cc3a8531832f8a75dfbc5dc722f2db0659f1bf2858e\",\"survivors\":[]},\"verdict\":\"REFUSED\"}\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "tagged.sqlite",
+        "--machine",
+        "fixtures/tagged_item.ik.toml",
+        "command"
+      ],
+      "exit": 1,
+      "failures": [],
+      "id": "unhappy.text_in_refused",
+      "parsed": {
+        "diagnostic": {
+          "code": "IK_INVARIANT_FAILED",
+          "message": "no outcome of command `tag` applies in state `idle`",
+          "rule": "tag.when"
+        },
+        "ok": false,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "bad-empty",
+        "runtime_version": "0.5.0"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"diagnostic\":{\"code\":\"IK_INVARIANT_FAILED\",\"message\":\"no outcome of command `tag` applies in state `idle`\",\"rule\":\"tag.when\"},\"ok\":false,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"bad-empty\",\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "tagged.sqlite",
+        "--machine",
+        "fixtures/tagged_item.ik.toml",
+        "command"
+      ],
+      "exit": 1,
+      "failures": [],
+      "id": "unhappy.illegal_state",
+      "parsed": {
+        "diagnostic": {
+          "code": "IK_ILLEGAL_STATE",
+          "message": "command `tag` is not legal from state `tagged`",
+          "rule": "tag"
+        },
+        "ok": false,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "ill1",
+        "runtime_version": "0.5.0"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"diagnostic\":{\"code\":\"IK_ILLEGAL_STATE\",\"message\":\"command `tag` is not legal from state `tagged`\",\"rule\":\"tag\"},\"ok\":false,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"ill1\",\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "tagged.sqlite",
+        "--machine",
+        "fixtures/tagged_item.ik.toml",
+        "command"
+      ],
+      "exit": 1,
+      "failures": [],
+      "id": "unhappy.stale_capability",
+      "parsed": {
+        "diagnostic": {
+          "code": "IK_CAPABILITY_STALE",
+          "message": "capability generation 0 is stale; current generation is 1",
+          "rule": "capability.generation"
+        },
+        "ok": false,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "stale1",
+        "runtime_version": "0.5.0"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"diagnostic\":{\"code\":\"IK_CAPABILITY_STALE\",\"message\":\"capability generation 0 is stale; current generation is 1\",\"rule\":\"capability.generation\"},\"ok\":false,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"stale1\",\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "loan.sqlite",
+        "--machine",
+        "fixtures/loan_checkout.ik.toml",
+        "create|command|show"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "change.persist_v1",
+      "parsed": {
+        "last": {
+          "ok": true,
+          "protocol": {
+            "major": 1,
+            "minor": 0
+          },
+          "request_id": "co1",
+          "result": {
+            "aggregate_id": "loan-1",
+            "capability": {
+              "generation": 1,
+              "nonce": "e65295d0b4825ecf0b577b44f0ffbcdbb8a9bf4fbc5e5874847cde121fd81c94"
+            },
+            "effect": {
+              "status": "none"
+            },
+            "generation": 1,
+            "mutation": true,
+            "receipt": {
+              "aggregate_id": "loan-1",
+              "effect": {
+                "type": "none"
+              },
+              "event_hash": "31abd945539aec1627c593b3939028f2a4793aabdd0ebf54e49997f7faf1d1f1",
+              "generation": 1,
+              "machine_id": "loan_checkout",
+              "machine_spec_hash": "6c08d4be51065bc9fd184c78009f7ef1f3b5c40f82e1d2d9d46e226cabaa15d8",
+              "machine_version": 1,
+              "receipt_id": "31abd945539aec1627c593b3939028f2a4793aabdd0ebf54e49997f7faf1d1f1",
+              "sequence": 1,
+              "state_digest": "491b66345ff3b9b19686e99f037b9b493b89488a5658af58cad231ad9da51e89"
+            },
+            "state": {
+              "checkout_ms": 1000,
+              "deposit_id": "dep-1",
+              "loan_until_ms": 1209601000,
+              "overdue": 0,
+              "recall_placed": 0,
+              "state": "on_loan"
+            },
+            "terminal": false
+          },
+          "runtime_version": "0.5.0"
+        },
+        "ops": [
+          {
+            "exit": 0,
+            "failures": [],
+            "op": "create",
+            "parsed": {
+              "ok": true,
+              "protocol": {
+                "major": 1,
+                "minor": 0
+              },
+              "request_id": "lc1",
+              "result": {
+                "aggregate_id": "loan-1",
+                "capability": {
+                  "generation": 0,
+                  "nonce": "bf9d6e390fd110dc2f5e6aa5a5b07d6422a3a3945363a3a7b7fa0d2841cc4a26"
+                },
+                "effect": {
+                  "status": "none"
+                },
+                "generation": 0,
+                "mutation": true,
+                "receipt": {
+                  "aggregate_id": "loan-1",
+                  "effect": {
+                    "type": "none"
+                  },
+                  "event_hash": "41126343ab1791855ea582110e7564931b195fa2249ddb07a201bfe8b4d5d3e0",
+                  "generation": 0,
+                  "machine_id": "loan_checkout",
+                  "machine_spec_hash": "6c08d4be51065bc9fd184c78009f7ef1f3b5c40f82e1d2d9d46e226cabaa15d8",
+                  "machine_version": 1,
+                  "receipt_id": "41126343ab1791855ea582110e7564931b195fa2249ddb07a201bfe8b4d5d3e0",
+                  "sequence": 0,
+                  "state_digest": "0c99797208606cc3b492940105e5854efc9c88941c9462d8932384beb5fd5c34"
+                },
+                "state": {
+                  "overdue": 0,
+                  "recall_placed": 0,
+                  "state": "idle"
+                },
+                "terminal": false
+              },
+              "runtime_version": "0.5.0"
+            },
+            "pass": true
+          },
+          {
+            "exit": 0,
+            "failures": [],
+            "op": "command",
+            "parsed": {
+              "ok": true,
+              "protocol": {
+                "major": 1,
+                "minor": 0
+              },
+              "request_id": "co1",
+              "result": {
+                "aggregate_id": "loan-1",
+                "capability": {
+                  "generation": 1,
+                  "nonce": "e65295d0b4825ecf0b577b44f0ffbcdbb8a9bf4fbc5e5874847cde121fd81c94"
+                },
+                "effect": {
+                  "status": "none"
+                },
+                "generation": 1,
+                "mutation": true,
+                "receipt": {
+                  "aggregate_id": "loan-1",
+                  "effect": {
+                    "type": "none"
+                  },
+                  "event_hash": "31abd945539aec1627c593b3939028f2a4793aabdd0ebf54e49997f7faf1d1f1",
+                  "generation": 1,
+                  "machine_id": "loan_checkout",
+                  "machine_spec_hash": "6c08d4be51065bc9fd184c78009f7ef1f3b5c40f82e1d2d9d46e226cabaa15d8",
+                  "machine_version": 1,
+                  "receipt_id": "31abd945539aec1627c593b3939028f2a4793aabdd0ebf54e49997f7faf1d1f1",
+                  "sequence": 1,
+                  "state_digest": "491b66345ff3b9b19686e99f037b9b493b89488a5658af58cad231ad9da51e89"
+                },
+                "state": {
+                  "checkout_ms": 1000,
+                  "deposit_id": "dep-1",
+                  "loan_until_ms": 1209601000,
+                  "overdue": 0,
+                  "recall_placed": 0,
+                  "state": "on_loan"
+                },
+                "terminal": false
+              },
+              "runtime_version": "0.5.0"
+            },
+            "pass": true
+          }
+        ]
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"ok\":true,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"co1\",\"result\":{\"aggregate_id\":\"loan-1\",\"capability\":{\"generation\":1,\"nonce\":\"e65295d0b4825ecf0b577b44f0ffbcdbb8a9bf4fbc5e5874847cde121fd81c94\"},\"effect\":{\"status\":\"none\"},\"generation\":1,\"mutation\":true,\"receipt\":{\"aggregate_id\":\"loan-1\",\"effect\":{\"type\":\"none\"},\"event_hash\":\"31abd945539aec1627c593b3939028f2a4793aabdd0ebf54e49997f7faf1d1f1\",\"generation\":1,\"machine_id\":\"loan_checkout\",\"machine_spec_hash\":\"6c08d4be51065bc9fd184c78009f7ef1f3b5c40f82e1d2d9d46e226cabaa15d8\",\"machine_version\":1,\"receipt_id\":\"31abd945539aec1627c593b3939028f2a4793aabdd0ebf54e49997f7faf1d1f1\",\"sequence\":1,\"state_digest\":\"491b66345ff3b9b19686e99f037b9b493b89488a5658af58cad231ad9da51e89\"},\"state\":{\"checkout_ms\":1000,\"deposit_id\":\"dep-1\",\"loan_until_ms\":1209601000,\"overdue\":0,\"recall_placed\":0,\"state\":\"on_loan\"},\"terminal\":false},\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "check",
+        "fixtures/loan_v2.ik.toml",
+        "--prior",
+        "fixtures/loan_checkout.ik.toml",
+        "--corpus",
+        "fixtures/loan_v2.ik.cases.json",
+        "--profile",
+        "fixtures/loan_checkout.ik.checks.toml",
+        "--json"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "change.check_prior",
+      "parsed": {
+        "definition": {
+          "commands_added": [
+            "extend"
+          ],
+          "commands_removed": [],
+          "new_version": 2,
+          "prior_version": 1,
+          "schema": "ik.definition.delta.v1",
+          "statement": "new in version 2: command extend; removed: none",
+          "states_added": [],
+          "states_removed": []
+        },
+        "invariant_witnesses": [],
+        "judgment": {
+          "reasons": [],
+          "status": "accepted",
+          "verdict": "accept"
+        },
+        "profile": {
+          "baseline": {
+            "goals": [
+              {
+                "candidate": "witness_found",
+                "id": "returned",
+                "prior": "witness_found"
+              }
+            ]
+          },
+          "bounds": {
+            "max_depth": 8,
+            "max_nodes": 64
+          },
+          "corpus_digest": "453712ecad5b91c72b02a8d9c8d3638a08ee82a62ed2336688524a0e721e752f",
+          "goals": [
+            {
+              "content_digest": "0e7917dc0aa3e40bc90768d5668d605a384e5e43ba5e034d13ed5902adad47e0",
+              "id": "returned",
+              "kind": "reach_terminal",
+              "required": true,
+              "status": "witness_found",
+              "witness": [
+                {
+                  "case": "honest",
+                  "command": "checkout",
+                  "outcome_index": 0
+                },
+                {
+                  "case": "on_time",
+                  "command": "checkin",
+                  "outcome_index": 0
+                }
+              ]
+            }
+          ],
+          "machine_spec_hash": "d38ced2adcf44ad5af742c25595f2148e071be1af1f8b5be4ef8395bfcef86ee",
+          "profile_digest": "cdabbfae9b0f19c2270c33f038686b1b469d3533f3fe6a8f36840b7263ef4f7b",
+          "schema": "ik.check.profile.v1",
+          "search_complete": true
+        },
+        "release": {
+          "obligations": [
+            {
+              "kind": "OBL-CAP-001",
+              "obligation_id": "capability/stale",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/checkin/from/on_loan/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/checkout/from/idle/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/extend/from/on_loan/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-CMD-001",
+              "obligation_id": "command/recall/from/on_loan/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-DETERMINISM-001",
+              "obligation_id": "determinism/fold",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-EVENT-001",
+              "obligation_id": "event/frozen_choice",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/checkin/0/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/checkout/0/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/extend/0/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-OUT-001",
+              "obligation_id": "outcome/recall/0/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-REFUSE-001",
+              "obligation_id": "refusal/immutability",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-REPLAY-001",
+              "obligation_id": "replay/equivalence",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-STATE-001",
+              "obligation_id": "state/on_loan/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-STATE-001",
+              "obligation_id": "state/returned/executable",
+              "status": "satisfied"
+            },
+            {
+              "kind": "OBL-TERM-002",
+              "obligation_id": "terminal/returned/mutation_refused",
+              "status": "not_examined"
+            },
+            {
+              "kind": "OBL-TERM-001",
+              "obligation_id": "terminal/returned/reachable",
+              "status": "satisfied"
+            }
+          ],
+          "provenance": {
+            "bounds": {
+              "max_depth": 8,
+              "max_nodes": 64
+            },
+            "completion_reason": null,
+            "corpus_cases": 5,
+            "corpus_digest": "453712ecad5b91c72b02a8d9c8d3638a08ee82a62ed2336688524a0e721e752f",
+            "engine_versions": [
+              [
+                "ik",
+                "0.5.0"
+              ]
+            ],
+            "exploration_complete": true,
+            "explored_nodes": 5,
+            "machine_id": "loan_checkout",
+            "plan_digest": "cf572164f5bd5bd4690c1cf5b7cef79cc3286c4f7842c342c6ba426988e7661c",
+            "runtime_artifact_digest": null,
+            "spec_hash": "d38ced2adcf44ad5af742c25595f2148e071be1af1f8b5be4ef8395bfcef86ee"
+          },
+          "release": {
+            "excluded_assumptions": [
+              "evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof",
+              "runtime artifact digest is unavailable: this report is not bound to a specific binary",
+              "external reducers, hosts, and effect executors are outside this check",
+              "obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002",
+              "no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)"
+            ],
+            "reasons": [],
+            "required_evidence": [
+              "exploration_complete",
+              "something_executed",
+              "no_falsified_obligation",
+              "no_incomplete_obligation",
+              "no_unwitnessed_or_debt_obligation_in_standard_lane",
+              "no_surviving_challenge",
+              "verification_infrastructure_healthy"
+            ],
+            "verdict": "release_pass"
+          },
+          "schema": "ikaros.release-evidence.v1",
+          "status_counts": {
+            "not_examined": 6,
+            "satisfied": 11
+          }
+        },
+        "report": {
+          "bounds": "bounded",
+          "challenges": {
+            "incomplete": 0,
+            "killed": 0,
+            "survived": 0,
+            "total": 0
+          },
+          "counterexamples": [],
+          "coverage": "bounded",
+          "engine_versions": [
+            [
+              "ik",
+              "0.5.0"
+            ]
+          ],
+          "engines": [
+            "explore",
+            "mutation"
+          ],
+          "machine_id": "loan_checkout",
+          "obligations": {
+            "falsified": 0,
+            "falsified_ids": [],
+            "incomplete": 0,
+            "satisfied": 11,
+            "total": 17,
+            "uncovered": 6,
+            "uncovered_ids": [
+              "capability/stale",
+              "determinism/fold",
+              "event/frozen_choice",
+              "refusal/immutability",
+              "replay/equivalence",
+              "terminal/returned/mutation_refused"
+            ]
+          },
+          "plan_digest": "cf572164f5bd5bd4690c1cf5b7cef79cc3286c4f7842c342c6ba426988e7661c",
+          "schema_version": 1,
+          "spec_hash": "d38ced2adcf44ad5af742c25595f2148e071be1af1f8b5be4ef8395bfcef86ee",
+          "survivors": []
+        },
+        "verdict": "ACCEPT"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"definition\":{\"commands_added\":[\"extend\"],\"commands_removed\":[],\"new_version\":2,\"prior_version\":1,\"schema\":\"ik.definition.delta.v1\",\"statement\":\"new in version 2: command extend; removed: none\",\"states_added\":[],\"states_removed\":[]},\"invariant_witnesses\":[],\"judgment\":{\"reasons\":[],\"status\":\"accepted\",\"verdict\":\"accept\"},\"profile\":{\"baseline\":{\"goals\":[{\"candidate\":\"witness_found\",\"id\":\"returned\",\"prior\":\"witness_found\"}]},\"bounds\":{\"max_depth\":8,\"max_nodes\":64},\"corpus_digest\":\"453712ecad5b91c72b02a8d9c8d3638a08ee82a62ed2336688524a0e721e752f\",\"goals\":[{\"content_digest\":\"0e7917dc0aa3e40bc90768d5668d605a384e5e43ba5e034d13ed5902adad47e0\",\"id\":\"returned\",\"kind\":\"reach_terminal\",\"required\":true,\"status\":\"witness_found\",\"witness\":[{\"case\":\"honest\",\"command\":\"checkout\",\"outcome_index\":0},{\"case\":\"on_time\",\"command\":\"checkin\",\"outcome_index\":0}]}],\"machine_spec_hash\":\"d38ced2adcf44ad5af742c25595f2148e071be1af1f8b5be4ef8395bfcef86ee\",\"profile_digest\":\"cdabbfae9b0f19c2270c33f038686b1b469d3533f3fe6a8f36840b7263ef4f7b\",\"schema\":\"ik.check.profile.v1\",\"search_complete\":true},\"release\":{\"obligations\":[{\"kind\":\"OBL-CAP-001\",\"obligation_id\":\"capability/stale\",\"status\":\"not_examined\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/checkin/from/on_loan/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/checkout/from/idle/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/extend/from/on_loan/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-CMD-001\",\"obligation_id\":\"command/recall/from/on_loan/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-DETERMINISM-001\",\"obligation_id\":\"determinism/fold\",\"status\":\"not_examined\"},{\"kind\":\"OBL-EVENT-001\",\"obligation_id\":\"event/frozen_choice\",\"status\":\"not_examined\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/checkin/0/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/checkout/0/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/extend/0/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-OUT-001\",\"obligation_id\":\"outcome/recall/0/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-REFUSE-001\",\"obligation_id\":\"refusal/immutability\",\"status\":\"not_examined\"},{\"kind\":\"OBL-REPLAY-001\",\"obligation_id\":\"replay/equivalence\",\"status\":\"not_examined\"},{\"kind\":\"OBL-STATE-001\",\"obligation_id\":\"state/on_loan/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-STATE-001\",\"obligation_id\":\"state/returned/executable\",\"status\":\"satisfied\"},{\"kind\":\"OBL-TERM-002\",\"obligation_id\":\"terminal/returned/mutation_refused\",\"status\":\"not_examined\"},{\"kind\":\"OBL-TERM-001\",\"obligation_id\":\"terminal/returned/reachable\",\"status\":\"satisfied\"}],\"provenance\":{\"bounds\":{\"max_depth\":8,\"max_nodes\":64},\"completion_reason\":null,\"corpus_cases\":5,\"corpus_digest\":\"453712ecad5b91c72b02a8d9c8d3638a08ee82a62ed2336688524a0e721e752f\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"exploration_complete\":true,\"explored_nodes\":5,\"machine_id\":\"loan_checkout\",\"plan_digest\":\"cf572164f5bd5bd4690c1cf5b7cef79cc3286c4f7842c342c6ba426988e7661c\",\"runtime_artifact_digest\":null,\"spec_hash\":\"d38ced2adcf44ad5af742c25595f2148e071be1af1f8b5be4ef8395bfcef86ee\"},\"release\":{\"excluded_assumptions\":[\"evidence is bounded and relative to the supplied finite corpus; it is not exhaustive proof\",\"runtime artifact digest is unavailable: this report is not bound to a specific binary\",\"external reducers, hosts, and effect executors are outside this check\",\"obligation kinds with no verifier in this lane stay not_examined, not satisfied: OBL-CAP-001, OBL-DETERMINISM-001, OBL-EVENT-001, OBL-REFUSE-001, OBL-REPLAY-001, OBL-TERM-002\",\"no change-local adequacy challenges ran (they need --prior; with --prior, none was generated for this change)\"],\"reasons\":[],\"required_evidence\":[\"exploration_complete\",\"something_executed\",\"no_falsified_obligation\",\"no_incomplete_obligation\",\"no_unwitnessed_or_debt_obligation_in_standard_lane\",\"no_surviving_challenge\",\"verification_infrastructure_healthy\"],\"verdict\":\"release_pass\"},\"schema\":\"ikaros.release-evidence.v1\",\"status_counts\":{\"not_examined\":6,\"satisfied\":11}},\"report\":{\"bounds\":\"bounded\",\"challenges\":{\"incomplete\":0,\"killed\":0,\"survived\":0,\"total\":0},\"counterexamples\":[],\"coverage\":\"bounded\",\"engine_versions\":[[\"ik\",\"0.5.0\"]],\"engines\":[\"explore\",\"mutation\"],\"machine_id\":\"loan_checkout\",\"obligations\":{\"falsified\":0,\"falsified_ids\":[],\"incomplete\":0,\"satisfied\":11,\"total\":17,\"uncovered\":6,\"uncovered_ids\":[\"capability/stale\",\"determinism/fold\",\"event/frozen_choice\",\"refusal/immutability\",\"replay/equivalence\",\"terminal/returned/mutation_refused\"]},\"plan_digest\":\"cf572164f5bd5bd4690c1cf5b7cef79cc3286c4f7842c342c6ba426988e7661c\",\"schema_version\":1,\"spec_hash\":\"d38ced2adcf44ad5af742c25595f2148e071be1af1f8b5be4ef8395bfcef86ee\",\"survivors\":[]},\"verdict\":\"ACCEPT\"}\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "loan.sqlite",
+        "--machine",
+        "fixtures/loan_v2.ik.toml",
+        "command"
+      ],
+      "exit": 1,
+      "failures": [],
+      "id": "change.old_instance_mismatch",
+      "parsed": {
+        "diagnostic": {
+          "code": "IK_MACHINE_MISMATCH",
+          "message": "presented machine identity does not match the aggregate's recorded identity"
+        },
+        "ok": false,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "ext1",
+        "runtime_version": "0.5.0"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"diagnostic\":{\"code\":\"IK_MACHINE_MISMATCH\",\"message\":\"presented machine identity does not match the aggregate's recorded identity\"},\"ok\":false,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"ext1\",\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "--store",
+        "loan.sqlite",
+        "--machine",
+        "fixtures/loan_checkout.ik.toml",
+        "command"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "change.old_instance_continues",
+      "parsed": {
+        "ok": true,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "rec1",
+        "result": {
+          "aggregate_id": "loan-1",
+          "capability": {
+            "generation": 2,
+            "nonce": "0498be11ab91295759e49b6259bd62f6821b73f17837f47e3d45565ae4bfc20c"
+          },
+          "effect": {
+            "status": "none"
+          },
+          "generation": 2,
+          "mutation": true,
+          "receipt": {
+            "aggregate_id": "loan-1",
+            "effect": {
+              "type": "none"
+            },
+            "event_hash": "2312eaeba4d435f49d71131c9181f0051e8f17acc0a32a151d6b34ba09df9a24",
+            "generation": 2,
+            "machine_id": "loan_checkout",
+            "machine_spec_hash": "6c08d4be51065bc9fd184c78009f7ef1f3b5c40f82e1d2d9d46e226cabaa15d8",
+            "machine_version": 1,
+            "receipt_id": "2312eaeba4d435f49d71131c9181f0051e8f17acc0a32a151d6b34ba09df9a24",
+            "sequence": 2,
+            "state_digest": "2c749c5b2a3e9d9d299dc550ac66a32eeb2fa10db6301d631a89c4fbc5408220"
+          },
+          "state": {
+            "checkout_ms": 1000,
+            "deposit_id": "dep-1",
+            "loan_until_ms": 1209601000,
+            "overdue": 0,
+            "recall_placed": 1,
+            "state": "on_loan"
+          },
+          "terminal": false
+        },
+        "runtime_version": "0.5.0"
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "{\"ok\":true,\"protocol\":{\"major\":1,\"minor\":0},\"request_id\":\"rec1\",\"result\":{\"aggregate_id\":\"loan-1\",\"capability\":{\"generation\":2,\"nonce\":\"0498be11ab91295759e49b6259bd62f6821b73f17837f47e3d45565ae4bfc20c\"},\"effect\":{\"status\":\"none\"},\"generation\":2,\"mutation\":true,\"receipt\":{\"aggregate_id\":\"loan-1\",\"effect\":{\"type\":\"none\"},\"event_hash\":\"2312eaeba4d435f49d71131c9181f0051e8f17acc0a32a151d6b34ba09df9a24\",\"generation\":2,\"machine_id\":\"loan_checkout\",\"machine_spec_hash\":\"6c08d4be51065bc9fd184c78009f7ef1f3b5c40f82e1d2d9d46e226cabaa15d8\",\"machine_version\":1,\"receipt_id\":\"2312eaeba4d435f49d71131c9181f0051e8f17acc0a32a151d6b34ba09df9a24\",\"sequence\":2,\"state_digest\":\"2c749c5b2a3e9d9d299dc550ac66a32eeb2fa10db6301d631a89c4fbc5408220\"},\"state\":{\"checkout_ms\":1000,\"deposit_id\":\"dep-1\",\"loan_until_ms\":1209601000,\"overdue\":0,\"recall_placed\":1,\"state\":\"on_loan\"},\"terminal\":false},\"runtime_version\":\"0.5.0\"}\n"
+    },
+    {
+      "argv": [
+        "scenario",
+        "run",
+        "fixtures/tagged_item.ik.toml",
+        "fixtures/scenarios/lost-reply.json",
+        "--out",
+        "$TMP/out/sc-lost"
+      ],
+      "exit": 0,
+      "failures": [],
+      "id": "diagnose.lost_reply",
+      "parsed": {
+        "aggregate": "item-lost",
+        "all_expectations_met": true,
+        "faults_applied": [
+          {
+            "name": "reply_dropped",
+            "proof": {
+              "generation": 1,
+              "lookup": {
+                "first_sequence": 1,
+                "generation": 1,
+                "last_sequence": 1,
+                "outcome": "committed_exact"
+              },
+              "named_step_committed": true,
+              "of": "tag",
+              "operation_id": "op-tag"
+            },
+            "seam_fired": true
+          },
+          {
+            "name": "duplicate_submission",
+            "proof": {
+              "generation_after": 1,
+              "generation_before": 1,
+              "outcome": "historical"
+            },
+            "seam_fired": true
+          },
+          {
+            "name": "reopened",
+            "proof": {
+              "generation_after": 1,
+              "generation_before": 1,
+              "state_unchanged": true
+            },
+            "seam_fired": true
+          }
+        ],
+        "machine_id": "tagged_item",
+        "runtime": {
+          "binary_sha256": "8366feba1f3b994db0c74ff2c3e970e91176142d9f0a71c309c2d48de43d61df",
+          "ik_version": "0.5.0",
+          "store_schema": 4
+        },
+        "scenario_digest": "6f5488f12741db89ca814c64900d11bf0570d6af0a0dd1528204dacd32dc6f66",
+        "schema": "ik.scenario.result.v1",
+        "seams_fired": [
+          "reply_dropped",
+          "duplicate_submission",
+          "reopened"
+        ],
+        "spec_hash": "f0bef35d059f09af32614c758cbfb5f66ac707bf92c03240dd96b729cb3758d6",
+        "steps": [
+          {
+            "expectation": "committed",
+            "kind": "create",
+            "label": "genesis",
+            "request": {
+              "aggregate": "item-lost"
+            },
+            "response": {
+              "outcome": "committed"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {},
+              "generation": 0,
+              "state": "idle"
+            },
+            "verdict": "pass"
+          },
+          {
+            "expectation": "committed",
+            "kind": "command",
+            "label": "tag",
+            "request": {
+              "args": {
+                "id": "item_1",
+                "label": "AMBER"
+              },
+              "name": "tag",
+              "operation_id": "op-tag",
+              "use_handle": null
+            },
+            "response": {
+              "outcome": "committed"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "verdict": "pass"
+          },
+          {
+            "expectation": "reply_dropped",
+            "kind": "drop_reply",
+            "label": "lost",
+            "request": {
+              "of": "tag"
+            },
+            "response": {
+              "outcome": "reply_dropped"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "verdict": "pass"
+          },
+          {
+            "expectation": "committed_exact",
+            "kind": "lookup",
+            "label": "found",
+            "request": {
+              "operation_id": "op-tag"
+            },
+            "response": {
+              "outcome": "committed_exact"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "verdict": "pass"
+          },
+          {
+            "expectation": "historical",
+            "kind": "duplicate",
+            "label": "again",
+            "request": {
+              "of": "tag",
+              "operation_id": "op-tag"
+            },
+            "response": {
+              "outcome": "historical"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "verdict": "pass"
+          },
+          {
+            "expectation": "reopened",
+            "kind": "reopen",
+            "label": "restart",
+            "request": {},
+            "response": {
+              "outcome": "reopened"
+            },
+            "state_after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "verdict": "pass"
+          }
+        ]
+      },
+      "pass": true,
+      "stderr": "",
+      "stdout": "all expectations met\n"
+    },
+    {
+      "argv": [
+        "report",
+        "handoff",
+        "replay",
+        "verify"
+      ],
+      "exit": 0,
+      "failures": [],
+      "finding_id": "$TMP/out/sc-lost#item-lost/found",
+      "handoff": {
+        "assumptions": [],
+        "decision": null,
+        "decision_status": "none",
+        "decisions": [],
+        "diagram": {
+          "change": null,
+          "compressed": "events the evidence supports \u00b7 lookup by operation id \u00b7 never resend\n```text\n  \u25cf [ idle ] \u2550\u2550\u25b6 \u27ea\n      \u2502\n      \u2502  tag\n      \u25bc\n  \u25cb [ \u2460 request sent ]        observed\n      \u2502\n      \u25bc\n  \u2702 [ \u2461 reply lost ]          observed\n      \u2502\n      \u25bc\n  \u25cb [ \u2462 committed ]           found by lookup\n      \u2502\n      \u25bc\n  \u25cb [ \u2463 asked again ]         found by lookup  \u25c0\u2500\u2500 YOU ARE HERE\n      \u2502\n      \u25bc\n  \u27eb \u2550\u2550\u25b6 \u2714 [ tagged ]  END\nEstablished: the earlier operation committed; this lookup did not commit again\nUncertain: whether any handle from this lookup is current\nSafe next action: do not resend; the earlier result stands\n```\nlegend: \u25c0\u2500\u2500 YOU ARE HERE \u00b7 \u2714 END \u00b7 \u2702 reply lost \u00b7 \u27ea \u27eb one command, unfolded \u00b7 \u25cf initial\nlegend: \u25cb other\n",
+          "drawn_edges": [],
+          "emphasis": "you_are_here",
+          "facts": {
+            "basis": "structural",
+            "chunks": [
+              "events the evidence supports",
+              "lookup by operation id",
+              "never resend"
+            ],
+            "line": "events the evidence supports \u00b7 lookup by operation id \u00b7 never resend"
+          },
+          "kind": "recovery",
+          "legend": [
+            "\u25bc HERE",
+            "\u2501 observed",
+            "\u2504 lookup",
+            "\u2702 reply lost"
+          ],
+          "level": 1,
+          "loops": [],
+          "markdown": "events the evidence supports \u00b7 lookup by operation id \u00b7 never resend\n```text\n  \u25cf [ idle ] \u2550\u2550\u25b6 \u27ea\n      \u2502\n      \u2502  tag\n      \u25bc\n  \u25cb [ \u2460 request sent ]        observed\n      \u2502\n      \u25bc\n  \u2702 [ \u2461 reply lost ]          observed\n      \u2502\n      \u25bc\n  \u25cb [ \u2462 committed ]           found by lookup\n      \u2502\n      \u25bc\n  \u25cb [ \u2463 asked again ]         found by lookup  \u25c0\u2500\u2500 YOU ARE HERE\n      \u2502\n      \u25bc\n  \u27eb \u2550\u2550\u25b6 \u2714 [ tagged ]  END\nEstablished: the earlier operation committed; this lookup did not commit again\nUncertain: whether any handle from this lookup is current\nSafe next action: do not resend; the earlier result stands\n```\nlegend: \u25c0\u2500\u2500 YOU ARE HERE \u00b7 \u2714 END \u00b7 \u2702 reply lost \u00b7 \u27ea \u27eb one command, unfolded \u00b7 \u25cf initial\nlegend: \u25cb other\n\n| event        | how known       | note                                                   |\n| ------------ | --------------- | ------------------------------------------------------ |\n| request sent | observed        |                                                        |\n| reply lost   | observed        | the caller never saw the result                        |\n| committed    | found by lookup | found under the same operation id; not committed again |\n| asked again  | found by lookup | the earlier result stands; it is not a current handle  |\n",
+          "mermaid": "flowchart LR\n    t0[\"request sent \u00b7 observed\"]\n    t1[\"reply lost \u2702 \u00b7 observed\"]\n    t2[\"committed \u00b7 found by lookup\"]\n    t3[\"asked again \u25bc HERE \u00b7 found by lookup\"]\n    t0 ==> t1\n    t1 -.-> t2\n    t2 -.-> t3\n",
+          "next": [],
+          "recovery": {
+            "command": "tag",
+            "fork": [
+              {
+                "outcome": "committed",
+                "resolution": "look up by saved operation id; never resend"
+              },
+              {
+                "outcome": "not committed",
+                "resolution": "look up by saved operation id; never resend"
+              },
+              {
+                "outcome": "unknown",
+                "resolution": "look up by saved operation id; never resend"
+              }
+            ],
+            "operation_id": "op-tag",
+            "resolved_how": "found by lookup",
+            "resolved_outcome": "committed",
+            "subject": "item-lost",
+            "timeline": [
+              {
+                "how": "observed",
+                "id": "sent",
+                "label": "request sent",
+                "note": ""
+              },
+              {
+                "how": "observed",
+                "id": "lost",
+                "label": "reply lost",
+                "note": "the caller never saw the result"
+              },
+              {
+                "how": "found by lookup",
+                "id": "committed",
+                "label": "committed",
+                "note": "found under the same operation id; not committed again"
+              },
+              {
+                "how": "found by lookup",
+                "id": "history",
+                "label": "asked again",
+                "note": "the earlier result stands; it is not a current handle"
+              }
+            ],
+            "you_are_here": "history"
+          },
+          "region_lanes": null,
+          "route_map": "  \u25cf [ idle ] \u2550\u2550\u25b6 \u27ea\n      \u2502\n      \u2502  tag\n      \u25bc\n  \u25cb [ \u2460 request sent ]        observed\n      \u2502\n      \u25bc\n  \u2702 [ \u2461 reply lost ]          observed\n      \u2502\n      \u25bc\n  \u25cb [ \u2462 committed ]           found by lookup\n      \u2502\n      \u25bc\n  \u25cb [ \u2463 asked again ]         found by lookup  \u25c0\u2500\u2500 YOU ARE HERE\n      \u2502\n      \u25bc\n  \u27eb \u2550\u2550\u25b6 \u2714 [ tagged ]  END\nEstablished: the earlier operation committed; this lookup did not commit again\nUncertain: whether any handle from this lookup is current\nSafe next action: do not resend; the earlier result stands\n",
+          "rules": [],
+          "safe_next": "do not resend; the earlier result stands",
+          "schema": "ik.diagram.v1",
+          "stuck": [],
+          "table": [
+            {
+              "class": "observed",
+              "command": "sent",
+              "effect": "",
+              "from": "",
+              "guard": "",
+              "to": ""
+            },
+            {
+              "class": "observed",
+              "command": "lost",
+              "effect": "",
+              "from": "",
+              "guard": "",
+              "to": ""
+            },
+            {
+              "class": "lookup",
+              "command": "committed",
+              "effect": "",
+              "from": "",
+              "guard": "",
+              "to": ""
+            },
+            {
+              "class": "lookup",
+              "command": "history",
+              "effect": "",
+              "from": "",
+              "guard": "",
+              "to": ""
+            }
+          ],
+          "table_markdown": "| event        | how known       | note                                                   |\n| ------------ | --------------- | ------------------------------------------------------ |\n| request sent | observed        |                                                        |\n| reply lost   | observed        | the caller never saw the result                        |\n| committed    | found by lookup | found under the same operation id; not committed again |\n| asked again  | found by lookup | the earlier result stands; it is not a current handle  |\n",
+          "unreachable": [],
+          "you_are_here": "history"
+        },
+        "duties": [
+          {
+            "duty": "Requirement source",
+            "expected_party": "Owner",
+            "status": "not recorded"
+          },
+          {
+            "duty": "Independent review",
+            "expected_party": "Reviewer",
+            "status": "not recorded"
+          },
+          {
+            "duty": "Approver identity",
+            "expected_party": "Platform",
+            "status": "not recorded: an acceptance binds content, not who accepted"
+          },
+          {
+            "duty": "Parties in roles",
+            "expected_party": "",
+            "status": "not recorded"
+          }
+        ],
+        "evidence": [
+          {
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/genesis",
+            "source_kind": "ik.scenario.result.v1",
+            "status": "committed"
+          },
+          {
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/tag",
+            "source_kind": "ik.scenario.result.v1",
+            "status": "committed"
+          },
+          {
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/lost",
+            "source_kind": "ik.scenario.result.v1",
+            "status": "reply_dropped"
+          },
+          {
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/found",
+            "source_kind": "ik.scenario.result.v1",
+            "status": "committed_exact"
+          },
+          {
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/again",
+            "source_kind": "ik.scenario.result.v1",
+            "status": "historical"
+          },
+          {
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/restart",
+            "source_kind": "ik.scenario.result.v1",
+            "status": "reopened"
+          }
+        ],
+        "kind": "recovery",
+        "operation_id": "op-tag",
+        "outcomes": [
+          {
+            "cited": [
+              "$TMP/out/sc-lost#item-lost/found"
+            ],
+            "claim": null,
+            "effective_claim": "reconciled",
+            "findings": [
+              {
+                "committed": "earlier operation: committed (confirmed by lookup); this lookup did not commit again",
+                "completeness": "observed",
+                "evidence_class": "observed_trace",
+                "id": "$TMP/out/sc-lost#item-lost/found",
+                "scope": "established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current",
+                "status": "committed_exact"
+              }
+            ],
+            "id": "R1",
+            "missing_evidence": [],
+            "status": "exercised",
+            "text": "lookup of the dropped commit is committed_exact"
+          }
+        ],
+        "readiness": "not_stated",
+        "reading": {
+          "established": [
+            "the earlier operation committed; this lookup did not commit again"
+          ],
+          "safe_next_action": "do not resend; the earlier result stands",
+          "uncertain": [
+            "whether any handle from this lookup is current"
+          ]
+        },
+        "scenario_only": true,
+        "schema": "ik.handoff.v1",
+        "scope": {
+          "assumed": [
+            "execution is perfect and reliable"
+          ],
+          "checked": "whether a recorded operation exists in the store under the given id and request",
+          "not_checked": [
+            "that the criteria are valid",
+            "that the code and effects performing a transition do what is intended",
+            "that the definition says what was needed",
+            "anything the requirement does not state"
+          ],
+          "readiness": "the owner's decision; this report does not state it"
+        },
+        "subject": "item-lost",
+        "title": "lost reply is history",
+        "unchanged": []
+      },
+      "handoff_exit": 0,
+      "handoff_stderr": "",
+      "id": "diagnose.report_handoff_verify",
+      "parsed": {
+        "finding_id": "$TMP/out/sc-lost#item-lost/found",
+        "handoff": {
+          "assumptions": [],
+          "decision": null,
+          "decision_status": "none",
+          "decisions": [],
+          "diagram": {
+            "change": null,
+            "compressed": "events the evidence supports \u00b7 lookup by operation id \u00b7 never resend\n```text\n  \u25cf [ idle ] \u2550\u2550\u25b6 \u27ea\n      \u2502\n      \u2502  tag\n      \u25bc\n  \u25cb [ \u2460 request sent ]        observed\n      \u2502\n      \u25bc\n  \u2702 [ \u2461 reply lost ]          observed\n      \u2502\n      \u25bc\n  \u25cb [ \u2462 committed ]           found by lookup\n      \u2502\n      \u25bc\n  \u25cb [ \u2463 asked again ]         found by lookup  \u25c0\u2500\u2500 YOU ARE HERE\n      \u2502\n      \u25bc\n  \u27eb \u2550\u2550\u25b6 \u2714 [ tagged ]  END\nEstablished: the earlier operation committed; this lookup did not commit again\nUncertain: whether any handle from this lookup is current\nSafe next action: do not resend; the earlier result stands\n```\nlegend: \u25c0\u2500\u2500 YOU ARE HERE \u00b7 \u2714 END \u00b7 \u2702 reply lost \u00b7 \u27ea \u27eb one command, unfolded \u00b7 \u25cf initial\nlegend: \u25cb other\n",
+            "drawn_edges": [],
+            "emphasis": "you_are_here",
+            "facts": {
+              "basis": "structural",
+              "chunks": [
+                "events the evidence supports",
+                "lookup by operation id",
+                "never resend"
+              ],
+              "line": "events the evidence supports \u00b7 lookup by operation id \u00b7 never resend"
+            },
+            "kind": "recovery",
+            "legend": [
+              "\u25bc HERE",
+              "\u2501 observed",
+              "\u2504 lookup",
+              "\u2702 reply lost"
+            ],
+            "level": 1,
+            "loops": [],
+            "markdown": "events the evidence supports \u00b7 lookup by operation id \u00b7 never resend\n```text\n  \u25cf [ idle ] \u2550\u2550\u25b6 \u27ea\n      \u2502\n      \u2502  tag\n      \u25bc\n  \u25cb [ \u2460 request sent ]        observed\n      \u2502\n      \u25bc\n  \u2702 [ \u2461 reply lost ]          observed\n      \u2502\n      \u25bc\n  \u25cb [ \u2462 committed ]           found by lookup\n      \u2502\n      \u25bc\n  \u25cb [ \u2463 asked again ]         found by lookup  \u25c0\u2500\u2500 YOU ARE HERE\n      \u2502\n      \u25bc\n  \u27eb \u2550\u2550\u25b6 \u2714 [ tagged ]  END\nEstablished: the earlier operation committed; this lookup did not commit again\nUncertain: whether any handle from this lookup is current\nSafe next action: do not resend; the earlier result stands\n```\nlegend: \u25c0\u2500\u2500 YOU ARE HERE \u00b7 \u2714 END \u00b7 \u2702 reply lost \u00b7 \u27ea \u27eb one command, unfolded \u00b7 \u25cf initial\nlegend: \u25cb other\n\n| event        | how known       | note                                                   |\n| ------------ | --------------- | ------------------------------------------------------ |\n| request sent | observed        |                                                        |\n| reply lost   | observed        | the caller never saw the result                        |\n| committed    | found by lookup | found under the same operation id; not committed again |\n| asked again  | found by lookup | the earlier result stands; it is not a current handle  |\n",
+            "mermaid": "flowchart LR\n    t0[\"request sent \u00b7 observed\"]\n    t1[\"reply lost \u2702 \u00b7 observed\"]\n    t2[\"committed \u00b7 found by lookup\"]\n    t3[\"asked again \u25bc HERE \u00b7 found by lookup\"]\n    t0 ==> t1\n    t1 -.-> t2\n    t2 -.-> t3\n",
+            "next": [],
+            "recovery": {
+              "command": "tag",
+              "fork": [
+                {
+                  "outcome": "committed",
+                  "resolution": "look up by saved operation id; never resend"
+                },
+                {
+                  "outcome": "not committed",
+                  "resolution": "look up by saved operation id; never resend"
+                },
+                {
+                  "outcome": "unknown",
+                  "resolution": "look up by saved operation id; never resend"
+                }
+              ],
+              "operation_id": "op-tag",
+              "resolved_how": "found by lookup",
+              "resolved_outcome": "committed",
+              "subject": "item-lost",
+              "timeline": [
+                {
+                  "how": "observed",
+                  "id": "sent",
+                  "label": "request sent",
+                  "note": ""
+                },
+                {
+                  "how": "observed",
+                  "id": "lost",
+                  "label": "reply lost",
+                  "note": "the caller never saw the result"
+                },
+                {
+                  "how": "found by lookup",
+                  "id": "committed",
+                  "label": "committed",
+                  "note": "found under the same operation id; not committed again"
+                },
+                {
+                  "how": "found by lookup",
+                  "id": "history",
+                  "label": "asked again",
+                  "note": "the earlier result stands; it is not a current handle"
+                }
+              ],
+              "you_are_here": "history"
+            },
+            "region_lanes": null,
+            "route_map": "  \u25cf [ idle ] \u2550\u2550\u25b6 \u27ea\n      \u2502\n      \u2502  tag\n      \u25bc\n  \u25cb [ \u2460 request sent ]        observed\n      \u2502\n      \u25bc\n  \u2702 [ \u2461 reply lost ]          observed\n      \u2502\n      \u25bc\n  \u25cb [ \u2462 committed ]           found by lookup\n      \u2502\n      \u25bc\n  \u25cb [ \u2463 asked again ]         found by lookup  \u25c0\u2500\u2500 YOU ARE HERE\n      \u2502\n      \u25bc\n  \u27eb \u2550\u2550\u25b6 \u2714 [ tagged ]  END\nEstablished: the earlier operation committed; this lookup did not commit again\nUncertain: whether any handle from this lookup is current\nSafe next action: do not resend; the earlier result stands\n",
+            "rules": [],
+            "safe_next": "do not resend; the earlier result stands",
+            "schema": "ik.diagram.v1",
+            "stuck": [],
+            "table": [
+              {
+                "class": "observed",
+                "command": "sent",
+                "effect": "",
+                "from": "",
+                "guard": "",
+                "to": ""
+              },
+              {
+                "class": "observed",
+                "command": "lost",
+                "effect": "",
+                "from": "",
+                "guard": "",
+                "to": ""
+              },
+              {
+                "class": "lookup",
+                "command": "committed",
+                "effect": "",
+                "from": "",
+                "guard": "",
+                "to": ""
+              },
+              {
+                "class": "lookup",
+                "command": "history",
+                "effect": "",
+                "from": "",
+                "guard": "",
+                "to": ""
+              }
+            ],
+            "table_markdown": "| event        | how known       | note                                                   |\n| ------------ | --------------- | ------------------------------------------------------ |\n| request sent | observed        |                                                        |\n| reply lost   | observed        | the caller never saw the result                        |\n| committed    | found by lookup | found under the same operation id; not committed again |\n| asked again  | found by lookup | the earlier result stands; it is not a current handle  |\n",
+            "unreachable": [],
+            "you_are_here": "history"
+          },
+          "duties": [
+            {
+              "duty": "Requirement source",
+              "expected_party": "Owner",
+              "status": "not recorded"
+            },
+            {
+              "duty": "Independent review",
+              "expected_party": "Reviewer",
+              "status": "not recorded"
+            },
+            {
+              "duty": "Approver identity",
+              "expected_party": "Platform",
+              "status": "not recorded: an acceptance binds content, not who accepted"
+            },
+            {
+              "duty": "Parties in roles",
+              "expected_party": "",
+              "status": "not recorded"
+            }
+          ],
+          "evidence": [
+            {
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/genesis",
+              "source_kind": "ik.scenario.result.v1",
+              "status": "committed"
+            },
+            {
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/tag",
+              "source_kind": "ik.scenario.result.v1",
+              "status": "committed"
+            },
+            {
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/lost",
+              "source_kind": "ik.scenario.result.v1",
+              "status": "reply_dropped"
+            },
+            {
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/found",
+              "source_kind": "ik.scenario.result.v1",
+              "status": "committed_exact"
+            },
+            {
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/again",
+              "source_kind": "ik.scenario.result.v1",
+              "status": "historical"
+            },
+            {
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/restart",
+              "source_kind": "ik.scenario.result.v1",
+              "status": "reopened"
+            }
+          ],
+          "kind": "recovery",
+          "operation_id": "op-tag",
+          "outcomes": [
+            {
+              "cited": [
+                "$TMP/out/sc-lost#item-lost/found"
+              ],
+              "claim": null,
+              "effective_claim": "reconciled",
+              "findings": [
+                {
+                  "committed": "earlier operation: committed (confirmed by lookup); this lookup did not commit again",
+                  "completeness": "observed",
+                  "evidence_class": "observed_trace",
+                  "id": "$TMP/out/sc-lost#item-lost/found",
+                  "scope": "established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current",
+                  "status": "committed_exact"
+                }
+              ],
+              "id": "R1",
+              "missing_evidence": [],
+              "status": "exercised",
+              "text": "lookup of the dropped commit is committed_exact"
+            }
+          ],
+          "readiness": "not_stated",
+          "reading": {
+            "established": [
+              "the earlier operation committed; this lookup did not commit again"
+            ],
+            "safe_next_action": "do not resend; the earlier result stands",
+            "uncertain": [
+              "whether any handle from this lookup is current"
+            ]
+          },
+          "scenario_only": true,
+          "schema": "ik.handoff.v1",
+          "scope": {
+            "assumed": [
+              "execution is perfect and reliable"
+            ],
+            "checked": "whether a recorded operation exists in the store under the given id and request",
+            "not_checked": [
+              "that the criteria are valid",
+              "that the code and effects performing a transition do what is intended",
+              "that the definition says what was needed",
+              "anything the requirement does not state"
+            ],
+            "readiness": "the owner's decision; this report does not state it"
+          },
+          "subject": "item-lost",
+          "title": "lost reply is history",
+          "unchanged": []
+        },
+        "handoff_exit": 0,
+        "handoff_stderr": "",
+        "replay": {
+          "ok": true,
+          "protocol": {
+            "major": 1,
+            "minor": 0
+          },
+          "request_id": "rp",
+          "result": {
+            "aggregates": [
+              {
+                "aggregate_id": "item-1",
+                "generation": 1,
+                "rebuilt": false,
+                "sequence": 1,
+                "state": {
+                  "item_id": "item_1",
+                  "label": "AMBER",
+                  "state": "tagged"
+                }
+              }
+            ],
+            "store_id": "ik-store-a44ea501-471f-425a-85cc-89634c54b998"
+          },
+          "runtime_version": "0.5.0"
+        },
+        "report": {
+          "findings": [
+            {
+              "after": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {},
+                "generation": 0,
+                "state": "idle"
+              },
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "attempted": "{\"aggregate\":\"item-lost\"}",
+              "committed": "committed",
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/genesis",
+              "next_action": "promote as regression or continue",
+              "reproduction_status": "observed",
+              "scope": "observed runtime trace; the command committed",
+              "source_coordinate": {
+                "state": "idle"
+              },
+              "source_kind": "ik.scenario.result.v1",
+              "status": "committed"
+            },
+            {
+              "after": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "attempted": "tag {\"id\":\"item_1\",\"label\":\"AMBER\"}",
+              "before": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {},
+                "generation": 0,
+                "state": "idle"
+              },
+              "committed": "committed",
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/tag",
+              "next_action": "promote as regression or continue",
+              "reproduction_status": "observed",
+              "scope": "observed runtime trace; the command committed",
+              "source_coordinate": {
+                "command": "tag",
+                "state": "tagged"
+              },
+              "source_kind": "ik.scenario.result.v1",
+              "status": "committed"
+            },
+            {
+              "after": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "attempted": "{\"of\":\"tag\"}",
+              "before": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "committed": "the reply was discarded; this step did not commit",
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/lost",
+              "next_action": "look up the earlier operation; do not resend from the dropped reply",
+              "reproduction_status": "observed",
+              "scope": "established: the reply to the earlier attempt was not delivered. uncertain: this dropped-reply record does not by itself confirm the commit",
+              "source_coordinate": {
+                "state": "tagged"
+              },
+              "source_kind": "ik.scenario.result.v1",
+              "status": "reply_dropped"
+            },
+            {
+              "after": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "attempted": "{\"operation_id\":\"op-tag\"}",
+              "before": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "committed": "earlier operation: committed (confirmed by lookup); this lookup did not commit again",
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/found",
+              "next_action": "do not resend; the earlier result stands",
+              "reproduction_status": "observed",
+              "scope": "established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current",
+              "source_coordinate": {
+                "state": "tagged"
+              },
+              "source_kind": "ik.scenario.result.v1",
+              "status": "committed_exact"
+            },
+            {
+              "after": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "attempted": "{\"of\":\"tag\",\"operation_id\":\"op-tag\"}",
+              "before": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "committed": "earlier operation: already committed (historical); this attempt did not commit again",
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/again",
+              "next_action": "do not treat this as a new commit or a current handle",
+              "reproduction_status": "observed",
+              "scope": "established: the earlier operation already committed; this attempt did not commit again. uncertain: whether any returned handle is current",
+              "source_coordinate": {
+                "state": "tagged"
+              },
+              "source_kind": "ik.scenario.result.v1",
+              "status": "historical"
+            },
+            {
+              "after": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "artifacts": [
+                "$TMP/out/sc-lost/SHA256SUMS",
+                "$TMP/out/sc-lost/machine.ik.toml",
+                "$TMP/out/sc-lost/result.json",
+                "$TMP/out/sc-lost/scenario.json",
+                "$TMP/out/sc-lost/trace.json"
+              ],
+              "attempted": "{}",
+              "before": {
+                "effect": {
+                  "status": "none"
+                },
+                "facts": {
+                  "item_id": "item_1",
+                  "label": "AMBER"
+                },
+                "generation": 1,
+                "state": "tagged"
+              },
+              "committed": "not committed",
+              "completeness": "observed",
+              "evidence_class": "observed_trace",
+              "id": "$TMP/out/sc-lost#item-lost/restart",
+              "next_action": "inspect status reopened",
+              "reproduction_status": "observed",
+              "scope": "observed runtime trace; outcome reopened",
+              "source_coordinate": {
+                "state": "tagged"
+              },
+              "source_kind": "ik.scenario.result.v1",
+              "status": "reopened"
+            }
+          ],
+          "schema": "ik.report.v1"
+        },
+        "report_exit": 0,
+        "report_stderr": "",
+        "report_stdout": "{\"findings\":[{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{},\"generation\":0,\"state\":\"idle\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"aggregate\\\":\\\"item-lost\\\"}\",\"committed\":\"committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/genesis\",\"next_action\":\"promote as regression or continue\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; the command committed\",\"source_coordinate\":{\"state\":\"idle\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"tag {\\\"id\\\":\\\"item_1\\\",\\\"label\\\":\\\"AMBER\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{},\"generation\":0,\"state\":\"idle\"},\"committed\":\"committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/tag\",\"next_action\":\"promote as regression or continue\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; the command committed\",\"source_coordinate\":{\"command\":\"tag\",\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"of\\\":\\\"tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"the reply was discarded; this step did not commit\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/lost\",\"next_action\":\"look up the earlier operation; do not resend from the dropped reply\",\"reproduction_status\":\"observed\",\"scope\":\"established: the reply to the earlier attempt was not delivered. uncertain: this dropped-reply record does not by itself confirm the commit\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"reply_dropped\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"operation_id\\\":\\\"op-tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"earlier operation: committed (confirmed by lookup); this lookup did not commit again\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/found\",\"next_action\":\"do not resend; the earlier result stands\",\"reproduction_status\":\"observed\",\"scope\":\"established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed_exact\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"of\\\":\\\"tag\\\",\\\"operation_id\\\":\\\"op-tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"earlier operation: already committed (historical); this attempt did not commit again\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/again\",\"next_action\":\"do not treat this as a new commit or a current handle\",\"reproduction_status\":\"observed\",\"scope\":\"established: the earlier operation already committed; this attempt did not commit again. uncertain: whether any returned handle is current\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"historical\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"not committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/restart\",\"next_action\":\"inspect status reopened\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; outcome reopened\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"reopened\"}],\"schema\":\"ik.report.v1\"}\n",
+        "verify": {
+          "ok": true,
+          "protocol": {
+            "major": 1,
+            "minor": 0
+          },
+          "request_id": "vf",
+          "result": {
+            "aggregates": 1,
+            "journal_ok": true,
+            "projection_ok": true,
+            "store_id": "ik-store-a44ea501-471f-425a-85cc-89634c54b998",
+            "verified": true
+          },
+          "runtime_version": "0.5.0"
+        }
+      },
+      "pass": true,
+      "replay": {
+        "ok": true,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "rp",
+        "result": {
+          "aggregates": [
+            {
+              "aggregate_id": "item-1",
+              "generation": 1,
+              "rebuilt": false,
+              "sequence": 1,
+              "state": {
+                "item_id": "item_1",
+                "label": "AMBER",
+                "state": "tagged"
+              }
+            }
+          ],
+          "store_id": "ik-store-a44ea501-471f-425a-85cc-89634c54b998"
+        },
+        "runtime_version": "0.5.0"
+      },
+      "report": {
+        "findings": [
+          {
+            "after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {},
+              "generation": 0,
+              "state": "idle"
+            },
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "attempted": "{\"aggregate\":\"item-lost\"}",
+            "committed": "committed",
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/genesis",
+            "next_action": "promote as regression or continue",
+            "reproduction_status": "observed",
+            "scope": "observed runtime trace; the command committed",
+            "source_coordinate": {
+              "state": "idle"
+            },
+            "source_kind": "ik.scenario.result.v1",
+            "status": "committed"
+          },
+          {
+            "after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "attempted": "tag {\"id\":\"item_1\",\"label\":\"AMBER\"}",
+            "before": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {},
+              "generation": 0,
+              "state": "idle"
+            },
+            "committed": "committed",
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/tag",
+            "next_action": "promote as regression or continue",
+            "reproduction_status": "observed",
+            "scope": "observed runtime trace; the command committed",
+            "source_coordinate": {
+              "command": "tag",
+              "state": "tagged"
+            },
+            "source_kind": "ik.scenario.result.v1",
+            "status": "committed"
+          },
+          {
+            "after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "attempted": "{\"of\":\"tag\"}",
+            "before": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "committed": "the reply was discarded; this step did not commit",
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/lost",
+            "next_action": "look up the earlier operation; do not resend from the dropped reply",
+            "reproduction_status": "observed",
+            "scope": "established: the reply to the earlier attempt was not delivered. uncertain: this dropped-reply record does not by itself confirm the commit",
+            "source_coordinate": {
+              "state": "tagged"
+            },
+            "source_kind": "ik.scenario.result.v1",
+            "status": "reply_dropped"
+          },
+          {
+            "after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "attempted": "{\"operation_id\":\"op-tag\"}",
+            "before": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "committed": "earlier operation: committed (confirmed by lookup); this lookup did not commit again",
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/found",
+            "next_action": "do not resend; the earlier result stands",
+            "reproduction_status": "observed",
+            "scope": "established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current",
+            "source_coordinate": {
+              "state": "tagged"
+            },
+            "source_kind": "ik.scenario.result.v1",
+            "status": "committed_exact"
+          },
+          {
+            "after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "attempted": "{\"of\":\"tag\",\"operation_id\":\"op-tag\"}",
+            "before": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "committed": "earlier operation: already committed (historical); this attempt did not commit again",
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/again",
+            "next_action": "do not treat this as a new commit or a current handle",
+            "reproduction_status": "observed",
+            "scope": "established: the earlier operation already committed; this attempt did not commit again. uncertain: whether any returned handle is current",
+            "source_coordinate": {
+              "state": "tagged"
+            },
+            "source_kind": "ik.scenario.result.v1",
+            "status": "historical"
+          },
+          {
+            "after": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "artifacts": [
+              "$TMP/out/sc-lost/SHA256SUMS",
+              "$TMP/out/sc-lost/machine.ik.toml",
+              "$TMP/out/sc-lost/result.json",
+              "$TMP/out/sc-lost/scenario.json",
+              "$TMP/out/sc-lost/trace.json"
+            ],
+            "attempted": "{}",
+            "before": {
+              "effect": {
+                "status": "none"
+              },
+              "facts": {
+                "item_id": "item_1",
+                "label": "AMBER"
+              },
+              "generation": 1,
+              "state": "tagged"
+            },
+            "committed": "not committed",
+            "completeness": "observed",
+            "evidence_class": "observed_trace",
+            "id": "$TMP/out/sc-lost#item-lost/restart",
+            "next_action": "inspect status reopened",
+            "reproduction_status": "observed",
+            "scope": "observed runtime trace; outcome reopened",
+            "source_coordinate": {
+              "state": "tagged"
+            },
+            "source_kind": "ik.scenario.result.v1",
+            "status": "reopened"
+          }
+        ],
+        "schema": "ik.report.v1"
+      },
+      "report_exit": 0,
+      "report_stderr": "",
+      "report_stdout": "{\"findings\":[{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{},\"generation\":0,\"state\":\"idle\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"aggregate\\\":\\\"item-lost\\\"}\",\"committed\":\"committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/genesis\",\"next_action\":\"promote as regression or continue\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; the command committed\",\"source_coordinate\":{\"state\":\"idle\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"tag {\\\"id\\\":\\\"item_1\\\",\\\"label\\\":\\\"AMBER\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{},\"generation\":0,\"state\":\"idle\"},\"committed\":\"committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/tag\",\"next_action\":\"promote as regression or continue\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; the command committed\",\"source_coordinate\":{\"command\":\"tag\",\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"of\\\":\\\"tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"the reply was discarded; this step did not commit\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/lost\",\"next_action\":\"look up the earlier operation; do not resend from the dropped reply\",\"reproduction_status\":\"observed\",\"scope\":\"established: the reply to the earlier attempt was not delivered. uncertain: this dropped-reply record does not by itself confirm the commit\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"reply_dropped\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"operation_id\\\":\\\"op-tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"earlier operation: committed (confirmed by lookup); this lookup did not commit again\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/found\",\"next_action\":\"do not resend; the earlier result stands\",\"reproduction_status\":\"observed\",\"scope\":\"established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed_exact\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"of\\\":\\\"tag\\\",\\\"operation_id\\\":\\\"op-tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"earlier operation: already committed (historical); this attempt did not commit again\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/again\",\"next_action\":\"do not treat this as a new commit or a current handle\",\"reproduction_status\":\"observed\",\"scope\":\"established: the earlier operation already committed; this attempt did not commit again. uncertain: whether any returned handle is current\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"historical\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"not committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/restart\",\"next_action\":\"inspect status reopened\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; outcome reopened\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"reopened\"}],\"schema\":\"ik.report.v1\"}\n",
+      "stderr": "",
+      "stdout": "{\"findings\":[{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{},\"generation\":0,\"state\":\"idle\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"aggregate\\\":\\\"item-lost\\\"}\",\"committed\":\"committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/genesis\",\"next_action\":\"promote as regression or continue\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; the command committed\",\"source_coordinate\":{\"state\":\"idle\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"tag {\\\"id\\\":\\\"item_1\\\",\\\"label\\\":\\\"AMBER\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{},\"generation\":0,\"state\":\"idle\"},\"committed\":\"committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/tag\",\"next_action\":\"promote as regression or continue\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; the command committed\",\"source_coordinate\":{\"command\":\"tag\",\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"of\\\":\\\"tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"the reply was discarded; this step did not commit\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/lost\",\"next_action\":\"look up the earlier operation; do not resend from the dropped reply\",\"reproduction_status\":\"observed\",\"scope\":\"established: the reply to the earlier attempt was not delivered. uncertain: this dropped-reply record does not by itself confirm the commit\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"reply_dropped\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"operation_id\\\":\\\"op-tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"earlier operation: committed (confirmed by lookup); this lookup did not commit again\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/found\",\"next_action\":\"do not resend; the earlier result stands\",\"reproduction_status\":\"observed\",\"scope\":\"established: the earlier operation committed; this lookup did not commit again. uncertain: whether any handle from this lookup is current\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"committed_exact\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{\\\"of\\\":\\\"tag\\\",\\\"operation_id\\\":\\\"op-tag\\\"}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"earlier operation: already committed (historical); this attempt did not commit again\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/again\",\"next_action\":\"do not treat this as a new commit or a current handle\",\"reproduction_status\":\"observed\",\"scope\":\"established: the earlier operation already committed; this attempt did not commit again. uncertain: whether any returned handle is current\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"historical\"},{\"after\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"artifacts\":[\"$TMP/out/sc-lost/SHA256SUMS\",\"$TMP/out/sc-lost/machine.ik.toml\",\"$TMP/out/sc-lost/result.json\",\"$TMP/out/sc-lost/scenario.json\",\"$TMP/out/sc-lost/trace.json\"],\"attempted\":\"{}\",\"before\":{\"effect\":{\"status\":\"none\"},\"facts\":{\"item_id\":\"item_1\",\"label\":\"AMBER\"},\"generation\":1,\"state\":\"tagged\"},\"committed\":\"not committed\",\"completeness\":\"observed\",\"evidence_class\":\"observed_trace\",\"id\":\"$TMP/out/sc-lost#item-lost/restart\",\"next_action\":\"inspect status reopened\",\"reproduction_status\":\"observed\",\"scope\":\"observed runtime trace; outcome reopened\",\"source_coordinate\":{\"state\":\"tagged\"},\"source_kind\":\"ik.scenario.result.v1\",\"status\":\"reopened\"}],\"schema\":\"ik.report.v1\"}\n",
+      "verify": {
+        "ok": true,
+        "protocol": {
+          "major": 1,
+          "minor": 0
+        },
+        "request_id": "vf",
+        "result": {
+          "aggregates": 1,
+          "journal_ok": true,
+          "projection_ok": true,
+          "store_id": "ik-store-a44ea501-471f-425a-85cc-89634c54b998",
+          "verified": true
+        },
+        "runtime_version": "0.5.0"
+      }
+    }
+  ],
+  "total": 18
+}

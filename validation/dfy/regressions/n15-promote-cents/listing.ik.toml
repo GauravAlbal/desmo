@@ -1,0 +1,56 @@
+# Escrow listing slice: accept checks cents; promote clears every deposit fact including the string id.
+schema_version = 1
+machine_id = "listing_promote_slice"
+machine_version = 2
+name = "ListingPromoteSlice"
+
+[facts]
+amount = { type = "int", policy = "replace" }
+deposit_window_ms = { type = "int", policy = "replace" }
+deposit_cents = { type = "int", policy = "replace", initial = 0 }
+accepted_ms = { type = "int", policy = "replace", initial = 0 }
+deposit_deadline_ms = { type = "int", policy = "replace", initial = 0 }
+deposit_id = { type = "string", policy = "replace" }
+
+[states]
+idle = { initial = true }
+offered = {}
+under_contract = {}
+funded = {}
+fallen = {}
+
+[commands.open]
+from = ["idle"]
+to = "offered"
+args = { amount = "int", deposit_window_ms = "int" }
+when = "$amount >= 50 && $deposit_window_ms >= 1"
+then = { amount = "$amount", deposit_window_ms = "$deposit_window_ms" }
+
+[commands.accept]
+from = ["offered"]
+to = "under_contract"
+args = { deposit_cents = "int", accepted_ms = "int", deposit_deadline_ms = "int" }
+when = "$deposit_cents == amount / 50 && $deposit_deadline_ms == $accepted_ms + deposit_window_ms"
+then = { deposit_cents = "$deposit_cents", accepted_ms = "$accepted_ms", deposit_deadline_ms = "$deposit_deadline_ms" }
+
+[commands.deposit]
+from = ["under_contract"]
+to = "funded"
+args = { deposit_id = "string" }
+when = "not_exists(deposit_id)"
+then = { deposit_id = "$deposit_id" }
+
+[commands.fallthrough]
+from = ["funded"]
+to = "fallen"
+
+[commands.promote]
+from = ["fallen"]
+to = "offered"
+then = { deposit_id = '""', deposit_cents = "0", accepted_ms = "0", deposit_deadline_ms = "0" }
+
+[commands.reconcile]
+from = ["offered"]
+to = "offered"
+when = "deposit_id == '' && deposit_cents == 0 && accepted_ms == 0 && deposit_deadline_ms == 0"
+then = {}

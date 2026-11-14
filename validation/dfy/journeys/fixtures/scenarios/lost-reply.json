@@ -1,0 +1,35 @@
+{
+  "scenario_version": 1,
+  "machine": "../tagged_item.ik.toml",
+  "aggregate": "item-lost",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "tag",
+      "name": "tag",
+      "args": { "id": "item_1", "label": "AMBER" },
+      "operation_id": "op-tag",
+      "expect": "committed"
+    },
+    {
+      "kind": "drop_reply",
+      "label": "lost",
+      "of": "tag"
+    },
+    {
+      "kind": "lookup",
+      "label": "found",
+      "operation_id": "op-tag",
+      "expect": "committed_exact"
+    },
+    {
+      "kind": "duplicate",
+      "label": "again",
+      "of": "tag"
+    },
+    {
+      "kind": "reopen",
+      "label": "restart"
+    }
+  ]
+}

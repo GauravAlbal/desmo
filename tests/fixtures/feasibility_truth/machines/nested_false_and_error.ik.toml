@@ -1,0 +1,15 @@
+schema_version = 1
+machine_id = "nested_false_and_error"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+ok = {}
+[commands.go]
+from = ["idle"]
+args = { x = "int" }
+when = '$x == 2 && token == "x"'
+to = "ok"
+

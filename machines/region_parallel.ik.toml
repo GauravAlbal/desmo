@@ -1,0 +1,35 @@
+schema_version = 2
+machine_id = "region_parallel"
+machine_version = 1
+name = "Independent playback and volume"
+
+[regions.playback.states]
+playing = { initial = true }
+paused = {}
+
+[regions.playback.commands.pause]
+from = ["playing"]
+to = "paused"
+
+[regions.playback.commands.play]
+from = ["paused"]
+to = "playing"
+
+[regions.volume.states]
+unmuted = { initial = true }
+muted = {}
+
+[regions.volume.commands.mute]
+from = ["unmuted"]
+to = "muted"
+
+[regions.volume.commands.unmute]
+from = ["muted"]
+to = "unmuted"
+
+[commands.pause_and_mute]
+from = { playback = ["playing"], volume = ["unmuted"] }
+to = { playback = "paused", volume = "muted" }
+
+[invariants.no_playing_muted]
+assert = 'region_playback != "playing" || region_volume != "muted"'

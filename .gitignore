@@ -1,0 +1,19 @@
+.DS_Store
+.marginalia/
+.omp/
+runs/
+target/
+dist/
+typescript/.codegen-*/
+**/__pycache__/
+python/dist/
+python/**/*.egg-info/
+python/**/__pycache__/
+
+# derived tool state: not user source.
+runs/context_ledger/
+data/sqlite/
+typescript/skills/
+
+# scaffold output from manual smoke runs
+/typescript/desmo-job/

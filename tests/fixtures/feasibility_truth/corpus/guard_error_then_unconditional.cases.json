@@ -1,0 +1,10 @@
+{
+  "commands": {
+    "go": [
+      {
+        "name": "default",
+        "args": {}
+      }
+    ]
+  }
+}

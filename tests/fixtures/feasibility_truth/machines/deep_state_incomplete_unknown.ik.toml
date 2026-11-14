@@ -1,0 +1,20 @@
+schema_version = 1
+machine_id = "deep_state_incomplete_unknown"
+machine_version = 1
+
+[facts]
+n = { type = "int", policy = "replace", initial = 0 }
+[states]
+s = { initial = true }
+far = {}
+[commands.inc]
+from = ["s"]
+args = { x = "int" }
+when = "$x == n + 1"
+then = { n = "$x" }
+to = "s"
+[commands.arrive]
+from = ["s"]
+when = "n == 50"
+to = "far"
+

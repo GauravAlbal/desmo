@@ -1,0 +1,25 @@
+{
+  "commands": {
+    "intake": [
+      { "name": "ten", "args": { "qty": 10, "hold_ms": 5000 } }
+    ],
+    "fill": [
+      {
+        "name": "honest",
+        "args": { "units": 4, "remain_after": 6, "now_ms": 1000, "deadline": 6000, "amount": 700 }
+      },
+      {
+        "name": "remain_lie",
+        "args": { "units": 4, "remain_after": 99, "now_ms": 1000, "deadline": 6000, "amount": 700 }
+      },
+      {
+        "name": "deadline_lie",
+        "args": { "units": 4, "remain_after": 6, "now_ms": 1000, "deadline": 0, "amount": 700 }
+      },
+      {
+        "name": "amount_lie",
+        "args": { "units": 4, "remain_after": 6, "now_ms": 1000, "deadline": 6000, "amount": 1 }
+      }
+    ]
+  }
+}

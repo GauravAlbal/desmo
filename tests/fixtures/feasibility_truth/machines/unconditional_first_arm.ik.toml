@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "unconditional_first_arm"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+b = {}
+c = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "1 == 1", to = "b" },
+  { when = "$x == 1", to = "c" }
+]
+

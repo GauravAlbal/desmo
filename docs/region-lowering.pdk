@@ -1,0 +1,90 @@
+(design desmo-region-lowering
+  (target
+    (system desmo-region-lowering)
+
+    (component region-front)
+    (component lowerer)
+    (component kernel)
+    (component projector)
+    (component chart)
+
+    (payload RegionSpec :version 1
+      :fields [authoring_hash schema_version])
+    (payload FlatDefinition :version 1
+      :fields [spec_hash machine_id])
+    (payload RegionMap :version 1
+      :fields [authoring_hash product_bound])
+    (payload Witness :version 1
+      :fields [failure_class minimal_steps])
+    (payload Verdict :version 1
+      :outcomes [accept refused])
+
+    (connect region-front lowerer :id schema2
+      :payload RegionSpec :via direct :mode call)
+    (connect region-front kernel :id schema1
+      :payload FlatDefinition :via direct :mode call)
+    (connect lowerer kernel :id emit
+      :payload FlatDefinition :via direct :mode call)
+    (connect lowerer projector :id map
+      :payload RegionMap :via direct :mode call)
+    (connect kernel projector :id witness
+      :payload Witness :via direct :mode call)
+    (connect kernel chart :id view
+      :payload Verdict :via direct :mode call)
+
+    (flow author :path [region-front lowerer]
+      :outcomes ["lowered"]
+      :guarantees [flat-only-runtime])
+    (flow lower :path [lowerer kernel]
+      :outcomes ["compiled"]
+      :guarantees [flat-only-runtime])
+    (flow schema1 :path [region-front kernel]
+      :outcomes ["compiled"]
+      :guarantees [schema1-unchanged])
+    (flow project :path [lowerer projector]
+      :outcomes ["region-path"]
+      :guarantees [region-path-is-projection])
+    (flow witness :path [kernel projector]
+      :outcomes ["region-path"]
+      :guarantees [region-path-is-projection])
+    (flow view :path [kernel chart]
+      :outcomes ["chart-after-verdict"]
+      :guarantees [chart-not-receipt])
+    (flow bound :path [region-front lowerer]
+      :outcomes ["refused"]
+      :guarantees [product-bound])
+
+    (realizes REQ-REGION-1 :targets [author lower schema1 project witness view bound])
+
+    (guarantee flat-only-runtime
+      :provider lowerer
+      :method "kernel compiles a schema-1 Definition with no region fields; spec_hash is digest_json of that definition"
+      :at kernel.compile
+      :requires [lowerer.emit-definition])
+    (guarantee schema1-unchanged
+      :provider region-front
+      :method "schema 1 bytes never enter the lowerer"
+      :at kernel.compile
+      :requires [region-front.schema1-dispatch])
+    (guarantee region-path-is-projection
+      :provider projector
+      :method "region steps are a pure function of the flat witness and the region map from the same lower"
+      :at projector.region-path
+      :requires [kernel.falsify lowerer.region-map])
+    (guarantee chart-not-receipt
+      :provider chart
+      :method "chart text is emitted after VERDICT and cannot change the exit code"
+      :at chart.emit
+      :requires [kernel.verdict])
+    (guarantee product-bound
+      :provider lowerer
+      :method "a product above 64 flat states is refused before kernel compile"
+      :at lowerer.refuse
+      :requires [lowerer.count-product])
+
+    (before lowerer.emit-definition kernel.compile :for [REQ-REGION-1])
+    (before region-front.schema1-dispatch kernel.compile :for [REQ-REGION-1])
+    (before kernel.falsify projector.region-path :for [REQ-REGION-1])
+    (before lowerer.region-map projector.region-path :for [REQ-REGION-1])
+    (before kernel.verdict chart.emit :for [REQ-REGION-1])
+    (before lowerer.count-product lowerer.refuse :for [REQ-REGION-1])))

@@ -1,0 +1,18 @@
+schema_version = 1
+machine_id = "profile_dead_end"
+machine_version = 1
+
+[facts]
+
+[states]
+start = { initial = true }
+stuck = {}
+done = { terminal = true }
+
+[commands.to_stuck]
+from = ["start"]
+to = "stuck"
+
+[commands.to_done]
+from = ["start"]
+to = "done"

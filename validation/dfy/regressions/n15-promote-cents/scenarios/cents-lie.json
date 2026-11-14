@@ -1,0 +1,21 @@
+{
+  "scenario_version": 1,
+  "machine": "../listing.ik.toml",
+  "aggregate": "L-cents-lie",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "open",
+      "name": "open",
+      "args": { "amount": 10000, "deposit_window_ms": 5000 },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "accept-cents-lie",
+      "name": "accept",
+      "args": { "deposit_cents": 1, "accepted_ms": 1000, "deposit_deadline_ms": 6000 },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    }
+  ]
+}

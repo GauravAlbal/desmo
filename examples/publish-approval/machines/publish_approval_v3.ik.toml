@@ -1,0 +1,58 @@
+# v3: publication is an effect bound to the exact approved artifact digest.
+# New aggregates only. v1/v2 aggregates keep their original definitions.
+schema_version = 1
+machine_id = "publish_approval"
+machine_version = 3
+name = "PublishApproval"
+
+[facts]
+artifact_digest = { type = "string", policy = "replace" }
+approved_digest = { type = "string", policy = "replace" }
+published_digest = { type = "string", policy = "replace" }
+
+[states]
+draft = { initial = true }
+approved = {}
+publishing = {}
+published = { terminal = true }
+
+[commands.edit]
+from = ["draft"]
+to = "draft"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest" }
+
+[commands.approve]
+from = ["draft"]
+to = "approved"
+args = { artifact_digest = "string" }
+when = "exists(artifact_digest) && $artifact_digest == artifact_digest"
+then = { approved_digest = "$artifact_digest" }
+
+[commands.revise]
+from = ["approved"]
+to = "draft"
+args = { artifact_digest = "string" }
+then = { artifact_digest = "$artifact_digest" }
+
+[commands.withdraw]
+from = ["approved"]
+to = "draft"
+
+[commands.authorize_publish]
+from = ["approved"]
+to = "publishing"
+args = { effect_id = "string", payload_digest = "string", idempotency_key = "string" }
+when = "exists(approved_digest) && $payload_digest == approved_digest && artifact_digest == approved_digest"
+effect = { kind = "publish.artifact", id = "$effect_id", payload_digest = "$payload_digest", idempotency_key = "$idempotency_key" }
+
+[commands.complete]
+from = ["publishing"]
+to = "published"
+args = { published_digest = "string" }
+when = "exists(approved_digest) && $published_digest == approved_digest"
+then = { published_digest = "$published_digest" }
+
+[invariants.pub_inv_001]
+when = "state == 'published'"
+assert = "exists(artifact_digest) && exists(approved_digest) && artifact_digest == approved_digest && published_digest == approved_digest"

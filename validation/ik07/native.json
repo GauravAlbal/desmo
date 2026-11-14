@@ -1,0 +1,63 @@
+[
+  {
+    "client": "in_process_connections",
+    "completed": 300,
+    "completed_per_s": 4606.79,
+    "experiment": "uncontended",
+    "latency_ms_all_requests": {
+      "max": 1.6595410000000002,
+      "p50": 0.16,
+      "p95": 0.47,
+      "p99": 0.96
+    },
+    "mode": "native",
+    "outcomes": {
+      "ok": 300
+    },
+    "requests": 300,
+    "same_aggregate": false,
+    "wall_s": 0.065,
+    "writers": 1
+  },
+  {
+    "client": "in_process_connections",
+    "completed": 597,
+    "completed_per_s": 3352.33,
+    "experiment": "same_aggregate_race",
+    "latency_ms_all_requests": {
+      "max": 153.11879100000002,
+      "p50": 0.14,
+      "p95": 0.52,
+      "p99": 2.36
+    },
+    "mode": "native",
+    "outcomes": {
+      "ok": 597,
+      "stale_refusal": 3
+    },
+    "requests": 600,
+    "same_aggregate": true,
+    "wall_s": 0.178,
+    "writers": 4
+  },
+  {
+    "client": "in_process_connections",
+    "completed": 600,
+    "completed_per_s": 3779.77,
+    "experiment": "unrelated_aggregates_shared_store",
+    "latency_ms_all_requests": {
+      "max": 121.953625,
+      "p50": 0.15,
+      "p95": 0.58,
+      "p99": 2.43
+    },
+    "mode": "native",
+    "outcomes": {
+      "ok": 600
+    },
+    "requests": 600,
+    "same_aggregate": false,
+    "wall_s": 0.159,
+    "writers": 4
+  }
+]

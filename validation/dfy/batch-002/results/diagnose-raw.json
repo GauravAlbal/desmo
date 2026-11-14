@@ -1,0 +1,20 @@
+{
+ "N1-r1-a-lost-investigate": "0\n{\"ok\":true,\"failures\":[]}",
+ "N1-r1-b-lost-recover": "0\n{\"ok\":true,\"failures\":[]}",
+ "N1-r1-c-control-recover": "0\n{\"ok\":true,\"failures\":[]}",
+ "N1-r2-a-lost-investigate": "0\n{\"ok\":true,\"failures\":[]}",
+ "N1-r2-b-lost-recover": "0\n{\"ok\":true,\"failures\":[]}",
+ "N1-r2-c-control-recover": "0\n{\"ok\":true,\"failures\":[]}",
+ "N2-r1-a-lost-investigate": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N2-r1-b-lost-recover": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N2-r1-c-control-recover": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N2-r2-a-lost-investigate": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N2-r2-b-lost-recover": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N2-r2-c-control-recover": "0\n{\"ok\":true,\"reasons\":[]}",
+ "N3-r1-a-lost-investigate": "0\n{\"ok\":true,\"failures\":[],\"mode\":\"investigate-only\",\"scenario\":\"lost-reply\"}",
+ "N3-r1-b-lost-recover": "1\n{\"ok\":false,\"failures\":[\"recommended_action\"],\"mode\":\"authorized-recovery\",\"scenario\":\"lost-reply\"}",
+ "N3-r1-c-control-recover": "0\n{\"ok\":true,\"failures\":[],\"mode\":\"authorized-recovery\",\"scenario\":\"expected-refusal\"}",
+ "N3-r2-a-lost-investigate": "0\n{\"ok\":true,\"failures\":[],\"mode\":\"investigate-only\",\"scenario\":\"lost-reply\"}",
+ "N3-r2-b-lost-recover": "0\n{\"ok\":true,\"failures\":[],\"mode\":\"authorized-recovery\",\"scenario\":\"lost-reply\"}",
+ "N3-r2-c-control-recover": "0\n{\"ok\":true,\"failures\":[],\"mode\":\"authorized-recovery\",\"scenario\":\"expected-refusal\"}"
+}

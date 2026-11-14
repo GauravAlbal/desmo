@@ -1,0 +1,26 @@
+schema_version = 1
+machine_id = "counter_never_negative"
+machine_version = 1
+
+[facts]
+n = { type = "int", policy = "replace", initial = 0 }
+[states]
+s = { initial = true }
+bad = {}
+[commands.inc]
+from = ["s"]
+args = { x = "int" }
+when = "$x == n + 1"
+then = { n = "$x" }
+to = "s"
+[commands.dec]
+from = ["s"]
+args = { x = "int" }
+when = "n > 0 && $x == n - 1"
+then = { n = "$x" }
+to = "s"
+[commands.neg]
+from = ["s"]
+when = "n < 0"
+to = "bad"
+

@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "eq_not_eq_total_int"
+machine_version = 1
+
+[facts]
+[states]
+a = { initial = true }
+eq = {}
+ne = {}
+dead = {}
+[commands.go]
+from = ["a"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x == 0", to = "eq" },
+  { when = "$x != 0", to = "ne" },
+  { when = "$x > 10", to = "dead" }
+]
+

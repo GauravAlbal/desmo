@@ -1,0 +1,923 @@
+{
+  "first_scoring": {
+    "N22/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N22/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "engineer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_cart": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N22/r2/build": {
+      "pass": false,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": false
+        },
+        "band_set": {
+          "1": true,
+          "2": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": false
+        },
+        "host_id": {
+          "1": true,
+          "2": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N22/r2/change": {
+      "pass": false,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "engineer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_cart": {
+          "1": true,
+          "2": false,
+          "3": true,
+          "4": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N23/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N23/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_buffer": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pharmacist_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N23/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N23/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_buffer": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pharmacist_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "note": "Per replica and stage: pass, and per rule criterion results (1 valid path, 2 direct-command refusal, 3 invalidation, 4 existing instances). first_scoring is the record. The rescoring uses a repaired evaluator and is reported separately; see DECISION.md.",
+  "rescoring_fact_echo_repair": {
+    "N22/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N22/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "engineer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_cart": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N22/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N22/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "air_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "air_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "band_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "cart_total": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "engineer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_cart": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "host_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "kill_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "mic_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "producer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "studio_matches": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N23/r1/build": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N23/r1/change": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_buffer": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pharmacist_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    },
+    "N23/r2/build": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true
+        }
+      }
+    },
+    "N23/r2/change": {
+      "pass": true,
+      "per_rule": {
+        "carton_bound": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "clerk_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "due_at": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "extra_buffer": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "fill_units": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "item_set": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "pharmacist_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "receive_gate": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "received_n": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "reviewer_id": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_clear": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        },
+        "void_note": {
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true
+        }
+      }
+    }
+  },
+  "sealed_evaluator_archives_sha256": {
+    "first_scoring": "eab74ee381442d0fc717cf15504fde92656e44c5799cb057ab71c4b09c8c9f0f",
+    "repaired": "a787fde21d0bc7146b3d84d0a3a538815521e720be6acbcdab5e3a0020691639"
+  }
+}

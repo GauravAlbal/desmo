@@ -1,0 +1,17 @@
+schema_version = 1
+machine_id = "guard_error_then_unconditional"
+machine_version = 1
+
+[facts]
+token = { type = "string", policy = "replace" }
+[states]
+idle = { initial = true }
+err = {}
+ok = {}
+[commands.go]
+from = ["idle"]
+outcomes = [
+  { when = 'token == "missing"', to = "err" },
+  { to = "ok" }
+]
+

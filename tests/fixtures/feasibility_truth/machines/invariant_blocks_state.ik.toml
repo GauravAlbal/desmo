@@ -1,0 +1,14 @@
+schema_version = 1
+machine_id = "invariant_blocks_state"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+bad = {}
+[invariants.never_bad]
+assert = 'state != "bad"'
+[commands.go]
+from = ["idle"]
+to = "bad"
+

@@ -1,0 +1,173 @@
+schema = "ik.journey-model.v1"
+title = "Development-user journeys: build, change, diagnose a lifecycle application"
+executable = "journeys.json"
+note = "Small checkable model. Each step is run by step_journeys.py against the packed ik binary. Assert codes, rule ids, and status fields, never wording."
+
+states = [
+  "Brief",
+  "ToolReady",
+  "Drafted",
+  "Checked",
+  "ScenarioVerified",
+  "Operated",
+  "FailureObserved",
+  "Diagnosed",
+  "Recovered",
+  "ChangeRequested",
+  "Changed",
+  "Versioned",
+]
+
+# Happy BUILD: Brief -> ToolReady -> Drafted -> Checked -> ScenarioVerified -> Operated
+[[steps]]
+id = "runtime.version"
+journey = "build"
+from = "Brief"
+to = "ToolReady"
+command = "ik --version"
+readout = "version line names kernel and protocol"
+
+[[steps]]
+id = "build.identity"
+journey = "build"
+from = "ToolReady"
+to = "Drafted"
+command = "ik identity fixtures/tagged_item.ik.toml"
+readout = "machine_id, version, spec_hash"
+
+[[steps]]
+id = "build.laws"
+journey = "build"
+from = "Drafted"
+to = "Drafted"
+command = "ik laws fixtures/tagged_item.ik.toml"
+readout = "advisory=true; unguarded_arguments lists opaque label"
+
+[[steps]]
+id = "build.check_plan"
+journey = "build"
+from = "Drafted"
+to = "Drafted"
+command = "ik check <machine> --profile <checks> --plan --json"
+readout = "schema=ik.check.plan.v1; no witness; exit 0 is not a release pass"
+
+[[steps]]
+id = "build.check_accept"
+journey = "build"
+from = "Drafted"
+to = "Checked"
+command = "ik check <machine> --corpus <cases> --profile <checks> --json"
+readout = "judgment.verdict=accept; required goal status=witness_found"
+
+[[steps]]
+id = "build.scenario"
+journey = "build"
+from = "Checked"
+to = "ScenarioVerified"
+command = "ik scenario run <machine> fixtures/scenarios/honest-tag.json --out <dir>"
+readout = "schema=ik.scenario.result.v1; all_expectations_met=true"
+
+[[steps]]
+id = "build.operate"
+journey = "build"
+from = "ScenarioVerified"
+to = "Operated"
+command = "ik --store <s> --machine <m> create|command|show"
+readout = "ok=true; create idle gen 0; tag commits tagged terminal gen 1; show agrees"
+
+# Unhappy: spec rejected, invariant counterexample, grammar attack, illegal state, stale handle
+[[steps]]
+id = "unhappy.check_missing_corpus"
+journey = "unhappy"
+from = "Drafted"
+to = "FailureObserved"
+command = "ik check fixtures/solo/tagged_item.ik.toml --json"
+failing_input = "no sibling corpus and no --corpus"
+readout = "exit 1; judgment.verdict=refused, judgment.status=missing_evidence; next_actions names corpus init"
+
+[[steps]]
+id = "unhappy.check_invariant_witness"
+journey = "unhappy"
+from = "Drafted"
+to = "FailureObserved"
+command = "ik check fixtures/probe.ik.toml --json"
+failing_input = "command violate assigns x=5 against invariant x<=3"
+readout = "exit 1; verdict=refused; diagnostic code=IK_INVARIANT_FAILED rule=x_limit"
+
+[[steps]]
+id = "unhappy.text_in_refused"
+journey = "unhappy"
+from = "Operated"
+to = "FailureObserved"
+command = "ik --store <s> --machine <m> command"
+failing_input = "tag args.id empty string (text_in grammar)"
+readout = "ok=false; code=IK_INVARIANT_FAILED; rule=tag.when"
+
+[[steps]]
+id = "unhappy.illegal_state"
+journey = "unhappy"
+from = "Operated"
+to = "FailureObserved"
+command = "ik --store <s> --machine <m> command"
+failing_input = "tag again from terminal tagged"
+readout = "ok=false; code=IK_ILLEGAL_STATE; rule=tag"
+
+[[steps]]
+id = "unhappy.stale_capability"
+journey = "unhappy"
+from = "Operated"
+to = "FailureObserved"
+command = "ik --store <s> --machine <m> command"
+failing_input = "copied generation-0 capability after a later commit"
+readout = "ok=false; code=IK_CAPABILITY_STALE"
+
+# Happy CHANGE with versioning: old instance stays on v1
+[[steps]]
+id = "change.persist_v1"
+journey = "change"
+from = "ChangeRequested"
+to = "ChangeRequested"
+command = "ik --store <s> --machine loan_checkout.ik.toml create; command checkout"
+readout = "mid-lifecycle on_loan; v1 identity recorded on the aggregate"
+
+[[steps]]
+id = "change.check_prior"
+journey = "change"
+from = "ChangeRequested"
+to = "Changed"
+command = "ik check loan_v2.ik.toml --prior loan_checkout.ik.toml --corpus loan_v2.ik.cases.json --profile loan_checkout.ik.checks.toml --json"
+readout = "verdict=accept; baseline candidate=prior=witness_found (no regression flag)"
+
+[[steps]]
+id = "change.old_instance_mismatch"
+journey = "change"
+from = "Changed"
+to = "Versioned"
+command = "ik --store <s> --machine loan_v2.ik.toml command extend"
+failing_input = "v2 identity presented against a v1 aggregate (legacy request)"
+readout = "ok=false; code=IK_MACHINE_MISMATCH; kernel has no legacy_request token"
+
+[[steps]]
+id = "change.old_instance_continues"
+journey = "change"
+from = "Versioned"
+to = "Versioned"
+command = "ik --store <s> --machine loan_checkout.ik.toml command recall"
+readout = "ok=true; mutation=true; still on_loan; recall_placed=1 under v1 identity"
+
+# Happy DIAGNOSE / RECOVER: lost reply, duplicate, crash reopen, report, handoff, verify
+[[steps]]
+id = "diagnose.lost_reply"
+journey = "diagnose"
+from = "FailureObserved"
+to = "Diagnosed"
+command = "ik scenario run <machine> fixtures/scenarios/lost-reply.json --out <dir>"
+readout = "drop_reply=reply_dropped; lookup=committed_exact; duplicate=historical; reopen passes"
+
+[[steps]]
+id = "diagnose.report_handoff_verify"
+journey = "diagnose"
+from = "Diagnosed"
+to = "Recovered"
+command = "ik report <dir> --json; ik handoff <behavior.json> --evidence <dir> --kind recovery --json; ik --store <s> replay; verify"
+readout = "report schema=ik.report.v1; handoff schema=ik.handoff.v1 kind=recovery; verify.verified=true"

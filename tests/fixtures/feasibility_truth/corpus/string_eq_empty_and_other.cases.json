@@ -1,0 +1,18 @@
+{
+  "commands": {
+    "step": [
+      {
+        "name": "empty",
+        "args": {
+          "s": ""
+        }
+      },
+      {
+        "name": "x",
+        "args": {
+          "s": "x"
+        }
+      }
+    ]
+  }
+}

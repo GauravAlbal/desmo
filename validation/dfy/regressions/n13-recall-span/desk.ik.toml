@@ -1,0 +1,35 @@
+# v2 ILL desk slice: 7-day span and overdue checkin live in the command guards.
+schema_version = 1
+machine_id = "ill_desk_v2_slice"
+machine_version = 2
+name = "IllDeskV2Slice"
+
+[facts]
+checkout_ms = { type = "int", policy = "replace" }
+loan_until_ms = { type = "int", policy = "replace" }
+recall_placed = { type = "int", policy = "replace", initial = 0 }
+
+[states]
+idle = { initial = true }
+out = {}
+returned = { terminal = true }
+
+[commands.checkout]
+from = ["idle"]
+to = "out"
+args = { checkout_ms = "int", loan_until_ms = "int" }
+when = "$loan_until_ms == $checkout_ms + 604800000"
+then = { checkout_ms = "$checkout_ms", loan_until_ms = "$loan_until_ms" }
+
+[commands.place_recall]
+from = ["out"]
+to = "out"
+when = "recall_placed == 0"
+then = { recall_placed = "1" }
+
+[commands.checkin]
+from = ["out"]
+to = "returned"
+args = { now_ms = "int" }
+when = "$now_ms <= loan_until_ms || recall_placed == 1"
+then = {}

@@ -1,0 +1,40 @@
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "build", "family": "N7", "replica": "r1", "first_pass_failed": [], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "change", "family": "N7", "replica": "r1", "first_pass_failed": ["C5"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N7", "replica": "r1", "case": "a-lost-investigate", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N7", "replica": "r1", "case": "b-lost-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N7", "replica": "r1", "case": "c-control-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "continuity", "family": "N7", "replica": "r1", "passed_final": true, "added": "after first scoring"}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "build", "family": "N7", "replica": "r2", "first_pass_failed": [], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "change", "family": "N7", "replica": "r2", "first_pass_failed": ["C5"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N7", "replica": "r2", "case": "a-lost-investigate", "first_pass_ok": false, "passed_final": true, "rerun": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N7", "replica": "r2", "case": "b-lost-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N7", "replica": "r2", "case": "c-control-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "continuity", "family": "N7", "replica": "r2", "passed_final": true, "added": "after first scoring"}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "build", "family": "N8", "replica": "r1", "first_pass_failed": ["R4", "R5"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "change", "family": "N8", "replica": "r1", "first_pass_failed": ["C2"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N8", "replica": "r1", "case": "a-lost-investigate", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N8", "replica": "r1", "case": "b-lost-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N8", "replica": "r1", "case": "c-control-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "continuity", "family": "N8", "replica": "r1", "passed_final": false, "added": "after first scoring"}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "build", "family": "N8", "replica": "r2", "first_pass_failed": ["R4", "R5"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "change", "family": "N8", "replica": "r2", "first_pass_failed": ["C2"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N8", "replica": "r2", "case": "a-lost-investigate", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N8", "replica": "r2", "case": "b-lost-recover", "first_pass_ok": false, "passed_final": true, "rerun": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N8", "replica": "r2", "case": "c-control-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "continuity", "family": "N8", "replica": "r2", "passed_final": false, "added": "after first scoring"}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "build", "family": "N9", "replica": "r1", "first_pass_failed": [], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "change", "family": "N9", "replica": "r1", "first_pass_failed": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "C3"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N9", "replica": "r1", "case": "a-lost-investigate", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N9", "replica": "r1", "case": "b-lost-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N9", "replica": "r1", "case": "c-control-recover", "first_pass_ok": false, "passed_final": true, "rerun": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "continuity", "family": "N9", "replica": "r1", "passed_final": true, "added": "after first scoring"}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "build", "family": "N9", "replica": "r2", "first_pass_failed": [], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "change", "family": "N9", "replica": "r2", "first_pass_failed": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "C3", "C5"], "final_failed": [], "passed_final": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N9", "replica": "r2", "case": "a-lost-investigate", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N9", "replica": "r2", "case": "b-lost-recover", "first_pass_ok": true, "passed_final": true, "rerun": false}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "diagnose", "family": "N9", "replica": "r2", "case": "c-control-recover", "first_pass_ok": false, "passed_final": true, "rerun": true}
+{"batch": "dfy-005", "track": "blind (fresh families)", "stage": "continuity", "family": "N9", "replica": "r2", "passed_final": true, "added": "after first scoring"}
+{"batch": "dfy-006", "track": "retest on patched candidate (not blind)", "stage": "change", "family": "N8", "replica": "r1", "final_failed": [], "passed_final": true, "continuity_passed": false}
+{"batch": "dfy-007", "track": "retest on patched candidate (not blind)", "stage": "change", "family": "N8", "replica": "r1", "final_failed": [], "passed_final": true, "continuity_passed": true}
+{"batch": "dfy-006", "track": "retest on patched candidate (not blind)", "stage": "change", "family": "N8", "replica": "r2", "final_failed": [], "passed_final": true, "continuity_passed": false}
+{"batch": "dfy-007", "track": "retest on patched candidate (not blind)", "stage": "change", "family": "N8", "replica": "r2", "final_failed": [], "passed_final": true, "continuity_passed": true}

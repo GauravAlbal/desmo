@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "int_range_split"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+neg = {}
+zero = {}
+pos = {}
+[commands.go]
+from = ["idle"]
+args = { x = "int" }
+outcomes = [
+  { when = "$x < 0", to = "neg" },
+  { when = "$x == 0", to = "zero" },
+  { when = "$x > 0", to = "pos" }
+]
+

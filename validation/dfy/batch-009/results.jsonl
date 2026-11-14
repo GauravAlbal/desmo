@@ -1,0 +1,36 @@
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "build", "family": "N7", "replica": "r1", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "change", "family": "N7", "replica": "r1", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N7", "replica": "r1", "case": "a-lost-investigate", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N7", "replica": "r1", "case": "b-lost-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N7", "replica": "r1", "case": "c-control-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "continuity", "family": "N7", "replica": "r1", "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "build", "family": "N7", "replica": "r2", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "change", "family": "N7", "replica": "r2", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N7", "replica": "r2", "case": "a-lost-investigate", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N7", "replica": "r2", "case": "b-lost-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N7", "replica": "r2", "case": "c-control-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "continuity", "family": "N7", "replica": "r2", "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "build", "family": "N8", "replica": "r1", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "change", "family": "N8", "replica": "r1", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N8", "replica": "r1", "case": "a-lost-investigate", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N8", "replica": "r1", "case": "b-lost-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N8", "replica": "r1", "case": "c-control-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "continuity", "family": "N8", "replica": "r1", "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "build", "family": "N8", "replica": "r2", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "change", "family": "N8", "replica": "r2", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N8", "replica": "r2", "case": "a-lost-investigate", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N8", "replica": "r2", "case": "b-lost-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N8", "replica": "r2", "case": "c-control-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "continuity", "family": "N8", "replica": "r2", "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "build", "family": "N9", "replica": "r1", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "change", "family": "N9", "replica": "r1", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N9", "replica": "r1", "case": "a-lost-investigate", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N9", "replica": "r1", "case": "b-lost-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N9", "replica": "r1", "case": "c-control-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "continuity", "family": "N9", "replica": "r1", "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "build", "family": "N9", "replica": "r2", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "change", "family": "N9", "replica": "r2", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N9", "replica": "r2", "case": "a-lost-investigate", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N9", "replica": "r2", "case": "b-lost-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "diagnose", "family": "N9", "replica": "r2", "case": "c-control-recover", "failed": [], "passed": true}
+{"batch": "dfy-009", "track": "frozen instruments, families reused, unrestricted agent (not blind)", "stage": "continuity", "family": "N9", "replica": "r2", "passed": true}

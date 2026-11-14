@@ -1,0 +1,59 @@
+{
+  "batch": "017",
+  "purpose": "fresh-family qualification of the full identifier and text grammar with the bounded string predicate (see PREREG.md); frozen before any agent ran",
+  "candidate_source": "828dffe82ebf41c777f29ce29e3f4627e90b847c",
+  "host": "macOS arm64",
+  "ik_version": "invariant-kernel 0.5.0 protocol 1.0",
+  "ik_binary_sha256": "8519a9d8a7d35bf86d3b1967df1f391473e4333c99856c627cdbea797a52b3b0",
+  "binary_identical_in_release_build_and_packed_npm_package": true,
+  "npm_tarballs_sha256": {
+    "ikaros-darwin-arm64-0.5.0.tgz": "f0e1dd42ec9cf92ccde9ee4a96e704986f536164aa368391d96b8d5312544214",
+    "ikaros-runtime-0.5.0.tgz": "d5874f5adc5d91ece1fb5b4191ed788e2d4a2ce396e47fbc7dcd17ae2e4128b6"
+  },
+  "targeted_regressions_on_packed_binary": {
+    "seam_fixtures": "all seams matched",
+    "typescript_client_and_skill_tests": "68 passed, 0 failed",
+    "python_client_tests": "150 passed, 1 skipped in 130.91s (0:02:10)",
+    "artifact_qualification": "scripts/qualify_artifacts.py exit 0, negative controls behaved",
+    "rust_suite_on_source": "run by the acceptance gate on the source revision (600 passed); not re-run separately for this record"
+  },
+  "builder_visible_sha256": {
+    "N24/brief.md": "8eb4fed0afe11cf2ad98c575bbf7d77fb57448acdeac008650370a6e0067adbc",
+    "N24/change.md": "507da252975c0e28ba285c8ad6bfc130ce40bee4e071199ec3f1416bfb4d73f7",
+    "N24/stub/server.mjs": "c82d9bc3a0f8757829867c03a11f683563fae50df926ddfadef1813492313990",
+    "N24/stub/CONTRACT.md": "caf851f652796ac125ca16dfdd09812b7ff3a171c0a09521f743db1f3c596902",
+    "N25/brief.md": "8de773aa2e384f393ba804fc1cfa7075bc5bb1cb54840db569b2c419c113f7de",
+    "N25/change.md": "98f304aa2a627ca4adcc66322cad278b87b7d74289ba1ab0fb34eef5ee78e001",
+    "N25/stub/server.mjs": "b2235c53ef6515928349269a402e351245097185435acf6d8661b34968c1ee93",
+    "N25/stub/CONTRACT.md": "d4db7e0e5296cee268a7b3cff72dd89d75d9a7bed0e8c76c158a5df51cbe5962"
+  },
+  "prompt_sha256": {
+    "common.md": "33d0599d1f1ab047ca2275898881e0d3bc72d675dfdb4a40d071d560664c1c3a",
+    "stage-build.md": "8202bc5f3095bd300ee5c88dce55c1bc227bd0ada77e56806e966df2bfa59546",
+    "stage-change.md": "7a7e50a856b830321ef136537889d002844a6f91d2b4944cc42a1023e919562c",
+    "tool-py.md": "9d2c4c4119279acbacb17720f32c936cd7df7230c994cdf15bc881483e725c7a",
+    "tool-ts.md": "f9d1c3bec7a4b939b5814579bda02968f1be4a3fe4d8cbbb7841ee1f0f938c41"
+  },
+  "staged_prompts_sha256": {
+    "N24/r1": "92d54abc4be09e4cd146449952eca504b89bc69c89d976da91ed8bc636f6f1ed",
+    "N24/r2": "16847cd3593cf8d2b1ec85b9847c56d0959f5fe863768017b31bc716c2315ea6",
+    "N25/r1": "e8159239f2f55a3e85f35ef0fed4ae76a1c6ee1d061e787faa62206e164932be",
+    "N25/r2": "27962fbbf7f31398977f02bc6aa047a205bb3d0fea38a6aba041b125b7784068"
+  },
+  "staged_skill_sha256": {
+    "N24/r1/build.md": "08dd201d43607a167cca5e207dfacf4f4df416fd273326c60f820cf861bdd5a0",
+    "N24/r1/change.md": "302c4d4d0b9e6491952153a5210a70e59c43006e944aab4cef94b0242dace3e0",
+    "N24/r2/build.md": "08dd201d43607a167cca5e207dfacf4f4df416fd273326c60f820cf861bdd5a0",
+    "N24/r2/change.md": "302c4d4d0b9e6491952153a5210a70e59c43006e944aab4cef94b0242dace3e0",
+    "N25/r1/build.md": "08dd201d43607a167cca5e207dfacf4f4df416fd273326c60f820cf861bdd5a0",
+    "N25/r1/change.md": "302c4d4d0b9e6491952153a5210a70e59c43006e944aab4cef94b0242dace3e0",
+    "N25/r2/build.md": "08dd201d43607a167cca5e207dfacf4f4df416fd273326c60f820cf861bdd5a0",
+    "N25/r2/change.md": "302c4d4d0b9e6491952153a5210a70e59c43006e944aab4cef94b0242dace3e0"
+  },
+  "scorer_sha256": "8d049d80255694b7958c1599657daf458c1ad72b4c1d90359caa5ea91b740738",
+  "sealed_evaluator_archive_sha256": "adfe43d41e8e93de3d0087829aa40f9c53e77d96df233538bc5496cdcd21d97b",
+  "isolation": "evaluators, rule tables, reference toys, defect controls and attack harness are one encrypted archive; its key is held in a private file in the lead's home configuration, outside the experiment tree; all plaintext was deleted before dispatch (oracle authors' own sessions retain their transcripts). Same-account isolation limits from the custody check still apply: no general sandbox is claimed.",
+  "instrument_selftest": "SELFTEST OK",
+  "what_this_supports": "a finite check, on two fresh families, of whether fresh agents given the packaged candidate with the bounded string predicate enforce the complete stated grammar of required identifiers, codes and notes at the runtime boundary; not a rate, a comparison, DFYJourneyQualified or a claim about other families",
+  "limits": "no Linux x64, no human participants, agent model identity not exposed, both families TypeScript, n=2 per family, feasibility adapter off"
+}

@@ -1,0 +1,19 @@
+schema_version = 1
+machine_id = "string_ne_covers_later"
+machine_version = 1
+
+[facts]
+[states]
+idle = { initial = true }
+paid = {}
+rest = {}
+shadow = {}
+[commands.step]
+from = ["idle"]
+args = { s = "string" }
+outcomes = [
+  { when = '$s == "paid"', to = "paid" },
+  { when = '$s != "paid"', to = "rest" },
+  { to = "shadow" }
+]
+

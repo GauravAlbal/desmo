@@ -1,0 +1,38 @@
+{
+  "scenario_version": 1,
+  "machine": "../loan_checkout.ik.toml",
+  "aggregate": "loan-1",
+  "steps": [
+    {
+      "kind": "command",
+      "label": "checkout",
+      "name": "checkout",
+      "args": {
+        "checkout_ms": 1000,
+        "loan_until_ms": 1209601000,
+        "deposit_id": "dep-1"
+      },
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "overdue-without-recall",
+      "name": "checkin",
+      "args": { "overdue": 1 },
+      "expect": "refused:IK_INVARIANT_FAILED"
+    },
+    {
+      "kind": "command",
+      "label": "recall",
+      "name": "recall",
+      "expect": "committed"
+    },
+    {
+      "kind": "command",
+      "label": "checkin",
+      "name": "checkin",
+      "args": { "overdue": 1 },
+      "expect": "committed"
+    }
+  ]
+}

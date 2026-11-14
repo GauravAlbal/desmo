@@ -1,0 +1,7 @@
+{
+  "commands": {
+    "edit": [{"name": "doc-a", "args": {"artifact_digest": "aaaa"}}],
+    "approve": [{"name": "doc-a", "args": {"artifact_digest": "aaaa"}}],
+    "revise": [{"name": "doc-b", "args": {"artifact_digest": "bbbb"}}]
+  }
+}

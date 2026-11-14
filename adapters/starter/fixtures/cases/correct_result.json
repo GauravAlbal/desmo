@@ -1,0 +1,13 @@
+{
+  "id": "correct_result",
+  "graph": "graphs/linear-complete.json",
+  "property_class": "finite_scope_stuck",
+  "question": "dead_end_count",
+  "expect": {
+    "result_accepted": true,
+    "execution_status": "completed",
+    "finding": "holds_in_scope",
+    "evidence_class": "exhaustive_finite_model",
+    "coverage_complete": true
+  }
+}
