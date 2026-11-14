@@ -363,15 +363,10 @@ fn cancel_hook_removed_fails_the_cancellation_case() {
 fn p_describe_reports_tool_unavailable_and_executes_nothing() {
     let root = temp_root("p");
     let script = repo("adapters/p/adapter.py");
-    let which_p = Command::new("which").arg("p").status().expect("which p");
-    let which_dotnet = Command::new("which")
-        .arg("dotnet")
-        .status()
-        .expect("which dotnet");
-    assert!(!which_p.success());
-    assert!(!which_dotnet.success());
+    let empty_path = temp_root("p-path");
     let described = Command::new(&script)
         .arg("describe")
+        .env("PATH", &empty_path)
         .current_dir(&root)
         .output()
         .expect("p describe");
@@ -386,6 +381,7 @@ fn p_describe_reports_tool_unavailable_and_executes_nothing() {
     let manifest = write_manifest(&root, &script, "p-route", "P", "p --version");
     let host = bin()
         .args(["analysis", "describe", &manifest.display().to_string()])
+        .env("PATH", &empty_path)
         .output()
         .expect("host describe");
     assert_eq!(host.status.code(), Some(0));
@@ -420,4 +416,5 @@ fn p_describe_reports_tool_unavailable_and_executes_nothing() {
     assert_eq!(bounded_body["coverage_complete"], false);
     assert_ne!(bounded_body["finding"], "holds_in_scope");
     let _ = fs::remove_dir_all(&root);
+    let _ = fs::remove_dir_all(&empty_path);
 }
