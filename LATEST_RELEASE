@@ -1,0 +1,28 @@
+{
+  "product": "Ikaros",
+  "repository": "invariant-kernel",
+  "version": "0.5.0",
+  "tag": "v0.5.0",
+  "source_sha": "a726b71367805c019188c72c41def781b9efd387",
+  "protocol_major": 1,
+  "runtime_version": "0.5.0",
+  "minimum_supported_protocol": 1,
+  "schema_version": 4,
+  "python_client_version": "0.5.0",
+  "go_client_source_revision": "a726b71367805c019188c72c41def781b9efd387",
+  "artifacts": [
+    {
+      "file": "ik-darwin-arm64.tar.gz",
+      "sha256": "32793db4dbf551c3495c1354ebb7d48afdc0c609bb557d020f28cd179ea8217c",
+      "target": "aarch64-apple-darwin"
+    },
+    {
+      "file": "invariant_kernel-0.5.0-py3-none-any.whl",
+      "sha256": "45d8d1cfdfddf5534d756fb6691b0b69879733cf14260a6a08bf059a4e636293"
+    },
+    {
+      "file": "invariant_kernel-0.5.0.tar.gz",
+      "sha256": "3fc00b602ca27649efcd2076393a595ad6946401f0d237b4ca6f46eeee612e92"
+    }
+  ]
+}
