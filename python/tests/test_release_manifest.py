@@ -11,7 +11,7 @@ from conftest import REPO
 def test_release_manifest_schema_three(tmp_path: Path) -> None:
     (tmp_path / "ik-darwin-arm64.tar.gz").write_bytes(b"ik")
     (tmp_path / "invariant_kernel-0.5.0-py3-none-any.whl").write_bytes(b"whl")
-    env = os.environ.copy()
+    env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_REF_NAME", "GITHUB_SHA")}
     env["IK_VERSION"] = "v0.5.0"
     env["IK_SOURCE_SHA"] = "abc123"
     subprocess.check_call(
