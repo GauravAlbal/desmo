@@ -243,7 +243,7 @@ def scenario_timeout_unknown(env: Env) -> dict[str, Any]:
     machine = env.app.router.machine_for("doc-timeout")
     kind = None
     original = env.kernel.timeout
-    env.kernel.timeout = 0.001
+    env.kernel.timeout = 0.000001
     try:
         env.app.authorize_publish(doc, operation_id=op_id)
     except TransportError as err:
