@@ -56,11 +56,11 @@ relationship (`$remain_after == remaining_qty - $units` then
 `remaining_qty = "$remain_after"`).
 
 Then-literal quoting is the characters **inside** the TOML string:
-`then = { status = '"paid"' }` or `then = { status = "\"paid\"" }` stores
-the string `paid`. `then = { deposit_id = '""' }` stores an empty string
-(the way to clear a string fact). `then = { n = "1" }` stores integer `1`.
-Bare `then = { status = "paid" }` is not a string literal (the deserializer
-yields `paid` without quotes). `+N` is only for `policy = "counter"` facts.
+- String literals require inner double quotes: `then = { status = '"paid"' }` or `then = { status = "\"paid\"" }` stores `paid`; `then = { deposit_id = '""' }` stores an empty string (the way to clear a string fact). Bare `then = { status = "paid" }` is rejected because the TOML deserializer yields `paid` without quotes.
+- Boolean literals are the unquoted TOML strings `"true"` and `"false"`: `then = { approved = "true" }` (not bare TOML `approved = true` and not `'"true"'`).
+- Integer literals are numeric strings: `then = { n = "1" }`.
+- Counter increments use `"+N"` on `policy = "counter"` facts only.
+- Command arguments use `"$arg"`, whose declared type must match the target fact type.
 
 Native machines (a native delegation lifecycle today) stay in a thin product package
 above the generic client. They are not a second protocol.

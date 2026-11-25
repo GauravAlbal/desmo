@@ -1,0 +1,103 @@
+schema_version = 1
+machine_id = "account_notifications"
+machine_version = 1
+name = "AccountNotifications"
+
+[facts]
+channel = { type = "string", policy = "replace" }
+version = { type = "int", policy = "counter", initial = 0 }
+captured_version = { type = "int", policy = "replace" }
+account_id = { type = "string", policy = "replace" }
+message_id = { type = "string", policy = "replace" }
+body = { type = "string", policy = "replace" }
+delivery_id = { type = "string", policy = "replace" }
+provider_id = { type = "string", policy = "replace" }
+
+[states]
+new = { initial = true }
+enabled = {}
+disabled = {}
+quiet_enabled = {}
+quiet_disabled = {}
+queued = {}
+uncertain = {}
+delivered = { terminal = true }
+suppressed = { terminal = true }
+
+[commands.subscribe_new]
+from = ["new"]
+to = "enabled"
+args = { channel = "string" }
+then = { channel = "$channel", version = "+1" }
+
+[commands.subscribe_enabled]
+from = ["enabled"]
+to = "enabled"
+args = { channel = "string" }
+then = { channel = "$channel", version = "+1" }
+
+[commands.subscribe_disabled]
+from = ["disabled"]
+to = "enabled"
+args = { channel = "string" }
+then = { channel = "$channel", version = "+1" }
+
+[commands.subscribe_quiet_enabled]
+from = ["quiet_enabled"]
+to = "quiet_enabled"
+args = { channel = "string" }
+then = { channel = "$channel", version = "+1" }
+
+[commands.subscribe_quiet_disabled]
+from = ["quiet_disabled"]
+to = "quiet_enabled"
+args = { channel = "string" }
+then = { channel = "$channel", version = "+1" }
+
+[commands.unsubscribe_enabled]
+from = ["enabled"]
+to = "disabled"
+then = { version = "+1" }
+
+[commands.unsubscribe_quiet_enabled]
+from = ["quiet_enabled"]
+to = "quiet_disabled"
+then = { version = "+1" }
+
+[commands.quiet_enabled]
+from = ["enabled"]
+to = "quiet_enabled"
+
+[commands.quiet_disabled]
+from = ["disabled"]
+to = "quiet_disabled"
+
+[commands.unquiet_enabled]
+from = ["quiet_enabled"]
+to = "enabled"
+
+[commands.unquiet_disabled]
+from = ["quiet_disabled"]
+to = "disabled"
+
+[commands.queue]
+from = ["new"]
+to = "queued"
+args = { account_id = "string", message_id = "string", body = "string", channel = "string", captured_version = "int", delivery_id = "string" }
+then = { account_id = "$account_id", message_id = "$message_id", body = "$body", channel = "$channel", captured_version = "$captured_version", delivery_id = "$delivery_id" }
+
+[commands.suppress]
+from = ["new"]
+to = "suppressed"
+args = { account_id = "string", message_id = "string", body = "string", channel = "string", captured_version = "int", delivery_id = "string" }
+then = { account_id = "$account_id", message_id = "$message_id", body = "$body", channel = "$channel", captured_version = "$captured_version", delivery_id = "$delivery_id" }
+
+[commands.send]
+from = ["queued"]
+to = "uncertain"
+
+[commands.finish]
+from = ["uncertain"]
+to = "delivered"
+args = { provider_id = "string" }
+then = { provider_id = "$provider_id" }

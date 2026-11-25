@@ -47,6 +47,7 @@ pub mod regression;
 pub mod report;
 pub mod runtime;
 pub mod scenario;
+pub mod simulate;
 pub mod smt;
 pub mod store;
 

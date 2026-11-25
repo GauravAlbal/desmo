@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+import fs from 'node:fs'; import path from 'node:path';
+const root=process.env.STATE_DIR, url=process.env.SERVICE_URL;
+const fail=(error)=>{process.stdout.write(JSON.stringify({error})+'\n');process.exitCode=1;};
+if(!root||!url){fail('missing environment');process.exit();}
+fs.mkdirSync(root,{recursive:true});const file=path.join(root,'plans.json');
+let state={};try{state=JSON.parse(fs.readFileSync(file,'utf8'));}catch{}
+function save(){const t=file+'.tmp';fs.writeFileSync(t,JSON.stringify(state));fs.renameSync(t,file);}
+const [cmd,id,a,b,c]=process.argv.slice(2);
+const valid=x=>/^[A-Za-z0-9_-]{1,64}$/.test(x||'');
+const out=x=>{process.stdout.write(JSON.stringify(x)+'\n');};
+async function request(method,route,data){const r=await fetch(url+route,{method,headers:{'content-type':'application/json'},body:data?JSON.stringify(data):undefined});if(r.status===404)return null;return await r.json();}
+try{
+ if(cmd==='schedule'){
+  const count=Number(c);if(process.env.DEFECT!=='R2'&&(!valid(id)||!valid(a)||!valid(b)||!Number.isInteger(count)||count<1||count>4))throw Error('invalid input');if(state[id]&&process.env.DEFECT!=='R1')throw Error('duplicate');
+  if(process.env.DEFECT==='R8')state={};
+  state[id]={plan_id:id,site_id:a,inspection_type:b,phase:'ready',next_index:1,count,completed:[],current_task_id:null};save();if(process.env.CRASH_AT==='after_schedule'&&process.env.DEFECT!=='R5')process.exit(86);out(state[id]);
+ }else if(cmd==='status') {if(!valid(id)||!state[id])throw Error('unknown plan');out(state[id]);
+ }else if(cmd==='advance'){
+  if(!valid(id)||!state[id])throw Error('unknown plan');const p=state[id];if((p.phase==='cancelled'||p.phase==='complete'||(p.phase==='paused'&&!p.current_task_id))&&!(process.env.DEFECT==='R3'&&p.phase==='complete')&&!(process.env.DEFECT==='C1'&&p.phase==='paused')){out(p);process.exit();}
+  const task=p.current_task_id||`${id}:${p.next_index}`;const wasUncertain=p.phase==='uncertain',wasPaused=p.phase==='paused';p.current_task_id=task;if(!wasPaused)p.phase='uncertain';save();let found=(process.env.DEFECT==='R4'&&wasUncertain&&p.plan_id==='pu')?null:await request('GET','/tasks/'+encodeURIComponent(task));if(!found)found=await request('POST','/tasks',{task_id:task,site_id:p.site_id,inspection_type:p.inspection_type});
+  if(process.env.CRASH_AT==='after_send'&&process.env.DEFECT!=='R6')process.exit(86);
+  const fresh=JSON.parse(fs.readFileSync(file,'utf8'))[id];if(fresh.phase==='cancelled'){out(fresh);process.exit();}
+  if(!fresh.completed.includes(task))fresh.completed.push(task);fresh.next_index++;fresh.current_task_id=null;fresh.phase=fresh.phase==='paused'?'paused':(fresh.next_index>fresh.count?'complete':'ready');state=JSON.parse(fs.readFileSync(file,'utf8'));state[id]=fresh;save();out(fresh);
+ }else if(cmd==='cancel') {if(!valid(id)||!state[id])throw Error('unknown plan');if(process.env.DEFECT!=='R7')state[id].phase='cancelled';save();out(state[id]);
+ }else if(cmd==='pause'){if(!valid(id)||!state[id])throw Error('unknown plan');if(!['cancelled','complete'].includes(state[id].phase))state[id].phase='paused';save();out(state[id]);
+ }else if(cmd==='resume'){if(!valid(id)||!state[id])throw Error('unknown plan');if(state[id].phase==='paused')state[id].phase='ready';save();out(state[id]);
+ }else throw Error('unknown command');
+}catch(e){fail(e.message);}

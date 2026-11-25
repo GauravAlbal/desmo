@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const root=process.env.STATE_DIR, service=process.env.SERVICE_URL, ik=process.env.IK_BINARY;
+const here=path.dirname(fileURLToPath(import.meta.url));
+const machine=process.env.MACHINE_PATH||path.join(here,'scheduler.ik.toml');
+const fail=(message)=>{process.stdout.write(JSON.stringify({error:String(message)})+'\n');process.exit(1);};
+const valid=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
+if(!root||!ik){fail('missing STATE_DIR or IK_BINARY');}
+fs.mkdirSync(root,{recursive:true});
+const store=path.join(root,'scheduler.sqlite');
+function cli(args,input='') {const p=spawnSync(ik,args,{encoding:'utf8',input,timeout:10000});if(p.error)throw p.error;if(p.status!==0)throw Error((p.stderr||'ik refused').trim());return p.stdout.trim().split('\n').filter(Boolean).map(x=>JSON.parse(x));}
+const identity=cli(['identity',machine])[0];
+let seq=0;
+function request(op,aggregate_id,more={}) {const id='g5-'+process.pid+'-'+(++seq);const body={protocol:{major:1,minor:0},runtime_version:'0.5.0',request_id:id,op,aggregate_id,...more};const responses=cli(['--store',store,'--machine',machine,'--session'],JSON.stringify(body)+'\n');const result=responses[0];if(!result?.ok){const error=Error(result?.diagnostic?.message||'ik refused');error.rule=result?.diagnostic?.rule;throw error;}return result.result;}
+function show(id){return request('show',id);}
+function create(id){return request('create',id,{machine:identity});}
+function command(id,name,args={}){const current=show(id);return request('command',id,{machine:identity,capability:current.capability,command:{name,args}});}
+function record(view){const s=view.state;const phase=s.state==='uncertain'?'uncertain':s.state==='paused_uncertain'?'paused':s.state;return {plan_id:s.plan_id,site_id:s.site_id,inspection_type:s.inspection_type,phase,next_index:s.next_index,count:s.count,completed:JSON.parse(s.completed||'[]'),current_task_id:s.current_task_id||null};}
+async function external(method,id,data){if(!service)throw Error('missing SERVICE_URL');const res=await fetch(service+id,{method,headers:data?{'content-type':'application/json'}:{},body:data?JSON.stringify(data):undefined});if(res.status===404)return null;if(!res.ok)throw Error('service refused');return await res.json();}
+const [cmd,id,arg1,arg2,arg3]=process.argv.slice(2);
+try {
+ if(cmd==='schedule'){
+  const count=Number(arg3);if(!valid(id)||!valid(arg1)||!valid(arg2)||!Number.isInteger(count)||count<1||count>4)throw Error('invalid input');
+  if(process.env.DEFECT==='R1'){try{const duplicate=record(show(id));process.stdout.write(JSON.stringify(duplicate)+'\n');process.exit(0);}catch{}}
+  try{show(id);throw Error('duplicate plan')}catch(e){if(e.rule!=='aggregate.not_found'&&!e.message.startsWith('store file missing'))throw e;}
+  create(id);const v=command(id,'schedule',{plan_id:id,site_id:arg1,inspection_type:arg2,count});if(process.env.CRASH_AT==='after_schedule'&&process.env.DEFECT!=='R5')process.exit(86);process.stdout.write(JSON.stringify(record(v))+'\n');
+ } else if(cmd==='status'){
+  if(!valid(id))throw Error('invalid plan id');process.stdout.write(JSON.stringify(record(show(id)))+'\n');
+ } else if(cmd==='advance'){
+  if(!valid(id))throw Error('invalid plan id');let v=show(id),r=record(v);if(process.env.DEFECT==='R8'&&id==='pa')fail('plan unavailable');if(process.env.DEFECT==='R3'&&r.phase==='complete'){await external('POST','/tasks',{task_id:`${id}:${r.next_index}`,site_id:r.site_id,inspection_type:r.inspection_type});process.stdout.write(JSON.stringify(r)+'\n');process.exit(0);}if(process.env.DEFECT==='C1'&&id==='pp'&&r.phase==='paused'){await external('POST','/tasks',{task_id:`${id}:${r.next_index}`,site_id:r.site_id,inspection_type:r.inspection_type});process.stdout.write(JSON.stringify(r)+'\n');process.exit(0);}if(['complete','cancelled'].includes(r.phase)||(r.phase==='paused'&&v.state.state!=='paused_uncertain')){process.stdout.write(JSON.stringify(r)+'\n');process.exit(0);}
+  const task=r.current_task_id||`${id}:${r.next_index}`;
+  if(r.phase==='ready'){command(id,'begin',{task_id:task});v=show(id);r=record(v);}
+  let outcome=(process.env.DEFECT==='R4'&&v.state.state==='uncertain'&&id==='pu')?null:await external('GET','/tasks/'+encodeURIComponent(task));
+  if(!outcome){outcome=await external('POST','/tasks',{task_id:task,site_id:r.site_id,inspection_type:r.inspection_type});if(process.env.CRASH_AT==='after_send'&&process.env.DEFECT!=='R6')process.exit(86);}
+  v=show(id);r=record(v);if(r.phase==='cancelled'){process.stdout.write(JSON.stringify(r)+'\n');process.exit(0);}
+  const completed=[...r.completed];if(!completed.includes(task))completed.push(task);const args={task_id:task,next_index:r.next_index+1,completed:JSON.stringify(completed)};
+  const pauseState=v.state.state==='paused_uncertain';const done=pauseState?command(id,'finish_paused',args):command(id,'finish',args);process.stdout.write(JSON.stringify(record(done))+'\n');
+ } else if(cmd==='cancel'){
+  if(!valid(id))throw Error('invalid plan id');const r=record(show(id));if(process.env.DEFECT==='R7'){process.stdout.write(JSON.stringify(r)+'\n');process.exit(0);}if(r.phase==='cancelled'){process.stdout.write(JSON.stringify(r)+'\n');process.exit(0);}process.stdout.write(JSON.stringify(record(command(id,'cancel'))) +'\n');
+ } else if(cmd==='pause'){
+  if(!valid(id))throw Error('invalid plan id');const r=record(show(id));if(r.phase==='uncertain')process.stdout.write(JSON.stringify(record(command(id,'pause_inflight'))) +'\n');else if(r.phase==='ready')process.stdout.write(JSON.stringify(record(command(id,'pause'))) +'\n');else process.stdout.write(JSON.stringify(r)+'\n');
+ } else if(cmd==='resume'){
+  if(!valid(id))throw Error('invalid plan id');const r=record(show(id));process.stdout.write(JSON.stringify(r.phase==='paused'?record(command(id,'resume')):r)+'\n');
+ } else if(cmd==='nonsense'&&process.env.DEFECT==='R2')process.stdout.write('{"accepted":true}\n');
+ else throw Error('unknown command');
+} catch(e){fail(e.message);}

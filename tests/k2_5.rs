@@ -206,6 +206,72 @@ fn exact_duplicate_replays_before_stale_capability_with_zero_mutation() {
 }
 
 #[test]
+fn recorded_effect_survives_reopen_full_receipt_replay_and_current_conflict() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("s.db");
+    let (mut store, agg, machine) = setup_probe(&dir);
+    let identity = machine.identity().clone();
+    let cap0 = cap(&identity, &agg, 0);
+    let planned = plan(&mut store, machine.as_ref(), &agg, &cap0);
+    let cap1 = planned.capability.clone();
+    let EffectStatus::Pending(original_intent) = planned.effect else {
+        panic!("expected a pending effect");
+    };
+    let binding = outcome(&agg, "e1", 1, "o1");
+    let recorded = store.record_effect(&EffectOutcomeRequest {
+        aggregate_id: agg.clone(), machine: identity.clone(),
+        capability: cap1.clone(), effect: binding.clone(),
+    }).expect("record commits");
+    assert!(recorded.mutation);
+    let original_receipt = recorded.receipt.expect("record receipt");
+    let before = store.show(&agg).expect("post-record projection");
+    let recorded_generation = before.generation;
+    let recorded_sequence = before.sequence;
+    let current_capability = before.capability;
+    assert_eq!(recorded_generation, recorded.generation);
+    drop(store);
+
+    let mut store = Store::open(&path).expect("reopen");
+    let reopened = store.show(&agg).expect("reopened projection");
+    let EffectStatus::Recorded(intent, outcome_digest, recorded_receipt_id) =
+        reopened.effect.clone()
+    else {
+        panic!("expected recorded effect after reopen");
+    };
+    assert_eq!(intent, original_intent);
+    assert_eq!(outcome_digest, binding.outcome_digest);
+    assert_eq!(
+        recorded_receipt_id.as_deref(),
+        Some(original_receipt.receipt_id.as_str())
+    );
+    assert_eq!(reopened.generation, recorded_generation);
+    assert_eq!(reopened.sequence, recorded_sequence);
+    let reopened_effect = reopened.effect;
+    let replay = store.record_effect(&EffectOutcomeRequest {
+        aggregate_id: agg.clone(), machine: identity.clone(),
+        capability: cap1, effect: binding,
+    }).expect("stale exact duplicate replays");
+    assert!(!replay.mutation);
+    assert_eq!(replay.generation, recorded_generation);
+    let replay_receipt = replay.receipt.expect("replayed receipt");
+    assert_eq!(replay_receipt, original_receipt);
+    let after_replay = store.show(&agg).expect("post-replay projection");
+    assert_eq!(after_replay.generation, recorded_generation);
+    assert_eq!(after_replay.sequence, recorded_sequence);
+    assert_eq!(after_replay.effect, reopened_effect);
+    let conflict = store.record_effect(&EffectOutcomeRequest {
+        aggregate_id: agg.clone(), machine: identity,
+        capability: current_capability,
+        effect: outcome(&agg, "e1", 1, "o2"),
+    }).expect_err("current conflicting digest refuses");
+    assert_eq!(conflict.code, DiagnosticCode::IkEffectOutcomeConflict);
+    let after_conflict = store.show(&agg).expect("post-conflict projection");
+    assert_eq!(after_conflict.generation, recorded_generation);
+    assert_eq!(after_conflict.sequence, recorded_sequence);
+    assert_eq!(after_conflict.effect, after_replay.effect);
+}
+
+#[test]
 fn conflicting_duplicate_outcome_refuses() {
     let dir = tempfile::tempdir().expect("tempdir");
     let (mut store, agg, machine) = setup_probe(&dir);

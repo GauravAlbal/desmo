@@ -808,32 +808,43 @@ fn check_then(
             continue;
         }
         if let Some(arg) = value.strip_prefix('$') {
-            if !cmd
-                .args
-                .as_ref()
-                .map(|a| a.contains_key(arg))
-                .unwrap_or(false)
-            {
-                issues.push(format!(
+            match cmd.args.as_ref().and_then(|a| a.get(arg)) {
+                None => issues.push(format!(
                     "`then` for `{fact}` references unknown arg `${arg}`"
-                ));
+                )),
+                Some(arg_ty) if arg_ty != &fdef.ty => issues.push(format!(
+                    "`then` for `{fact}` assigns `${arg}` of type `{arg_ty}` to `{}` fact",
+                    fdef.ty
+                )),
+                Some(_) => {}
             }
         } else {
             let literal = parse_literal(value);
             match literal {
                 Some(v) if value_matches_type(&v, &fdef.ty) => {}
                 Some(_) => issues.push(format!(
-                    "`then` value for `{fact}` does not match type `{}`",
-                    fdef.ty
+                    "`then` value `{value}` for `{fact}` does not match type `{}` ({})",
+                    fdef.ty,
+                    then_type_hint(&fdef.ty)
                 )),
                 None => issues.push(format!(
-                    "`then` value `{value}` for `{fact}` is not a literal or `$arg`"
+                    "`then` value `{value}` for `{fact}` is not a literal or `$arg` ({})",
+                    then_type_hint(&fdef.ty)
                 )),
             }
         }
     }
     let _ = cmd_name;
     issues
+}
+
+fn then_type_hint(ty: &str) -> &'static str {
+    match ty {
+        "string" => r#"use inner quotes like '"paid"' or '""', or "$arg""#,
+        "bool" => r#"use "true", "false", or "$arg""#,
+        "int" => r#"use an integer string like "1", "+1" on a counter, or "$arg""#,
+        _ => r#"use a literal ('"text"', "1", "true"/"false") or "$arg""#,
+    }
 }
 
 fn parse_literal(value: &str) -> Option<Value> {

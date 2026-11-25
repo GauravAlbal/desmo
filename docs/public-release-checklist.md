@@ -30,21 +30,25 @@ when it becomes public. Items marked OWNER cannot be inferred or completed by to
 - [x] **O-3a Private-workflow references.** Generalized in 17 files; the export carries no
   acknowledged references (`acknowledged` in `export/allowlist.json` is empty).
 - [x] **O-4 Security channel.** `SECURITY.md` names GitHub private vulnerability reporting. It is not
-  available while the repository is private (the settings API returned 404), so it is enabled after
-  the visibility change. Enabling it is a step of IK-16, not yet done.
+  available while the repository is private (the settings API returned 404). Enabled on
+  2026-11-14 after the visibility change (`private-vulnerability-reporting` returns enabled).
 - [x] **O-5 Support expectations.** Confirmed: best effort, latest release only.
 - [x] **O-6 History.** Snapshot only: publish the single exported commit, with lineage in
   `EXPORT_MANIFEST.json`.
-- [ ] **O-7 Release step.** (The owner authorized the full release on 2026-11-14.) Repository creation, visibility, tags, release assets, enabling
-  private vulnerability reporting and the `LATEST_RELEASE` update are separate owner-authorized
-  actions (IK-16), in that order, each needing its own authorization. Registry publication is not
-  part of the alpha: the Node packages and the wheel are release assets.
+- [x] **O-7 Release step.** Done 2026-11-14 with the owner's authorization. Public repository
+  `GauravAlbal/desmo`: snapshot commit `a726b713` (export of internal `716d8c1`), one release
+  metadata commit adding `LATEST_RELEASE`, annotated tags `v0.5.0` and `go/v0.5.0` on the snapshot
+  commit, GitHub Release `v0.5.0` with the host archives, wheel, sdist, npm tarballs, `SHA256SUMS`
+  and manifests. Registry publication is not part of the alpha. Afterwards `main` gained test and CI
+  fixes only (no product change, no new release): the `tests/adapter_starter.rs` dotnet assumption,
+  pytest in CI, a CI-environment leak in the release-manifest test, a 1 microsecond client timeout
+  in the timeout scenario and a writer-start race in `tests/operations.rs`. `main` and the release
+  tags are protected by rulesets, and CI runs on `macos-latest` and `ubuntu-24.04`.
 - [x] **O-8 npm scope.** The `@desmo` scope on npm is not registered. The packed runtime tarball no
   longer lists `@desmo/<platform>` packages as optional dependencies, so installing from the release
   tarballs asks no registry about them. Registering the scope (an owner account action) is needed only
   if the packages are ever published to npm, and the optional dependencies would be restored then.
-- [ ] **O-9 Go module tag.** The Go module path is now `github.com/GauravAlbal/desmo/go`, so it
-  resolves only once the public repository exists, and a release needs a `go/vX.Y.Z` tag.
+- [x] **O-9 Go module tag.** The Go module path is `github.com/GauravAlbal/desmo/go`; `go/v0.5.0` was tagged alongside `v0.5.0` on 2026-11-14 (see O-7).
 
 Evidence decisions recorded the same day (see `docs/alpha-readiness.md`): the IK-06 independent review
 stays an agent review and the IK-13 cold run an agent run plus the owner's read, both stated plainly in

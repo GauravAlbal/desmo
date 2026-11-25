@@ -1,0 +1,6 @@
+PASS refused-state-marked-reached: rejected (refused publication target must never be represented as reached)
+PASS read-labelled-as-commit: rejected (canonical read and renewed approval must remain distinct)
+PASS missing-or-incompatible-reproduction-package: rejected (package, binary-version, protocol mismatches and missing package rejected)
+PASS always-refuse-story: rejected (corrected path must commit progress to published)
+PASS headless text-overflow bounds: all 9 scenes (viewport and available text containers)
+PASS encoded frame-level lifecycle: Authorized unlit in all 223 refusal/read frames before renewed approval

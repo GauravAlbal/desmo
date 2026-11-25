@@ -25,6 +25,7 @@
         {"id": "verify", "class": "read", "bin": "ik", "argv": ["--store", "{store}", "--machine", "{machine}", "verify"], "stdin": "verify", "touches_store": true},
         {"id": "lookup-operation", "class": "read", "bin": "ik", "argv": ["--store", "{store}", "--machine", "{machine}", "lookup_operation"], "stdin": "lookup_operation", "touches_store": true},
         {"id": "graph-export", "class": "scratch", "bin": "ik", "argv": ["graph", "export", "{machine}", "--out", "{graph_out}"], "touches_store": false},
+        {"id": "simulate", "class": "scratch", "bin": "ik", "argv": ["simulate", "{machine}", "--out", "{simulator_out}"], "touches_store": false},
         {"id": "scenario-run", "class": "scratch", "bin": "ik", "argv": ["scenario", "run", "{machine}", "{scenario}", "--out", "{scratch}"], "touches_store": false, "refuses_store_flag": true},
         {"id": "scenario-reproduce", "class": "scratch", "bin": "ik", "argv": ["scenario", "reproduce", "{bundle}", "--out", "{scratch_repro}"], "touches_store": false, "refuses_store_flag": true}
       ]

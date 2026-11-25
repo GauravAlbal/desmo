@@ -67,6 +67,10 @@
     {
       "glob": "validation/ik10/*",
       "reason": "private consumer qualification record"
+    },
+    {
+      "glob": "docs/verification-roadmap.md",
+      "reason": "internal verification planning log referencing private work-graph tools; public assurance summary is docs/assurance.md"
     }
   ],
   "patterns": [

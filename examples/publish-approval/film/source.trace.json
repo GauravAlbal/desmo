@@ -1,0 +1,99 @@
+{
+  "schema": "ikaros.trace.v2",
+  "product": "Ikaros",
+  "runtime_version": "0.5.0",
+  "machine_id": "publish_approval",
+  "advisory": true,
+  "origin": "film-flow-observed",
+  "reproducible": false,
+  "redacted": false,
+  "events": [
+    {
+      "kind": "read",
+      "attempted": "create",
+      "state": "draft",
+      "generation": "0",
+      "message": "new aggregate"
+    },
+    {
+      "kind": "commit",
+      "attempted": "edit",
+      "fromState": "draft",
+      "toState": "draft",
+      "generation": "1"
+    },
+    {
+      "kind": "commit",
+      "attempted": "approve",
+      "fromState": "draft",
+      "toState": "approved",
+      "generation": "2"
+    },
+    {
+      "kind": "commit",
+      "attempted": "revise",
+      "fromState": "approved",
+      "toState": "draft",
+      "generation": "3"
+    },
+    {
+      "kind": "refusal",
+      "attempted": "authorize_publish",
+      "fromState": "approved",
+      "code": "IK_CAPABILITY_STALE",
+      "message": "capability generation 2 is stale; current generation is 3",
+      "intendedState": "publishing",
+      "filmFlowAnnotation": "{\"approvedDigest\": \"95d16619e8db54628270cd8a0224dc8f112726cad8ace5b493152234f7b1af14\", \"kind\": \"digest-comparison\", \"proposedDigest\": \"5e700857469c775ae229eab55e76ac55fe4dcb752cfe3940540d090b2a666e7f\"}"
+    },
+    {
+      "kind": "read",
+      "attempted": "show",
+      "state": "draft",
+      "generation": "3",
+      "message": "canonical read"
+    },
+    {
+      "kind": "commit",
+      "attempted": "approve",
+      "fromState": "draft",
+      "toState": "approved",
+      "generation": "4"
+    },
+    {
+      "kind": "read",
+      "attempted": "show",
+      "state": "approved",
+      "generation": "4",
+      "message": "canonical read"
+    },
+    {
+      "kind": "commit",
+      "attempted": "authorize_publish",
+      "fromState": "approved",
+      "toState": "publishing",
+      "generation": "5"
+    },
+    {
+      "kind": "read",
+      "attempted": "show",
+      "state": "publishing",
+      "generation": "5",
+      "message": "canonical read"
+    },
+    {
+      "kind": "commit",
+      "attempted": "record",
+      "fromState": "publishing",
+      "toState": "publishing",
+      "generation": "6"
+    },
+    {
+      "kind": "commit",
+      "attempted": "complete",
+      "fromState": "publishing",
+      "toState": "published",
+      "generation": "7"
+    }
+  ],
+  "reproduction": "python3 examples/publish-approval/film/flow.py --out examples/publish-approval/film/source.trace.json"
+}

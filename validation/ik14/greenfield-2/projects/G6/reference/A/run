@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import http from 'node:http';
+const out=(x,code=0)=>{process.stdout.write(JSON.stringify(x)+'\n');process.exit(code)};
+const refuse=(reason='invalid')=>out({error:reason},1);
+const valid=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(x);
+const root=process.env.STATE_DIR, svc=process.env.SERVICE_URL;
+if(!root)refuse('missing STATE_DIR');
+const file=path.join(root,'state.json');
+try{fs.mkdirSync(root,{recursive:true})}catch{refuse('state unavailable')}
+function read(){return fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):{accounts:{},deliveries:{}}}
+function change(fn){const lock=file+'.lock';let fd;try{fd=fs.openSync(lock,'wx')}catch{return {error:'busy'}}try{const s=read(),r=fn(s);if(r?.error)return r;fs.writeFileSync(file+'.tmp.'+process.pid,JSON.stringify(s));fs.renameSync(file+'.tmp.'+process.pid,file);return r}catch(e){return {error:e.message==='conflict'?'conflict':'state unavailable'}}finally{if(fd!==undefined){fs.closeSync(fd);fs.unlinkSync(lock)}}}
+function provider(method,url,data){return new Promise((resolve,reject)=>{const u=new URL(url);const q=http.request(u,{method,headers:data?{'content-type':'application/json'}:{}},r=>{let b='';r.on('data',x=>b+=x);r.on('end',()=>{try{resolve({status:r.statusCode,body:JSON.parse(b)})}catch{reject(Error('bad provider response'))}})});q.on('error',reject);if(data)q.end(JSON.stringify(data));else q.end()})}
+const [cmd,id,arg,...rest]=process.argv.slice(2);
+ if(cmd==='status'){const s=read(),a=s.accounts[id];if(!a)refuse('unknown account');const d=Object.values(s.deliveries).filter(x=>x.account_id===id).at(-1);out({account_id:id,enabled:a.enabled,channel:a.channel,version:a.version,...(d?{phase:d.phase}:{})})}
+if(['subscribe','unsubscribe','quiet','unquiet','status'].includes(cmd)){
+ if(!valid(id)||(cmd==='subscribe'&&!['email','sms'].includes(arg)))refuse();
+ const r=change(s=>{let a=s.accounts[id];if(cmd==='subscribe'){if(!a)a={enabled:true,channel:arg,version:1,quiet:false};else{a.enabled=true;a.channel=arg;a.version++;}s.accounts[id]=a;return {account_id:id,enabled:a.enabled,channel:a.channel,version:a.version}}
+ if(!a)return {error:'unknown account'};if(cmd==='unsubscribe'&&a.enabled){a.enabled=false;a.version++;}if(cmd==='quiet')a.quiet=true;if(cmd==='unquiet')a.quiet=false;return {account_id:id,enabled:a.enabled,channel:a.channel,version:a.version}});if(r.error)refuse(r.error);out(r)
+}
+if(cmd==='deliver'){
+ const message=arg,body=rest.join('');if(!valid(id)||!valid(message)||[...body].length<1||[...body].length>256)refuse();if(!svc)refuse('missing SERVICE_URL');
+ const prep=change(s=>{const a=s.accounts[id];if(!a)return {error:'unknown account'};const version=a.version,key=`${id}:${message}:v${version}`;let d=s.deliveries[key];if(d&&d.body!==body)return {error:'conflict'};if(!d){d={account_id:id,message_id:message,body,version,channel:a.channel,delivery_id:key,phase:(!a.enabled||a.quiet)?'suppressed':'queued'};s.deliveries[key]=d;}return {d:{...d},quiet:a.quiet,enabled:a.enabled}});if(prep.error)refuse(prep.error);let d=prep.d;
+ if(d.phase==='suppressed')out({message_id:message,delivery_id:d.delivery_id,version:d.version,phase:'suppressed'});
+ if(d.phase!=='delivered'){
+  d.phase='uncertain';change(s=>{s.deliveries[d.delivery_id]=d;return {ok:true}});
+  try{let r=await provider('GET',svc+'/v1/deliveries/'+encodeURIComponent(d.delivery_id));if(r.status===200){d.phase='delivered';d.provider_id=r.body.provider_id}else if(r.status!==404)throw Error('lookup failed');else {r=await provider('POST',svc+'/v1/deliveries',{delivery_id:d.delivery_id,account_id:id,message_id:message,body,channel:d.channel,version:d.version});if(r.status!==200)throw Error('provider refused');d.phase='delivered';d.provider_id=r.body.provider_id}}
+  catch{change(s=>{s.deliveries[d.delivery_id]=d;return {ok:true}});out({message_id:message,delivery_id:d.delivery_id,version:d.version,phase:'uncertain'})}
+  change(s=>{s.deliveries[d.delivery_id]=d;return {ok:true}})
+ }
+ out({message_id:message,delivery_id:d.delivery_id,version:d.version,phase:d.phase,provider_id:d.provider_id})
+}
+if(cmd==='status'&&valid(id)){const s=read(),a=s.accounts[id];if(!a)refuse('unknown account');out({account_id:id,enabled:a.enabled,channel:a.channel,version:a.version,...Object.values(s.deliveries).filter(d=>d.account_id===id).at(-1)&&{phase:Object.values(s.deliveries).filter(d=>d.account_id===id).at(-1).phase}})}
+refuse('unknown command');

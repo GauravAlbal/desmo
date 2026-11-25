@@ -24,6 +24,7 @@ TARGETS = [
     "SOURCE_VERSION_POLICY",
     "src/protocol.rs",
     "tests/*.rs",
+    "tests/fixtures/profile/golden/*.json",
     "go/*.go",
     "python/pyproject.toml",
     "python/src/invariant_kernel/*.py",

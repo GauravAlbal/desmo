@@ -302,27 +302,23 @@ The worker protocol does not prevent Python code from opening files, creating
 processes, or performing other IO on its own. “No store path” and failure
 atomicity are lifecycle guarantees, not OS-enforced IO denial.
 
-## Consumer shape (not a migration claim)
+## Example consumer flow
 
-A WEDDING-WEEKEND-01 consumer with a `D_KISS_NOAH` command can use the generic
-API without moving lifecycle authority into the game code:
+An application with complex domain reduction can use the generic reducer API
+without moving lifecycle authority out of Rust:
 
-1. The consumer calls `scene.execute({"name": "kiss_noah"}, observation)`.
+1. The host calls `order.execute({"name": "apply_discount", "percent": 10}, observation)`.
 2. The reducer examines immutable observation/state inputs and emits a
-   versioned event only when the scene's domain rules permit the kiss; a
-   disallowed attempt returns a `ReducerDiagnostic` (or an explicit no-op,
-   according to the domain contract).
+   versioned event only when the domain rules permit the command; a disallowed
+   attempt returns a `ReducerDiagnostic` (or an explicit no-op, according to
+   the domain contract).
 3. Rust validates the capability, invokes `apply` for the event, and commits
    the resulting current state and journal/projection records.
 4. A later command uses the new Rust-bound handle; an old handle is stale.
 
-This documents the intended consumer shape only. It does not claim that the
-interactive-fiction WEDDING-WEEKEND-01 repository or `D_KISS_NOAH` is already
-migrated.
-
-Install the wheel from the private GitHub Release. The wheel does not bundle
-`ik`; set `IK_BINARY` or `PATH`. Do not adopt from a source checkout of
-`main`.
+Install the wheel from the GitHub Release. The wheel does not bundle `ik`;
+install `ik` via `install.sh` or set `IK_BINARY` / `PATH`. Do not adopt from a
+source checkout of `main`.
 
 ## Recovering an uncertain command
 

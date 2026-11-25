@@ -88,7 +88,7 @@ test("skill install is idempotent and refuses a local edit without force", () =>
     assert.equal(targeted.status, 0, targeted.stderr);
     assert.equal(existsSync(join(target, "desmo", "routing.json")), true);
     const fakeIk = join(dir, "fake-ik");
-    writeFileSync(fakeIk, "#!/bin/sh\nprintf '%s\\n' 'invariant-kernel 0.5.0 protocol 1.0'\n");
+    writeFileSync(fakeIk, "#!/bin/sh\nprintf '%s\\n' 'invariant-kernel 0.5.1 protocol 1.0'\n");
     chmodSync(fakeIk, 0o755);
     const env = { ...process.env, IK_BINARY: fakeIk, IK_BIN: "" };
     const doctor = runCli(["doctor", "--dir", dir, "--json"], dir, env);
@@ -180,7 +180,7 @@ function sameBytes(left: StoreSnap, right: StoreSnap): boolean {
 function envelope(op: string, identity: unknown, extra: Record<string, unknown>): string {
   return JSON.stringify({
     protocol: { major: 1, minor: 0 },
-    runtime_version: "0.5.0",
+    runtime_version: "0.5.1",
     request_id: `r-${op}`,
     op,
     machine: identity,
@@ -252,6 +252,7 @@ test("investigate_only operations do not change a store and scenario uses scratc
       "{evidence}": join(bundle, "result.json"),
       "{report_input}": join(bundle, "result.json"),
       "{graph_out}": join(dir, "graph.json"),
+      "{simulator_out}": join(dir, "simulator.html"),
       "{project}": dir,
     };
     const bodies: Record<string, string> = {
@@ -289,6 +290,10 @@ test("investigate_only operations do not change a store and scenario uses scratc
       if (op.id === "graph-export") {
         assert.equal(existsSync(values["{graph_out}"]), true);
         assert.notEqual(values["{graph_out}"], store);
+      }
+      if (op.id === "simulate") {
+        assert.equal(existsSync(values["{simulator_out}"]), true);
+        assert.notEqual(values["{simulator_out}"], store);
       }
       if (op.refuses_store_flag) {
         const refused = runIk([...argv, "--store", store], dir);

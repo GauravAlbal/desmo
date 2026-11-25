@@ -5,6 +5,10 @@
 > prepared-fixture comparison is retained as a separate engineering diagnostic and is not pooled with it.
 > First tranche (3 projects x 2 arms, 2 replicas): ordinary stack 6/6 complete trajectories, Desmo arm 4/6; descriptive only,
 > no comparative claim. See `validation/ik14/greenfield/decision.md`.
+> Second tranche (`validation/ik14/greenfield-2/`, corrected fixtures with isolation and per-requirement defect controls,
+> two runs): run 2 ordinary stack 5/6 initial and 5/6 after the change, Desmo arm 4/6 and 4/6; descriptive only, no
+> comparative claim. See `validation/ik14/greenfield-2/decision.md` and the tranche-1 review in
+> `validation/ik14/greenfield/parity-review.md`.
 
 Status: **contract; the experiment has not been run.** A one-run-per-arm pilot on a new project exists in `validation/ik14/pilot/` and is not this experiment. No comparative superiority claim is made or
 supported. This is not an alpha safety gate; it is required only before claiming measured savings.

@@ -132,3 +132,44 @@ implication, parent fallback vs child override, unrelated-region addition, and
 adversarial shapes: string ordering, overflow, negative-dividend toward-zero
 division, unset facts, short-circuit with errors, and an earlier guard error
 that must not fall through.
+
+## Kani capability proof
+
+The historical record documents a Kani 0.68 / CBMC 6.11 bounded run of
+`validate_capability` for arbitrary independent `u64` generations and independent
+ASCII nonces of length 0–4, including NUL. Its original positive, four cover and
+false-control outputs were unavailable in the retained-evidence audit on
+2026-11-17; this is not a fresh qualification or evidence that the historical run
+failed. The source harness remains available, but source inspection and a passing
+product gate cannot substitute for those solver results.
+
+For an explicitly authorized reproduction, select the positive harness:
+
+```sh
+RUSTFLAGS=-Zmir-opt-level=2 cargo kani --lib --harness capability_contract --no-assertion-reach-checks -Z unstable-options --unwind 24
+```
+
+`--no-assertion-reach-checks` removes only Kani's auxiliary assertion-reachability
+reporting; it does not remove user assertions, safety checks, or unwind checks.
+The explicitly selected positive harness matters because the other harness is
+intentionally false. Its negative control is expected to exit 1 at the deliberate
+assertion; the expectation alone is not an observed counterexample:
+
+```sh
+RUSTFLAGS=-Zmir-opt-level=2 cargo kani --lib --harness intentionally_wrong_matching_is_rejected --no-assertion-reach-checks -Z unstable-options --unwind 24 --cbmc-args --stop-on-fail --trace
+```
+
+Kani is not part of the acceptance scripts or release gate.
+
+### Scoped launch wording
+
+The following is the evidence-conditioned scope as of 2026-11-17, not a claim
+that a new verifier run passed:
+
+> The **bounded proofs** reported to date are helper-scoped: a historical Kani 0.68 / CBMC 6.11 run is documented for `validate_capability`, with independent arbitrary `u64` generations, independent ASCII nonces of length 0–4 (including NUL), unwind 24, and safety/unwinding checks retained. Its assertions cover matching acceptance and generation-before-nonce diagnostic codes/rules, not exact diagnostic message bytes. The original positive, four cover and deliberately false helper-control outputs are unavailable in the retained audit, so those outcomes have not been independently reconfirmed here. Full command/effect entrypoint authority, runtime-owned cleanup and exact historical-receipt preservation remain unproved: retained positive entrypoint attempts timed out, and Verus stopped at owned JSON-type admission. This evidence is not bound to the published `0.5.0` binaries and establishes no whole-core, persistence, cryptographic or host guarantee.
+
+An observed false assertion in an effect-replay control witnesses that case; it
+does not establish the positive entrypoint theorem or replace the missing helper
+control/cover results. Stronger wording requires actual qualified results and
+their source/artifact boundary, not an installation, intended assertion or
+successful unrelated gate.

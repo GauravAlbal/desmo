@@ -1,0 +1,2 @@
+#!/bin/sh
+DEFECT=R4 exec "$(dirname "$0")/../reference/run" "$@"

@@ -21,4 +21,6 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 IK_BINARY="$ROOT/target/debug/ik" \
   python3 -m pytest -q $PYTEST_JOBS "$ROOT/python/tests"
 ( cd "$ROOT/go" && IK_BINARY="$ROOT/target/debug/ik" go test ./... )
 ( cd "$ROOT/typescript" && npm ci --omit=optional && npx tsc -p tsconfig.json && IK_BINARY="$ROOT/target/debug/ik" npm test )
-python3 examples/publish-approval/scenarios.py --out "${TMPDIR:-/tmp}/desmo-public-verify-scenarios" > /dev/null
+SCENARIO_OUT="${TMPDIR:-/tmp}/desmo-public-verify-scenarios"
+rm -rf "$SCENARIO_OUT"
+python3 examples/publish-approval/scenarios.py --out "$SCENARIO_OUT" > /dev/null

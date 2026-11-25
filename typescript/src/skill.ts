@@ -2,12 +2,20 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { packageRoot } from "./assets.js";
 
-export const SKILL_FILES = ["SKILL.md", "build.md", "change.md", "diagnose.md", "routing.json"] as const;
+export const SKILL_FILES = [
+  "SKILL.md",
+  "audit.md",
+  "build.md",
+  "change.md",
+  "diagnose.md",
+  "readout.md",
+  "routing.json",
+] as const;
 
 export const SKILL_RELATIVE = join(".agents", "skills", "desmo");
 
 export const DESMO_USAGE =
-  "Usage: desmo demo stale-worker | desmo init --template job --language typescript [--out dir] | desmo doctor [--dir project] [--json] | desmo codegen <machine.ik.toml> [--out file] [--check] [--import-from specifier] | desmo trace <bundle.json> --out <file.html> | desmo skill install [--dir <project>] [--target <agent-skills-dir>] [--force]";
+  "Usage: desmo demo orders | desmo demo stale-worker | desmo simulate <machine.ik.toml> [--out file.html] | desmo init --template job --language typescript [--out dir] | desmo doctor [--dir project] [--json] | desmo codegen <machine.ik.toml> [--out file] [--check] [--import-from specifier] | desmo trace <bundle.json> --out <file.html> | desmo skill install [--dir <project>] [--target <agent-skills-dir>] [--force]";
 
 export type SkillStatus = {
   path: string;

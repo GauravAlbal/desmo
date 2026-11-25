@@ -1,0 +1,39 @@
+# Order lifecycle: cart -> paid -> delivered -> returned -> refunded, plus cancel from cart/paid.
+# Cancelled and refunded are terminal. No skipped steps, no zombie mutations, no undeclared states.
+schema_version = 1
+machine_id = "order"
+machine_version = 1
+name = "Order"
+
+[facts]
+payment_ref = { type = "string", policy = "replace" }
+
+[states]
+cart = { initial = true }
+paid = {}
+delivered = {}
+returned = {}
+refunded = { terminal = true }
+cancelled = { terminal = true }
+
+[commands.pay]
+from = ["cart"]
+to = "paid"
+args = { payment_ref = "string" }
+then = { payment_ref = "$payment_ref" }
+
+[commands.deliver]
+from = ["paid"]
+to = "delivered"
+
+[commands.cancel]
+from = ["cart", "paid"]
+to = "cancelled"
+
+[commands.send_back]
+from = ["delivered"]
+to = "returned"
+
+[commands.refund]
+from = ["returned"]
+to = "refunded"

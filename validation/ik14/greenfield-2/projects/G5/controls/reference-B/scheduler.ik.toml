@@ -1,0 +1,68 @@
+schema_version = 1
+machine_id = "inspection_scheduler"
+machine_version = 1
+name = "InspectionScheduler"
+
+[facts]
+plan_id = { type = "string", policy = "replace" }
+site_id = { type = "string", policy = "replace" }
+inspection_type = { type = "string", policy = "replace" }
+count = { type = "int", policy = "replace" }
+next_index = { type = "int", policy = "replace" }
+completed = { type = "string", policy = "replace" }
+current_task_id = { type = "string", policy = "replace" }
+
+[states]
+new = { initial = true }
+ready = {}
+uncertain = {}
+paused = {}
+paused_uncertain = {}
+complete = { terminal = true }
+cancelled = { terminal = true }
+
+[commands.schedule]
+from = ["new"]
+to = "ready"
+args = { plan_id = "string", site_id = "string", inspection_type = "string", count = "int" }
+when = "text_in($plan_id, 'A-Za-z0-9_-', 1, 64) && text_in($site_id, 'A-Za-z0-9_-', 1, 64) && text_in($inspection_type, 'A-Za-z0-9_-', 1, 64) && $count >= 1 && $count <= 4"
+then = { plan_id = "$plan_id", site_id = "$site_id", inspection_type = "$inspection_type", count = "$count", next_index = "1", completed = '"[]"', current_task_id = '""' }
+
+[commands.begin]
+from = ["ready"]
+to = "uncertain"
+args = { task_id = "string" }
+when = "text_in($task_id, 'A-Za-z0-9_:-', 1, 80)"
+then = { current_task_id = "$task_id" }
+
+[commands.finish]
+from = ["uncertain"]
+args = { task_id = "string", next_index = "int", completed = "string" }
+outcomes = [
+  { when = "$task_id == current_task_id && $next_index == next_index + 1 && $next_index > count", to = "complete", then = { next_index = "$next_index", completed = "$completed", current_task_id = '""' } },
+  { when = "$task_id == current_task_id && $next_index == next_index + 1 && $next_index <= count", to = "ready", then = { next_index = "$next_index", completed = "$completed", current_task_id = '""' } }
+]
+
+[commands.pause]
+from = ["ready"]
+to = "paused"
+
+[commands.pause_inflight]
+from = ["uncertain"]
+to = "paused_uncertain"
+
+[commands.resume]
+from = ["paused"]
+to = "ready"
+
+[commands.finish_paused]
+from = ["paused_uncertain"]
+args = { task_id = "string", next_index = "int", completed = "string" }
+outcomes = [
+  { when = "$task_id == current_task_id && $next_index == next_index + 1 && $next_index > count", to = "complete", then = { next_index = "$next_index", completed = "$completed", current_task_id = '""' } },
+  { when = "$task_id == current_task_id && $next_index == next_index + 1 && $next_index <= count", to = "paused", then = { next_index = "$next_index", completed = "$completed", current_task_id = '""' } }
+]
+
+[commands.cancel]
+from = ["new", "ready", "uncertain", "paused", "paused_uncertain"]
+to = "cancelled"

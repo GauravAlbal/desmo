@@ -1,0 +1,3 @@
+Add per-account quiet mode with `quiet <account_id>` and `unquiet <account_id>`. These commands MUST change only the quiet flag: they preserve enabled/disabled preference, channel, and version. They are valid for enabled and disabled accounts; repeating the current quiet setting succeeds idempotently without a version increment. Invalid ids and unknown accounts are refusals.
+
+While quiet, a delivery is durably suppressed without a provider call, even when the notification preference remains enabled. Suppression is terminal for that account/message/version; unquiet does not revive it. After unquiet, a new message id uses the current version and can be delivered normally. Successful quiet/unquiet responses use the preference response fields defined in `brief.md`.

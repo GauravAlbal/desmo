@@ -1,6 +1,6 @@
 [package]
 name = "invariant-kernel"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 description = "Reusable pure invariant runtime: machine contract, declarative machines, durable SQLite store, strict canonical JSON CLI"
 license = "MIT OR Apache-2.0"
@@ -22,7 +22,11 @@ default = []
 # `cargo test --all-features`.
 test-support = []
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [dependencies]
+itoa = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["arbitrary_precision"] }
 toml = "0.8"

@@ -8,3 +8,7 @@ export function packageRoot(): string {
 export function bundledMachine(): string {
   return join(packageRoot(), "assets", "verification_attempt.ik.toml");
 }
+
+export function bundledOrderMachine(): string {
+  return join(packageRoot(), "assets", "order.ik.toml");
+}

@@ -3,9 +3,9 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { bundledMachine } from "./assets.js";
+import { bundledMachine, bundledOrderMachine } from "./assets.js";
 import { Kernel } from "./client.js";
-import { continuation, StaleCapabilityError } from "./errors.js";
+import { continuation, IllegalStateError, StaleCapabilityError } from "./errors.js";
 import { parseTraceBundle, renderTraceHtml, type TraceBundle, type TraceEvent } from "./trace.js";
 import { generateContracts, parseMachineSchema } from "./codegen.js";
 import { parseWire } from "./json.js";
@@ -85,7 +85,7 @@ async function demoStaleWorker(): Promise<void> {
   const bundle: TraceBundle = {
     schema: "ikaros.trace.v2",
     product: "Ikaros",
-    runtime_version: "0.5.0",
+    runtime_version: packageVersion(),
     machine_id: "verification_attempt",
     advisory: true,
     origin: "observed",
@@ -101,6 +101,66 @@ async function demoStaleWorker(): Promise<void> {
     JSON.stringify(bundle, (_k, v) => (typeof v === "bigint" ? v.toString() : v), 2),
   );
   console.log(`\nTrace: ${htmlPath}`);
+}
+
+async function demoOrders(): Promise<void> {
+  console.log("Without Desmo (direct status writes, no runtime guard):");
+  const naive: Record<string, string> = {
+    "order-1042": "cart",
+    "order-1043": "cancelled",
+    "order-1044": "paid",
+  };
+  naive["order-1042"] = "refunded"; // unpaid cart refunded
+  naive["order-1043"] = "delivered"; // cancelled order delivered
+  naive["order-1044"] = "PAID"; // undeclared uppercase status
+  naive["order-1045"] = "incinerated"; // undeclared state invented by a job
+  console.log(`  distinct statuses: ${Array.from(new Set(Object.values(naive))).join(", ")}\n`);
+
+  console.log("With Desmo (order.ik.toml enforced by ik):");
+  const dir = mkdtempSync(join(tmpdir(), "desmo-orders-"));
+  const kernel = new Kernel(join(dir, "orders.db"));
+  const orders = await kernel.machine(bundledOrderMachine());
+
+  const unpaid = await orders.create("order-1042");
+  try {
+    await unpaid.command("refund");
+    throw new Error("expected unpaid refund refusal");
+  } catch (err) {
+    if (!(err instanceof IllegalStateError)) {
+      throw err;
+    }
+    const fresh = await orders.show("order-1042");
+    console.log(`  refund(cart)       -> refused (${err.code}) · stays ${fresh.namedState()}`);
+  }
+
+  const paid = await (await orders.create("order-1043")).command("pay", { payment_ref: "ch_1043" });
+  const cancelled = await paid.command("cancel");
+  try {
+    await cancelled.command("deliver");
+    throw new Error("expected cancelled deliver refusal");
+  } catch (err) {
+    if (!(err instanceof IllegalStateError)) {
+      throw err;
+    }
+    const fresh = await orders.show("order-1043");
+    console.log(`  deliver(cancelled) -> refused (${err.code}) · stays ${fresh.namedState()}`);
+  }
+
+  const happy = await (await orders.create("order-1044"))
+    .command("pay", { payment_ref: "ch_1044" })
+    .then((o) => o.command("deliver"))
+    .then((o) => o.command("send_back"))
+    .then((o) => o.command("refund"));
+  console.log(`  pay->deliver->send_back->refund -> committed (${happy.namedState()}, gen ${String(happy.generation)})`);
+  try {
+    await happy.command("refund");
+    throw new Error("expected double refund refusal");
+  } catch (err) {
+    if (!(err instanceof IllegalStateError)) {
+      throw err;
+    }
+    console.log(`  refund(refunded)   -> refused (${err.code}) · terminal`);
+  }
 }
 
 function flagValue(argv: string[], name: string): string | undefined {
@@ -131,7 +191,7 @@ function initJob(target: string): void {
           start: "node job.mjs",
           test: "node --test job.test.mjs",
         },
-        dependencies: { "@desmo/runtime": "0.5.0" },
+        dependencies: { "@desmo/runtime": "0.5.1" },
       },
       null,
       2,
@@ -142,6 +202,11 @@ function initJob(target: string): void {
     `# Desmo job template
 
 One machine definition in \`job.ik.toml\`. Runtime remains authoritative.
+
+Note: \`@desmo/runtime\` is distributed from GitHub Releases (not npm). Install the
+release tarballs (\`desmo-runtime-*.tgz\` and your platform \`desmo-<platform>-*.tgz\`)
+with \`npm install --no-audit --no-fund --ignore-scripts ./desmo-runtime-*.tgz ./desmo-<platform>-*.tgz\`,
+or put \`ik\` on \`PATH\` via \`install.sh\`, then run:
 
     npm test
     npm start
@@ -154,9 +219,10 @@ One machine definition in \`job.ik.toml\`. Runtime remains authoritative.
 
 const kernel = new Kernel(".state/kernel.db");
 const jobs = await kernel.machine("job.ik.toml");
-const job = await jobs.create("job-1");
+const id = \`job-\${Date.now()}\`;
+const job = await jobs.create(id);
 const running = await job.command("start");
-console.log(running.namedState());
+console.log(id, running.namedState());
 `,
   );
   writeFileSync(
@@ -223,6 +289,18 @@ function codegen(args: string[]): void {
   } else {
     process.stdout.write(source);
   }
+}
+
+/** `desmo simulate`: generate a self-contained interactive HTML simulator via `ik simulate`. Advisory only. */
+function simulateCommand(args: string[]): void {
+  const machinePath = args[0];
+  if (!machinePath || machinePath.startsWith("--")) {
+    throw new Error("usage: desmo simulate <machine.ik.toml> [--out <file.html>]");
+  }
+  const out = flagValue(args, "--out");
+  const ikArgs = out ? ["simulate", machinePath, "--out", out] : ["simulate", machinePath];
+  const output = execFileSync(locateBinary(), ikArgs, { encoding: "utf8" });
+  process.stdout.write(output);
 }
 
 /** `desmo trace`: validate a trace bundle and render it to standalone HTML. Advisory only. */
@@ -295,8 +373,12 @@ const argv = process.argv.slice(2);
 try {
   if (argv[0] === "demo" && argv[1] === "stale-worker") {
     await demoStaleWorker();
+  } else if (argv[0] === "demo" && argv[1] === "orders") {
+    await demoOrders();
   } else if (argv[0] === "codegen") {
     codegen(argv.slice(1));
+  } else if (argv[0] === "simulate") {
+    simulateCommand(argv.slice(1));
   } else if (argv[0] === "trace") {
     traceCommand(argv.slice(1));
   } else if (argv[0] === "doctor") {
@@ -312,8 +394,11 @@ try {
     } else {
       initJob(flagValue(argv, "--out") ?? "desmo-job");
     }
-  } else {
+  } else if (argv.length === 0 || argv[0] === "-h" || argv[0] === "--help") {
     console.log(DESMO_USAGE);
+  } else {
+    console.error(`unknown command: ${argv.join(" ")}\n${DESMO_USAGE}`);
+    process.exitCode = 1;
   }
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);

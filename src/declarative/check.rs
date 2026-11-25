@@ -153,6 +153,7 @@ pub(crate) fn check_with_run(
         old_run: old_run.as_ref(),
         local: &local,
         judgment: &judgment,
+        uncovered_ids: &judge_report.obligations.uncovered_ids,
         machine_diff: machine_diff.as_ref(),
         witness: machine_diff
             .as_ref()
@@ -188,6 +189,7 @@ struct RenderArgs<'a> {
     old_run: Option<&'a Exploration>,
     local: &'a [LocalAdequacy],
     judgment: &'a AcceptJudgment,
+    uncovered_ids: &'a [String],
     machine_diff: Option<&'a super::diff::MachineDiff>,
     witness: Option<&'a Vec<super::explore::WitnessStep>>,
 }
@@ -202,6 +204,7 @@ fn render_packet(args: RenderArgs<'_>) -> String {
         old_run,
         local,
         judgment,
+        uncovered_ids,
         machine_diff,
         witness,
     } = args;
@@ -219,7 +222,7 @@ fn render_packet(args: RenderArgs<'_>) -> String {
         .collect();
     if !debt.is_empty() {
         out.push_str("NEW SEMANTIC DEBT\n\n");
-        for obligation in debt {
+        for obligation in &debt {
             out.push_str(&format_debt_item(obligation, new, new_run, local, witness));
             out.push('\n');
         }
@@ -269,6 +272,15 @@ fn render_packet(args: RenderArgs<'_>) -> String {
         out.push_str("\nREASONS\n");
         for reason in &judgment.reasons {
             out.push_str(&format!("  - {reason}\n"));
+        }
+    }
+    if judgment.verdict != "accept" && debt.is_empty() && !uncovered_ids.is_empty() {
+        out.push_str("\nUNCOVERED OBLIGATIONS\n");
+        for id in uncovered_ids.iter().take(20) {
+            out.push_str(&format!("  - {id}\n"));
+        }
+        if uncovered_ids.len() > 20 {
+            out.push_str(&format!("  ... and {} more\n", uncovered_ids.len() - 20));
         }
     }
     push_impossibilities(&mut out, &new_plan.impossibilities);

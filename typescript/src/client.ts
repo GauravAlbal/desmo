@@ -17,7 +17,7 @@ import { unwrapEnvelope } from "./envelope.js";
 
 export const PROTOCOL_MAJOR = 1;
 export const PROTOCOL_MINOR = 0;
-export const RUNTIME_VERSION = "0.5.0";
+export const RUNTIME_VERSION = "0.5.1";
 export type { Json };
 
 export class MachineIdentity {
