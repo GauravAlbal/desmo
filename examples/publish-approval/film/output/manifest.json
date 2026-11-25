@@ -1,0 +1,96 @@
+{
+  "source_trace": "../source.trace.json",
+  "source_trace_sha256": "a4ac8401f1150db64fa8e2ca3663f9ae06f979909cdf571a6fc5138b03bf1321",
+  "runtime_version": "0.5.0",
+  "machine_id": "publish_approval",
+  "machine_definition": "examples/publish-approval/machines/publish_approval_v3.ik.toml",
+  "machine_sha256": "7f832e17ebf0b2c6dcdd0512057ba27a5c034e98e0d0f304510e949d885a9aa3",
+  "schema": "ikaros.trace.v2",
+  "duration_seconds": "30.000000",
+  "audio": "none",
+  "mp4_bytes": 251907,
+  "mp4_sha256": "918699f26f81fcf86c879c00b0290686f64e5fb39d0b36d7d4fb3fd9373f676f",
+  "outputs": [
+    "approval-film.mp4",
+    "facts.json",
+    "manifest.json",
+    "poster.png",
+    "report.html",
+    "still-1.png",
+    "still-2.png",
+    "still-3.png",
+    "still-4.png",
+    "still-5.png",
+    "still-6.png",
+    "validation.log"
+  ],
+  "facts": [
+    {
+      "id": "F0",
+      "trace_event_id": "event-1",
+      "event_index": 0,
+      "kind": "read",
+      "command": "create",
+      "on_screen_fact": "Opening state is draft"
+    },
+    {
+      "id": "F1",
+      "trace_event_id": "event-3",
+      "event_index": 2,
+      "kind": "commit",
+      "command": "approve",
+      "on_screen_fact": "Reviewer approves this exact version"
+    },
+    {
+      "id": "F2",
+      "trace_event_id": "event-4",
+      "event_index": 3,
+      "kind": "commit",
+      "command": "revise",
+      "on_screen_fact": "Author edits the document after approval"
+    },
+    {
+      "id": "F3",
+      "trace_event_id": "event-5",
+      "event_index": 4,
+      "kind": "refusal",
+      "command": "authorize_publish",
+      "on_screen_fact": "Authorization refused: it names a version nobody approved"
+    },
+    {
+      "id": "F4",
+      "trace_event_id": "event-6",
+      "event_index": 5,
+      "kind": "read",
+      "command": "show",
+      "on_screen_fact": "Fresh read of the current version"
+    },
+    {
+      "id": "F5",
+      "trace_event_id": "event-7",
+      "event_index": 6,
+      "kind": "commit",
+      "command": "approve",
+      "on_screen_fact": "Approved again, new version"
+    },
+    {
+      "id": "F6",
+      "trace_event_id": "event-9",
+      "event_index": 8,
+      "kind": "commit",
+      "command": "authorize_publish",
+      "on_screen_fact": "Publication authorized"
+    },
+    {
+      "id": "F7",
+      "trace_event_id": "event-12",
+      "event_index": 11,
+      "kind": "commit",
+      "command": "complete",
+      "on_screen_fact": "The authorized artifact is published"
+    }
+  ],
+  "overflow": "all rendered scenes passed viewport and available text-container bounds checks",
+  "refused_read_video_frames_checked": 223,
+  "human_run": "open owner item; not performed"
+}

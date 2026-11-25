@@ -9,6 +9,26 @@ always a SemVer major. See [docs/release-compatibility.md](docs/release-compatib
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-24
+
+### Added
+
+- `ik simulate <machine.ik.toml> [--out <file.html>]` (and `desmo simulate`) renders a zero-dependency, self-contained interactive HTML structural simulator directly from `ik schema`, including legal/illegal command refusal (`IK_ILLEGAL_STATE`), terminal locks, and Copy/Fire Stale Capability Handle (`IK_CAPABILITY_STALE`).
+- `skills/desmo/audit.md`: read-only brownfield audit workflow (`investigate_only`) compatible with `npx skills add GauravAlbal/desmo` to discover implicit state machines, extract a scratch `.ik.toml`, run `ik diagram` + `ik check`, and generate an interactive simulator with `ik simulate`.
+- `install.sh`: POSIX one-line `curl` installer for prebuilt macOS arm64 and Linux x86_64 `ik` binaries with strict `SHA256SUMS` verification.
+- `examples/orders/` (`order.ik.toml`, `order.ik.cases.json`, `demo.py`, `README.md`) and `desmo demo orders` CLI command.
+- `docs/assurance.md`: transparent verification and assurance boundary table covering tests, deleted-wall mutants, crash-matrix tests, linearizability, SMT/TLC adapters, and open Kani entrypoint proofs.
+- TypeScript SDK typed error exports (`IllegalStateError`, `CommandInvalidError`, `InvariantFailedError`, `NonceInvalidError`, `MachineError`).
+- Bounded Kani proof harness for capability generation and nonce validation, plus optional entrypoint authority-prefix Kani harnesses (full entrypoint qualification remains open).
+
+### Fixed
+
+- `ik check` now lists uncovered obligations (`UNCOVERED OBLIGATIONS`, up to 20 IDs plus remainder) on flat schema-1 refusals without `--prior`.
+- Declarative `then` binding parser/compiler now reports actionable spelling hints on boolean/literal errors and checks `$arg` type mismatches statically.
+- `desmo skill install` now copies all 7 skill files including `readout.md` and `audit.md`; unknown `desmo` subcommands now exit with code `1`; `desmo init` generates an idempotent `job.mjs` and documents GitHub Release installation; `desmo doctor` surfaces runtime/package version mismatches.
+- `scripts/public-verify` now cleans its temporary scenario output directory so repeat runs succeed cleanly.
+- `ik --help` updated to list all envelope ops (`create_with_command`, `transaction`, `lookup_operation`), `ik check --corpus-template`, and `ik simulate`.
+
 ## [0.5.0] - 2026-11-14
 
 ### Changed
@@ -25,7 +45,7 @@ always a SemVer major. See [docs/release-compatibility.md](docs/release-compatib
 
 ### Added
 
-- `ik readout <summary.md> --handoff <handoff.txt> [--stamp] [--json]` lints the prose an agent writes around a handoff. Nine named defect vectors (readiness words, completeness claims, proof words, a `>` quote that is not verbatim handoff text, the `Status:` line or `Not checked:` paragraph not quoted, a material gap not mentioned, a stale or hand-written stamp) each print the line, what is wrong and the fix. Exit 0 clean, 1 defects, 2 usage. `--stamp` writes a hash line (summary and handoff sha256) only when the lint is clean; the hash binds content, not author, and a clean lint does not say the summary is true. Procedure in `skills/ikaros/readout.md`.
+- `ik readout <summary.md> --handoff <handoff.txt> [--stamp] [--json]` lints the prose an agent writes around a handoff. Nine named defect vectors (readiness words, completeness claims, proof words, a `>` quote that is not verbatim handoff text, the `Status:` line or `Not checked:` paragraph not quoted, a material gap not mentioned, a stale or hand-written stamp) each print the line, what is wrong and the fix. Exit 0 clean, 1 defects, 2 usage. `--stamp` writes a hash line (summary and handoff sha256) only when the lint is clean; the hash binds content, not author, and a clean lint does not say the summary is true. Procedure in `skills/desmo/readout.md`.
 
 ### Changed
 

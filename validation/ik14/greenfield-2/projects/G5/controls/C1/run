@@ -1,0 +1,2 @@
+#!/bin/sh
+DEFECT=C1 exec "$(dirname "$0")/../reference/run" "$@"

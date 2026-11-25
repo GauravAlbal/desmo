@@ -14,6 +14,9 @@ use crate::identity::{AggregateId, Capability, MachineIdentity};
 use crate::machine::{ApplyOutcome, Decision, DomainEvent};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(kani)]
+mod capability_proofs;
+
 
 /// Hash of the (nonexistent) event before genesis.
 pub const GENESIS_PREV: &str = "0000000000000000000000000000000000000000000000000000000000000000";
@@ -264,13 +267,22 @@ fn validate_capability(
         return Ok(());
     }
     if capability.generation != snapshot.generation {
+        let mut supplied_buffer = itoa::Buffer::new();
+        let mut current_buffer = itoa::Buffer::new();
+        let supplied = supplied_buffer.format(capability.generation);
+        let current = current_buffer.format(snapshot.generation);
+        let prefix = "capability generation ";
+        let separator = " is stale; current generation is ";
+        // A u64 needs at most 20 decimal digits; keep the allocation size fixed.
+        let mut message = String::with_capacity(prefix.len() + separator.len() + 2 * 20);
+        message.push_str(prefix);
+        message.push_str(supplied);
+        message.push_str(separator);
+        message.push_str(current);
         return Err(Diagnostic::new(
             DiagnosticCode::IkCapabilityStale,
             Some("capability.generation"),
-            format!(
-                "capability generation {} is stale; current generation is {}",
-                capability.generation, snapshot.generation
-            ),
+            message,
         ));
     }
     if capability.nonce != snapshot.nonce {
@@ -390,6 +402,13 @@ pub fn execute_command(
         return Ok(step);
     }
     validate_capability(snapshot, capability)?;
+    // Authority harnesses assume invalid capability. Assert before cutting this
+    // suffix: reaching it fails verification, rather than hiding a mutation path.
+    #[cfg(kani)]
+    {
+        kani::assert(false, "command authority: mutation suffix is unreachable");
+        kani::assume(false);
+    }
     if snapshot.terminal {
         #[cfg(feature = "test-support")]
         let allow = crate::law_mutant::is(crate::law_mutant::LawMutant::AllowTerminalMutation);
@@ -602,6 +621,12 @@ pub fn execute_outcome_binding(
     }
 
     validate_capability(snapshot, capability)?;
+    // Same fail-closed cutpoint as execute_command; duplicate replay is above it.
+    #[cfg(kani)]
+    {
+        kani::assert(false, "outcome authority: mutation suffix is unreachable");
+        kani::assume(false);
+    }
 
     // Terminal states reject ordinary mutation, but an outstanding pending effect can
     // always be resolved.

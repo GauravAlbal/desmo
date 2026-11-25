@@ -1,0 +1,138 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { Kernel, StoreNotFoundError } from '../../../../../../../typescript/dist/index.js';
+
+const root = process.env.STATE_DIR;
+const service = process.env.SERVICE_URL;
+const binary = process.env.IK_BINARY || 'ik';
+const machinePath = new URL('./notification.ik.toml', import.meta.url).pathname;
+const fail = (message) => {
+  process.stdout.write(JSON.stringify({ error: String(message) }) + '\n');
+  process.exit(1);
+};
+const valid = (value) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value);
+if (!root) fail('missing STATE_DIR');
+await fs.mkdir(root, { recursive: true });
+const machine = await new Kernel(path.join(root, 'notifications.sqlite'), { binary }).machine(machinePath);
+const [cmd, id, arg, ...rest] = process.argv.slice(2);
+const body = rest.join(' ');
+const stateOf = (aggregate) => aggregate.namedState();
+const factsOf = (aggregate) => {
+  const state = aggregate.state;
+  return state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+};
+const read = async (aggregateId) => machine.show(aggregateId);
+const missing = (error) => error?.rule === 'aggregate.not_found' ||
+  (error instanceof StoreNotFoundError && error.rule === 'store.missing');
+const account = async (accountId) => {
+  try { return await read(`account:${accountId}`); }
+  catch (error) { if (missing(error)) return undefined; throw error; }
+};
+const mutate = async (aggregate, command, args) => (await read(aggregate.id)).command(command, args);
+const preference = (aggregate) => {
+  const state = stateOf(aggregate);
+  const facts = factsOf(aggregate);
+  return {
+    account_id: aggregate.id.slice('account:'.length),
+    enabled: state === 'enabled' || state === 'quiet_enabled',
+    channel: facts.channel,
+    version: Number(facts.version || 0),
+  };
+};
+const provider = async (method, url, data) => {
+  const response = await fetch(url, {
+    method,
+    headers: data ? { 'content-type': 'application/json' } : {},
+    body: data ? JSON.stringify(data) : undefined,
+  });
+  let result;
+  try { result = await response.json(); } catch { throw new Error('invalid provider response'); }
+  return { status: response.status, body: result };
+};
+
+try {
+  if (cmd === 'subscribe') {
+    if (!valid(id) || !['email', 'sms'].includes(arg)) fail('invalid');
+    const key = `account:${id}`;
+    let current = await account(id);
+    if (!current) current = await machine.create(key);
+    const name = ({
+      new: 'subscribe_new', enabled: 'subscribe_enabled', disabled: 'subscribe_disabled',
+      quiet_enabled: 'subscribe_quiet_enabled', quiet_disabled: 'subscribe_quiet_disabled',
+    })[stateOf(current)];
+    if (!name) fail('invalid account state');
+    current = await mutate(current, name, { channel: arg });
+    process.stdout.write(JSON.stringify(preference(current)) + '\n');
+  } else if (cmd === 'unsubscribe' || cmd === 'quiet' || cmd === 'unquiet') {
+    if (!valid(id)) fail('invalid');
+    const current = await account(id);
+    if (!current) fail('unknown account');
+    const state = stateOf(current);
+    const transition = cmd === 'unsubscribe'
+      ? ({ enabled: 'unsubscribe_enabled', quiet_enabled: 'unsubscribe_quiet_enabled' })[state]
+      : cmd === 'quiet'
+        ? ({ enabled: 'quiet_enabled', disabled: 'quiet_disabled' })[state]
+        : ({ quiet_enabled: 'unquiet_enabled', quiet_disabled: 'unquiet_disabled' })[state];
+    process.stdout.write(JSON.stringify(preference(transition ? await mutate(current, transition) : current)) + '\n');
+  } else if (cmd === 'status') {
+    if (!valid(id)) fail('invalid');
+    const current = await account(id);
+    if (!current) fail('unknown account');
+    process.stdout.write(JSON.stringify(preference(current)) + '\n');
+  } else if (cmd === 'deliver') {
+    if (!valid(id) || !valid(arg) || [...body].length < 1 || [...body].length > 256) fail('invalid');
+    if (!service) fail('missing SERVICE_URL');
+    const pref = await account(id);
+    if (!pref) fail('unknown account');
+    const prefState = stateOf(pref);
+    const facts = factsOf(pref);
+    const version = Number(facts.version || 0);
+    const deliveryId = `${id}:${arg}:v${version}`;
+    const aggregateId = `delivery:${deliveryId}`;
+    let delivery;
+    try { delivery = await read(aggregateId); }
+    catch (error) { if (!missing(error)) throw error; }
+    if (delivery && factsOf(delivery).body !== body) fail('conflict');
+    if (!delivery) {
+      delivery = await machine.create(aggregateId);
+      const command = prefState === 'enabled'
+        ? 'queue'
+        : 'suppress';
+      delivery = await mutate(delivery, command, {
+        account_id: id, message_id: arg, body, channel: facts.channel,
+        captured_version: version, delivery_id: deliveryId,
+      });
+    }
+    let phase = stateOf(delivery);
+    if (phase === 'suppressed') {
+      process.stdout.write(JSON.stringify({ message_id: arg, delivery_id: deliveryId, version, phase }) + '\n');
+    } else if (phase === 'delivered') {
+      process.stdout.write(JSON.stringify({ message_id: arg, delivery_id: deliveryId, version, phase, provider_id: factsOf(delivery).provider_id }) + '\n');
+    } else {
+      if (phase === 'queued') delivery = await mutate(delivery, 'send');
+      phase = stateOf(delivery);
+      try {
+        const lookup = await provider('GET', `${service}/v1/deliveries/${encodeURIComponent(deliveryId)}`);
+        let result;
+        if (lookup.status === 200) result = lookup.body;
+        else if (lookup.status === 404) {
+          const sent = await provider('POST', `${service}/v1/deliveries`, {
+            delivery_id: deliveryId, account_id: id, message_id: arg, body,
+            channel: facts.channel, version,
+          });
+          if (sent.status !== 200) throw new Error('provider refused');
+          result = sent.body;
+        } else throw new Error('provider lookup failed');
+        delivery = await mutate(delivery, 'finish', { provider_id: result.provider_id });
+        process.stdout.write(JSON.stringify({ message_id: arg, delivery_id: deliveryId, version, phase: 'delivered', provider_id: result.provider_id }) + '\n');
+      } catch {
+        const latest = await read(aggregateId);
+        process.stdout.write(JSON.stringify({ message_id: arg, delivery_id: deliveryId, version, phase: stateOf(latest) }) + '\n');
+      }
+    }
+  } else fail('unknown command');
+} catch (error) {
+  fail(error.message || error);
+}
+

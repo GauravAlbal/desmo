@@ -1,0 +1,3 @@
+# Change request
+
+Add the exact phase value `hold`, with required `hold_reason` that is nonblank after trimming whitespace. `hold <reservation_id> <reason>` is allowed only before any service request has been sent; afterward it refuses with error code `already_dispatched`. A successful hold returns a snapshot with `phase:"hold"` and `hold_reason` equal to the supplied reason. `advance` on a reservation in phase `hold` refuses with error code `held` and MUST NOT contact the service. `cancel` remains available from `hold` and succeeds with phase `cancelled` (exit 0). Existing records and all original requirements remain valid.

@@ -15,7 +15,12 @@ followed by a required initialize as one atomic admission.
 initializing command in one store transaction, or it commits neither. An
 invalid initial command or a law violation exposes no aggregate. The same
 operation id replays the original result as history (`historical: true`, no
-capability). A different command under that id conflicts. A dropped reply is
+capability). A different command under that id conflicts. Note that unlike
+bare `create` (which always refuses an existing aggregate id), an identical
+`create_with_command` against an existing aggregate whose journal is still
+`[genesis, initial_event]` returns `ExactDuplicate` (`mutation: false`) with
+the live handle even under a new `operation_id`; if your application must
+refuse duplicate creation explicitly, check existence with `show` first. A dropped reply is
 reconciled with `lookup_operation` using the same command body and no
 capability: `committed_exact`, `conflict`, or `not_recorded`. A `conflict`
 can mean the supplied lookup fingerprint (command body, capability, and

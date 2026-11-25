@@ -1,0 +1,387 @@
+# Tranche 2 validation log
+
+Status: NOT VALIDATED; no builder dispatch or arm build has occurred.
+
+The brief, parity contract, and dispatch plan were authored. Evaluator implementations, per-requirement defective stubs, reference-correct stubs, and staging isolation checks have not been implemented or executed. Therefore no claim is made that controls fail exactly one requirement, reference stubs pass, or control routes are inaccessible. Dispatch is prohibited until these are completed.
+
+## G5
+
+G5 initial and change evaluator/control gates passed for native reference A and Desmo reference B. Added `stub/server.mjs` and lifecycle-only `stub/CONTRACT.md`; a separate evaluator fixture injects dropped replies outside staged inputs. `evaluator/run.sh` emits JSON result fields keyed by every applicable requirement. `evaluator/matrix.mjs` checks a reference pass and exactly one mapped failure per defect control.
+
+Staging commands: `python3 validation/ik14/greenfield-2/projects/G5/stage-control.py G5 A isolate7 initial`, `python3 validation/ik14/greenfield-2/projects/G5/stage-control.py G5 A isolate7 change`, and the same two commands with `B` in place of `A`. Both arms stage only `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}` initially, adding only `CHANGE.md` at change stage. Grep over both `runs/G5/A/isolate7` and `runs/G5/B/isolate7` found no `evaluator|control|defect|reference` strings. The coordinator stages Desmo docs/KIT externally; G5's stager no longer copies repo docs.
+
+Reference A commands for each stage: `node validation/ik14/greenfield-2/projects/G5/evaluator/matrix.mjs validation/ik14/greenfield-2/projects/G5 <initial|change>`; both returned exit 0. Each reference output was `{"requirements":{"R1":true,...,"R8":true}}` (change also includes `"C1":true`). Each defect run emitted the complete vector with exactly its mapped requirement false and every other applicable requirement true; e.g. R4 is `{"requirements":{"R1":true,"R2":true,"R3":true,"R4":false,"R5":true,"R6":true,"R7":true,"R8":true}}`. The matrix exit 0 verifies all mapped vectors.
+
+Reference B and B-defect commands for each stage: `ARM=B IK_BINARY=$IK_BINARY node validation/ik14/greenfield-2/projects/G5/evaluator/matrix.mjs validation/ik14/greenfield-2/projects/G5 <initial|change>`; both returned exit 0. B reference outputs were all true for applicable requirements. Each requirement's B-specific `DEFECT` control ran against the B public adapter and emitted the complete vector with only its mapped requirement false, all others true. The Desmo runner uses `controls/reference-B/scheduler.ik.toml`; `ik identity` and scheduler command scenarios executed successfully. `/tmp/relmac-npm` was not present, so this adapter invokes the configured binary protocol directly rather than the released TypeScript package.
+
+Fault cases: R4 loses a committed service reply, verifies persisted phase `uncertain`, unchanged index, and no completion before confirming lookup-before-resend recovery; the evaluator does not require a particular exit code for the lost reply. No brief edit was needed. R5 exits after schedule commit; R6 exits after send and restarts to reconcile; R7 holds an external response while cancellation commits and checks that the late result does not advance; C1 holds an in-flight occurrence through pause, reconciles it while paused, blocks the next dispatch, then resumes.
+
+Coordinator-review addendum: `evaluator/run.sh` accepts positional `initial|change`. R2 rejects invalid requests without service calls and additionally requires a valid schedule to succeed and become visible through status. Re-ran full A/B reference and defect matrices for both stages; each matrix command exited 0. Exact matrix commands: `node validation/ik14/greenfield-2/projects/G5/evaluator/matrix.mjs validation/ik14/greenfield-2/projects/G5 initial`; the same command ending in `change`; and each command again prefixed `ARM=B IK_BINARY=$IK_BINARY`. Every reference vector was all true; every mapped defect vector had only its mapped requirement false.
+
+Always-refuse probe: `PROJECT_DIR=validation/ik14/greenfield-2/projects/G5/evaluator/fixtures/always-refuse sh validation/ik14/greenfield-2/projects/G5/evaluator/run.sh initial`; output `{"requirements":{"R1":false,"R2":false,"R3":false,"R4":false,"R5":false,"R6":false,"R7":false,"R8":false}}`, exit 1; R2 failed because its valid schedule was refused. Always-accept probe: same command with `PROJECT_DIR=.../always-accept`; output was the same all-false vector, exit 1; R2 failed on the first invalid request being accepted. Both fixtures are evaluator-only and outside staged workspaces. G5 controls passed. No builders or real arm builds were run.
+
+Timeout addendum: `evaluator/evaluate.mjs` now kills timed-out command process groups after 20 seconds, releases any held service response, and fails the containing requirement with the timed-out argv while continuing later requirements. Completed commands clear their timers; a 200-second watchdog kills active groups, releases held responses, prints the current result JSON (untested requirements remain false), and exits nonzero. `controls/hang-pause/run` delegates its first `pause` to the A reference and blocks on the second pause while C1 has an in-flight advance waiting on the withheld service response. Command `PROJECT_DIR=validation/ik14/greenfield-2/projects/G5/controls/hang-pause sh validation/ik14/greenfield-2/projects/G5/evaluator/run.sh change` exited 1 after 22.18 seconds; stderr was `C1: command timed out: advance pp; pause pp`, and stdout was `{"requirements":{"R1":true,"R2":true,"R3":true,"R4":true,"R5":true,"R6":true,"R7":true,"R8":true,"C1":false}}`. This verifies timeout isolation to C1 and release of the held service response.
+
+Post-timeout full matrix rerun (all four commands exited 0): A initial `node validation/ik14/greenfield-2/projects/G5/evaluator/matrix.mjs validation/ik14/greenfield-2/projects/G5 initial`; A change same command ending `change`; B initial and change used those same commands prefixed `ARM=B IK_BINARY=$IK_BINARY`. For each matrix, output order is R1..R8 and (for change) C1, with `1=true`, `0=false`; reference stdout vectors were `11111111` (initial) and `111111111` (change). Defect stdout vectors were identical for A and B: initial R1=`01111111`, R2=`10111111`, R3=`11011111`, R4=`11101111`, R5=`11110111`, R6=`11111011`, R7=`11111101`, R8=`11111110`; change R1=`011111111`, R2=`101111111`, R3=`110111111`, R4=`111011111`, R5=`111101111`, R6=`111110111`, R7=`111111011`, R8=`111111101`, C1=`111111110`. Every defect case reported `exact:true` and each matrix exited 0.
+
+Source-review audit and edit reasons: `brief.md` now pins ordinary success/refusal exit behavior, crash exception, root-record JSON schema and every asserted phase/field; R1 maps to brief lines 3, 7, 9; R2 to 3, 10; R3 to 3, 5, 7, 11; R4 to 5, 7, 12 and the service contract; R5 to 3, 13; R6 to 3, 7, 14 and the service contract; R7 to 3, 5, 7, 15 and the service contract; R8 to 3, 5, 7, 16. R4 now specifies applied-then-lost reply and confirmed lookup/no resend; R5/R6 specify CRASH_AT boundaries and exit behavior; these edits remove implementation guesses. `change.md` now requires phase `paused` from pause both with and without an in-flight send, specifies current-task retention, result reconciliation, exit status, fields, and the complete `pp`/`pp:1` C1 sequence; reason: earlier text did not exclude `uncertain_paused`. `stub/CONTRACT.md` now lists every response: POST success 200 confirmed, malformed JSON 400 `invalid JSON`, missing/empty/non-string task id 400 `task_id required`, GET found 200 confirmed, GET/route missing 404 `not found`; it also specifies R4 close-without-response and R7/C1 held-200 behavior. Public stub and evaluator fixture were aligned for the two 400 cases. Staged prose was also stripped of internal runner vocabulary after the scan flagged it, because builder inputs must contain only public requirements and interface details.
+
+Evaluator edits: records are now required at the JSON root, matching the public brief and both references. R1 duplicate and all R2 refusals require a nonzero exit plus a JSON string `error`; R2 now also exercises missing `STATE_DIR`/`SERVICE_URL`. R7 now uses count 3 so the no-future-dispatch probe is meaningful, checks successful cancellation and final cancelled state with only `pc:1`, accepts either exit status from the late command but rejects timeout, then calls advance again and verifies no `pc:2`/`pc:3` POST. These changes directly address the source-review findings and close previously unchecked or vacuous assertions. Public service stub and evaluator fixture now both reject malformed JSON and missing/empty/non-string task ids with matching 400 bodies; reason: before the edit, the stub and fixture diverged for malformed service requests.
+
+Public service smoke: ran the Node stub on port 18743 and used curl on valid POST, found/missing GET, missing-id POST, malformed-JSON POST, and unknown route. Exact observed status/body pairs matched the contract: 200 confirmed; 200 confirmed; 404 `not found`; 400 `task_id required`; 400 `invalid JSON`; 404 `not found`.
+
+Final matrix rerun after all G5 edits: A initial command was `node validation/ik14/greenfield-2/projects/G5/evaluator/matrix.mjs validation/ik14/greenfield-2/projects/G5 initial`; A change used the same command ending in `change`. B initial and change used those respective commands prefixed with `ARM=B IK_BINARY=$IK_BINARY`. All four exited 0. Output order R1..R8[,C1], `1=true`, `0=false`: references initial `11111111`, change `111111111`; defects for both arms initial R1=`01111111`, R2=`10111111`, R3=`11011111`, R4=`11101111`, R5=`11110111`, R6=`11111011`, R7=`11111101`, R8=`11111110`; change R1=`011111111`, R2=`101111111`, R3=`110111111`, R4=`111011111`, R5=`111101111`, R6=`111110111`, R7=`111111011`, R8=`111111101`, C1=`111111110`. Each defect vector was `exact:true`.
+
+Final hang probe: `PROJECT_DIR=validation/ik14/greenfield-2/projects/G5/controls/hang-pause sh validation/ik14/greenfield-2/projects/G5/evaluator/run.sh change` exited 1; stderr `C1: command timed out: advance pp; pause pp`; JSON was `{"requirements":{"R1":true,"R2":true,"R3":true,"R4":true,"R5":true,"R6":true,"R7":true,"R8":true,"C1":false}}`.
+
+Refreshed staged-input proof: ran `python3 validation/ik14/greenfield-2/projects/G5/stage-control.py G5 A audit2 initial`, same with `A audit2 change`, then the same pair for B. Each initial inventory was `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}`; each change inventory added only `CHANGE.md`. The scan for internal evaluator/control/defect/reference terms and absolute paths in all four `runs/G5/{A,B}/audit2` staged trees found no matches.
+
+## G4 (final)
+
+The G4 package now has a stage-aware evaluator, private controllable service fixture and separate loopback control sidecar, ordinary Node reference A, Desmo-backed reference B, and controls R1-R8/C1-C2. A uses a lock-protected atomic file transaction, stable reservation operation IDs, a persisted pending-effect outbox before service calls, and cancellation currentness checks. Initial staging omits change-request text; change staging includes `CHANGE.md`. The public stub and contract expose only `/reserve` and `/operations/<id>`.
+
+Staging commands:
+
+```text
+python3 validation/ik14/greenfield-2/projects/G4/stage.py G4 A final2 initial
+<earlier G4-local stage output path; superseded by shared external staging below>
+python3 validation/ik14/greenfield-2/projects/G4/stage.py G4 A final2 change
+<earlier G4-local stage output path; superseded by shared external staging below>
+python3 validation/ik14/greenfield-2/projects/G4/stage.py G4 B final2 initial
+<earlier G4-local stage output path; superseded by shared external staging below>
+python3 validation/ik14/greenfield-2/projects/G4/stage.py G4 B final2 change
+<earlier G4-local stage output path; superseded by shared external staging below>
+```
+
+Initial inventory: `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}`. Change inventory: `{BRIEF.md, CHANGE.md, stub/CONTRACT.md, stub/server.mjs}`. `find validation/ik14/greenfield-2/projects/G4/runs/A/final2 validation/ik14/greenfield-2/projects/G4/runs/B/final2 -type f` returned exactly the 14 paths: those three initial-stage files and four change-stage files for each arm. Grep command:
+
+```text
+grep -RniE '/control/|drop_next|hold_response|eval_control_secret|control_sidecar|"deny":|"drop":|"conflict":|<absolute-home-path-marker>/' validation/ik14/greenfield-2/projects/G4/runs/A/final2 validation/ik14/greenfield-2/projects/G4/runs/B/final2
+```
+
+Output: no matches (grep exit 1). This checks the actual sidecar route prefix, control configuration keys, sidecar identifier, and forbidden absolute paths; the sidecar source remains under `evaluator/fixture/`, outside staged input. The stage script performs the same refusal scan before printing the destination.
+
+Reference commands used the evaluator for both stages:
+
+```text
+PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/A EVAL_STAGE=initial sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh
+PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/A EVAL_STAGE=change sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh
+IK_BINARY=<installed Desmo binary> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/B EVAL_STAGE=initial sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh
+IK_BINARY=<installed Desmo binary> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/B EVAL_STAGE=change sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh
+```
+
+Observed JSON evaluator results: reference A initial R1-R8 all `passed:true`; A change R1-R8/C1/C2 all `passed:true`; reference B initial R1-R8 all `passed:true`; B change R1-R8/C1/C2 all `passed:true`. Reference B invoked the supplied `ik` binary; `reference/B/reservation.ik.toml` defines durable queued/uncertain/reserved/rejected/cancelled/hold transitions, and its identity was used by its CLI adapter.
+
+Defect matrix outputs (each cell is the evaluator's `passed` result for the named requirement; `P` means `passed:true`, `F` means the intended failing requirement; all unlisted results are shown explicitly as P):
+
+| Control | Initial R1 R2 R3 R4 R5 R6 R7 R8 | Change R1 R2 R3 R4 R5 R6 R7 R8 C1 C2 |
+|---|---|---|
+| R1 | F P P P P P P P | F P P P P P P P P P |
+| R2 | P F P P P P P P | P F P P P P P P P P |
+| R3 | P P F P P P P P | P P F P P P P P P P |
+| R4 | P P P F P P P P | P P P F P P P P P P |
+| R5 | P P P P F P P P | P P P P F P P P P P |
+| R6 | P P P P P F P P | P P P P P F P P P P |
+| R7 | P P P P P P F P | P P P P P P F P P P |
+| R8 | P P P P P P P F | P P P P P P P F P P |
+| C1 | not run | P P P P P P P P F P |
+| C2 | not run | P P P P P P P P P F |
+
+The checked failure schedules were: R4 three persisted denials, intermediate restart/status, and no terminal call; R5 committed request with dropped response followed by exact-id lookup and one allocation; R6 held grant followed by cancellation and late grant; R7 status/cancel while a service response is held and subsequent late-response currentness; R8 conflict response with no allocation or replacement key. C1 checks pre-dispatch hold/reason, held refusal, and cancellation; C2 checks blank reason and post-dispatch refusal. Each defect output has exactly its named requirement false in both applicable stages; C1/C2 are change-only.
+
+No requirement failed isolation in the executed matrix. No real builder arms were dispatched or run.
+### G4 coordinator-review re-run
+
+Applied review changes: `brief.md` now contains only R1-R8 and `change.md` alone contains the change request; `change.md` requires a hold reason nonblank after trimming whitespace, matching C2's blank-reason check. Removed `projects/G4/stage.py`, which staged under the project tree; the coordinator's shared stage interface owns external staging. `evaluator/run.sh` now requires its positional `initial|change` argument.
+
+Reference B is now independent: `reference/B/run.mjs` uses `@desmo/runtime`'s `Kernel` client with the supplied `ik` binary; `reservation.ik.toml` owns the queued/uncertain/reserved/rejected/cancelled/hold transitions, including the sent guard, denial count, cancellation currentness, and hold reason. It does not execute or mirror reference A. `ik identity` reported machine `g4_reservation`, version 1, spec hash `6fa4833c8a3912a04f7e4a3e3a98e112e645e23d32d4b25d5aa2d42ca28c333d`.
+
+The shared staging inventory was exercised in `/tmp/ik14-g4-stage.FA6h52` and removed after the scan. Initial inventory was exactly `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}`; change inventory was exactly `{BRIEF.md, CHANGE.md, stub/CONTRACT.md, stub/server.mjs}`. Grep for `/control/|drop_next|hold_response|eval_control_secret|control_sidecar|"deny":|"drop":|"conflict":|<absolute-home-path-marker>/` returned no matches in either staged input.
+
+Re-run reference commands (all exited 0): `PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/A sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh initial`; same with `change`; and the same pair with `IK_BINARY=<installed Desmo binary> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/B`. Observed results: A initial R1-R8 all P; A change R1-R8/C1/C2 all P; B initial R1-R8 all P; B change R1-R8/C1/C2 all P.
+
+Defect command pattern: `PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/controls/<ID> sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh <initial|change>`. Each run emitted JSON and exited 1. `P` means the requirement's `passed` result was true; `F` means false:
+
+| Control | Initial R1 R2 R3 R4 R5 R6 R7 R8 | Change R1 R2 R3 R4 R5 R6 R7 R8 C1 C2 |
+|---|---|---|
+| R1 | F P P P P P P P | F P P P P P P P P P |
+| R2 | P F P P P P P P | P F P P P P P P P P |
+| R3 | P P F P P P P P | P P F P P P P P P P |
+| R4 | P P P F P P P P | P P P F P P P P P P |
+| R5 | P P P P F P P P | P P P P F P P P P P |
+| R6 | P P P P P F P P | P P P P P F P P P P |
+| R7 | P P P P P P F P | P P P P P P F P P P |
+| R8 | P P P P P P P F | P P P P P P P F P P |
+| C1 | not applicable | P P P P P P P P F P |
+| C2 | not applicable | P P P P P P P P P F |
+
+Thus each control failed exactly its mapped requirement in every applicable stage. The fault schedules exercised persisted denials and terminal no-call (R4), dropped post-commit response with same-ID lookup and one allocation (R5), held grant with cancel and late completion (R6), status/cancel during held service response (R7), and conflict with no allocation or replacement key (R8); C1/C2 exercised hold semantics and blank/post-dispatch refusal. No requirement failed isolation. No builders or real arm builds were dispatched.
+### G4 evaluator timeout hardening re-run
+
+`evaluator/run.mjs` now gives every `./run` command a 20-second timeout, launches each child in its own process group, and kills that group on timeout (SIGTERM with SIGKILL escalation). Timeout failures report `command timed out: <argv>`. Before terminating the command, the evaluator sets the service fixture's hold state to false, releasing any held response; fixture teardown also terminates outstanding command groups and the fixture/sidecar group. A 200-second global watchdog emits a JSON result with each not-yet-evaluated requirement false and error `evaluator watchdog`, then exits nonzero.
+
+Re-ran A/B references and all R1-R8 controls in both stages, plus C1/C2 in change stage, using `sh projects/G4/evaluator/run.sh <initial|change>`. Both references passed every applicable requirement and exited 0. Every defect-control JSON exited 1 and retained exactly its intended failure; the vectors match the preceding G4 matrix:
+
+| Control | Initial R1 R2 R3 R4 R5 R6 R7 R8 | Change R1 R2 R3 R4 R5 R6 R7 R8 C1 C2 |
+|---|---|---|
+| R1 | F P P P P P P P | F P P P P P P P P P |
+| R2 | P F P P P P P P | P F P P P P P P P P |
+| R3 | P P F P P P P P | P P F P P P P P P P |
+| R4 | P P P F P P P P | P P P F P P P P P P |
+| R5 | P P P P F P P P | P P P P F P P P P P |
+| R6 | P P P P P F P P | P P P P P F P P P P |
+| R7 | P P P P P P F P | P P P P P P F P P P |
+| R8 | P P P P P P P F | P P P P P P P F P P |
+| C1 | not applicable | P P P P P P P P F P |
+| C2 | not applicable | P P P P P P P P P F |
+
+Hang-control run: copied reference A under `/tmp/ik14-g4-hang.PCfSim/project`, with only `cancel r6` replaced by an indefinite sleep. Both initial and change evaluator runs terminated; R6 alone failed with `command timed out: /tmp/ik14-g4-hang.PCfSim/project/run cancel r6`. Initial R1-R5/R7-R8 passed; change R1-R5/R7-R8/C1-C2 passed. R6 holds the provider response while waiting for that cancel command, so the timeout run also verifies release of the held response and that later R7/C checks are unaffected. The temporary copy was removed.
+
+Global-watchdog smoke: ran a temporary copy of the evaluator with its watchdog interval reduced to 500 ms against a blocking `./run`; it emitted valid JSON with R1-R8 all false and error `evaluator watchdog`, then exited 1. The production default remains 200 seconds. Temporary test files were removed.
+
+
+
+### G4 final contract and assertion audit
+
+This addendum supersedes the earlier G4 staging commands and matrices above. It records the final public-contract/fixture alignment and all final runs after the edits below.
+
+Edits and reasons:
+- `brief.md`: specify the JSON refusal envelope (`error`), successful/refused exit codes, exact R2 error mapping and environment-check precedence, and every asserted snapshot field/phase. R6/R7 now require the evaluator's observed successful `cancel` and late `advance` snapshots with phase `cancelled` and `equipment_id:null`; R4/R8 state successful exit 0 for terminal advances/conflict results. This resolves undocumented evaluator expectations rather than weakening tests.
+- `change.md`: distinguish success phase `hold` from refusal error code `held`; specify `already_dispatched`, the no-service-call held refusal, the returned `hold_reason`, and successful cancellation from hold.
+- `stub/CONTRACT.md`: document the complete service request/response shapes and statuses, including 200 grant/denial and lookup hit/miss, 400 invalid JSON, 409 conflict, 404 unknown route, post-apply dropped response, delayed response, stable idempotency, and lookup-before-retry semantics. This supplies the wire protocol required by R4-R8.
+- `stub/server.mjs`: make missing-operation lookup HTTP 200 `{found:false}` like its contract and the fixture; make malformed JSON HTTP 400 `{error:"invalid"}`. The public stub remains deterministic and has no fault-selection endpoint.
+- `evaluator/fixture/server.mjs`: change missing-operation lookup from 404 to HTTP 200 `{found:false}` to match the public stub; remove its explicit `Content-Length` so JSON responses use the same public shape/headers. Both service servers now return the same normal grant, malformed-JSON response, lookup hit/miss shapes, and unknown-route response. Fixture-only denial/conflict/drop/delay schedules retain their documented shapes.
+- The first staging attempt detected the word `evaluator` in the public contract; it was removed so no internal implementation terminology is staged. The public-stub smoke exposed a missing request-body helper after the server edit (valid POST incorrectly returned 400); the helper was restored, and the smoke below then observed the expected grant.
+
+Endpoint comparison and public-stub smoke:
+- `POST /reserve`: both normal paths return HTTP 200 `{"outcome":"granted","equipment_id":...}`; the fixture additionally returns HTTP 200 `{"outcome":"denied"}`, HTTP 409 `{"error":"conflict"}`, may close the connection after recording (no status/body), or may delay the response before returning the same 200 result. Invalid JSON returns HTTP 400 `{"error":"invalid"}` in both.
+- `GET /operations/<id>`: both return HTTP 200 `{"found":false}` when absent and HTTP 200 `{"found":true,"outcome":...}` (with `equipment_id` for grants) when present. The fixture's former 404 miss was the mismatch fixed above.
+- Unmatched method/path: both return HTTP 404 `{"error":"not_found"}`. The private fixture sidecar is a separate process outside the staged project; neither route nor its configuration keys are exposed by the public stub.
+- Ran the public stub and `curl` against absent lookup, valid grant, found lookup, invalid JSON, and unknown route. Actual status/body pairs were respectively `200 {"found":false}`, `200 {"outcome":"granted","equipment_id":"equipment-i"}`, `200 {"found":true,"outcome":"granted","equipment_id":"equipment-i"}`, `400 {"error":"invalid"}`, and `404 {"error":"not_found"}`.
+
+Assertion audit (the evaluator's result/error tokens, fields, phases, and exit expectations now have these normative sources):
+
+| Evaluator assertions | Source |
+|---|---|
+| One JSON result; success exit 0; refusal nonzero with `error` field | `brief.md` general command contract |
+| Snapshot fields `reservation_id`, `member_id`, `item_id`, `phase`, `attempts`, `operation_id`, `equipment_id`; initial `queued`/0/stable ID; `equipment_id` null outside `reserved` | `brief.md` initial state and snapshot contract |
+| R1 duplicate `already_exists`, no mutation/service call | `brief.md` R1 |
+| R2 `invalid`, `unknown_command`, `not_found`, missing `STATE_DIR`/`SERVICE_URL`, environment-before-lookup precedence, no service call | `brief.md` R2 |
+| R3 `reserved`, returned service `equipment_id`, stable POST fields and one allocation | `brief.md` R3; `stub/CONTRACT.md` POST success |
+| R4 denial `outcome`, HTTP 200 response, attempts 1-3, `queued` then terminal `rejected`, restart persistence, no terminal service call | `brief.md` R4; `stub/CONTRACT.md` POST denial and retained lookup |
+| R5 `uncertain`, attempts unchanged, post-apply drop/no response, GET `found` shapes, same-id lookup before retry, one allocation | `brief.md` R5; `stub/CONTRACT.md` POST transport behavior and GET |
+| R6/R7 successful cancellation and late advance exit 0 with `cancelled` and `equipment_id:null`; concurrent status/cancel; no later terminal service call | `brief.md` R6-R7 and snapshot null rule |
+| R8 HTTP 409 `{"error":"conflict"}`, unrecorded lookup miss, terminal `rejected`, successful advance exit 0, no replacement key/allocation | `brief.md` R8; `stub/CONTRACT.md` POST conflict and GET |
+| C1 exact phase `hold`, returned `hold_reason`, error code `held`, no held service call, cancellation returns `cancelled` | `change.md` |
+| C2 whitespace-only `invalid` (blank hold reason is an invalid argument); post-dispatch `already_dispatched` | `change.md`; `brief.md` R2 for the `invalid` code |
+| Service wire statuses/body fields: 200 grant/denial/lookup, 400 invalid JSON, 409 conflict, 404 not-found route, dropped and delayed response semantics | `stub/CONTRACT.md` |
+
+Final staging used the coordinator's shared stager, not the removed G4-local `stage.py`:
+
+```text
+IK14_WORK=/tmp/ik14-g4-stage.faKSyD python3 validation/ik14/greenfield-2/stage.py G4 A audit3 initial
+IK14_WORK=/tmp/ik14-g4-stage.faKSyD python3 validation/ik14/greenfield-2/stage.py G4 A audit3 change
+IK14_WORK=/tmp/ik14-g4-stage.faKSyD python3 validation/ik14/greenfield-2/stage.py G4 B audit3 initial
+IK14_WORK=/tmp/ik14-g4-stage.faKSyD python3 validation/ik14/greenfield-2/stage.py G4 B audit3 change
+```
+Returned project paths:
+`/tmp/ik14-g4-stage.faKSyD/G4/A/audit3/initial/project`, `/tmp/ik14-g4-stage.faKSyD/G4/A/audit3/change/project`, `/tmp/ik14-g4-stage.faKSyD/G4/B/audit3/initial/project`, `/tmp/ik14-g4-stage.faKSyD/G4/B/audit3/change/project`.
+
+Observed project inventories: A initial `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}`; A change adds only `CHANGE.md`. B has the same G4 project files, plus the coordinator's separate shared `KIT/` toolchain; B change adds only `CHANGE.md` to the project. `PROMPT.md` is outside `project/`; evaluator, sidecar, reference and defect implementations were not staged. The staged project inputs were scanned for `/control/(state|config|reset)`, `control-sidecar`, `controlPort`, `eval_control_secret`, the JSON keys `"deny":`, `"drop":`, `"hold":`, `"conflict":`, `EVAL_`, `_DEFECT`, evaluator/reference markers, and absolute-home-path markers: no matches in initial or change inputs for either arm. A separate scan of public G4 brief/change/stub sources for `the forbidden public terms`, and absolute-home paths also found no matches. The arm-B `KIT/` is coordinator toolchain material, not a G4 project input.
+
+Final reference commands used Node v22.17.1; B also used the installed real Desmo `ik` binary:
+
+```text
+NODE=<Node v22.17.1> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/A sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh initial
+NODE=<Node v22.17.1> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/A sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh change
+NODE=<Node v22.17.1> IK_BINARY=<installed ik binary> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/B sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh initial
+NODE=<Node v22.17.1> IK_BINARY=<installed ik binary> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/reference/B sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh change
+```
+
+Each command exited 0. Reference A and B outputs were `R1=P R2=P R3=P R4=P R5=P R6=P R7=P R8=P` initially, and `R1=P R2=P R3=P R4=P R5=P R6=P R7=P R8=P C1=P C2=P` at change stage.
+
+Defect commands were `NODE=<Node v22.17.1> PROJECT_DIR=validation/ik14/greenfield-2/projects/G4/controls/<ID> sh validation/ik14/greenfield-2/projects/G4/evaluator/run.sh <stage>`. Each emitted the actual per-requirement JSON and exited 1; `P` is `passed:true`, `F` is `passed:false`:
+
+| Control | Initial R1 R2 R3 R4 R5 R6 R7 R8 | Change R1 R2 R3 R4 R5 R6 R7 R8 C1 C2 |
+|---|---|---|
+| R1 | F P P P P P P P | F P P P P P P P P P |
+| R2 | P F P P P P P P | P F P P P P P P P P |
+| R3 | P P F P P P P P | P P F P P P P P P P |
+| R4 | P P P F P P P P | P P P F P P P P P P |
+| R5 | P P P P F P P P | P P P P F P P P P P |
+| R6 | P P P P P F P P | P P P P P F P P P P |
+| R7 | P P P P P P F P | P P P P P P F P P P |
+| R8 | P P P P P P P F | P P P P P P P F P P |
+| C1 | not applicable | P P P P P P P P F P |
+| C2 | not applicable | P P P P P P P P P F |
+
+The final hang control used a temporary copy of reference A whose `cancel r6` blocks indefinitely while R6 has an in-flight held service response. Both evaluator stages exited 1 with only R6 false and `command timed out: /tmp/ik14-g4-hang-audit.3WzkAl/G4/reference/A/run cancel r6`; initial R1-R5/R7-R8 passed, and change R1-R5/R7-R8/C1-C2 passed. This verifies timeout cleanup releases the held response and later cases still run. The temporary copy was removed. No control failed isolation; every R1-R8/C1-C2 defect failed exactly its intended requirement. No builders or real builder arms were dispatched.
+
+
+## G6
+
+G6 controls and references are implemented and exercised; no builder dispatch or actual arm builds occurred. Brief edit: clarified executable `./run`, JSON stdout/exit behavior, and provider startup/`SERVICE_URL`; the initial brief left this invocation unspecified. Added `change.md` to make maintenance stageable. Public provider files are `stub/server.mjs` and `stub/CONTRACT.md`; evaluator fixture source is isolated under `evaluator/fixture/`.
+
+Isolation commands: `python3 validation/ik14/greenfield-2/projects/G6/stage.py /tmp/g6stage-initial2 initial` and `python3 validation/ik14/greenfield-2/projects/G6/stage.py /tmp/g6stage-change2 change`. Inventories were initial `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}` and change `{BRIEF.md, CHANGE.md, stub/CONTRACT.md, stub/server.mjs}`. `grep -RniE 'control|evaluator|drop_next|/control/'` returned no matches in either staged tree (`NO_CONTROL_STRINGS`). Evaluator fixture and its child `control-sidecar.mjs` are outside staged inputs; the sidecar runs as a separate process.
+
+The matrix was executed separately with `EVAL_STAGE=initial` and `EVAL_STAGE=change` for each applicable row. Reference command: `EVAL_STAGE=<initial|change> PROJECT_DIR=validation/ik14/greenfield-2/projects/G6/reference/<A|B> validation/ik14/greenfield-2/projects/G6/evaluator/run.sh`. Both arms passed R1-R7 initially and R1-R7 plus C1 after change (exit 0).
+
+Defect command: `EVAL_STAGE=<initial|change> PROJECT_DIR=validation/ik14/greenfield-2/projects/G6/controls/<ID> validation/ik14/greenfield-2/projects/G6/evaluator/run.sh`. For each initial-stage R1-R7 run, output was the mapped R false and all other R true, `"pass":false`, exit 1. For each change-stage R1-R7 run, the mapped R false, all other R1-R7 and C1 true, `"pass":false`, exit 1. R5 uses a held in-flight provider response while preferences change, then checks delivery and current-preference versions. C1 is run on change stage only and is expected to fail C1 while R1-R7 pass. No actual arm builds were run.
+### G6 coordinator-review rerun
+
+This addendum supersedes the G6 evidence above: that run used an invalid custom staging interface, and reference B was then a copy of A. Removed `projects/G6/stage.py`, its duplicate `stub/public-server.mjs`, and the unused `evaluate.sh` wrapper. The initial `brief.md` contains only R1–R7; the quiet-mode request is in `change.md`. The evaluator entry is `sh projects/G6/evaluator/run.sh <initial|change>`, defaults to `initial`, reads `PROJECT_DIR`, uses ephemeral provider ports, prints JSON per requirement, and exits nonzero when any requirement fails.
+
+Reference B is independent of A. `reference/B/notification.ik.toml` declares preference and delivery states; `reference/B/run` uses `@desmo/runtime`'s `Kernel` client with `IK_BINARY` set to the installed binary. Preference changes and delivery lifecycle are dispatched through the machine; delivery effects use the public service's exact delivery id and lookup route. No arm build was run.
+
+Staging used the coordinator entrypoint (all commands succeeded):
+
+```text
+IK14_WORK=/tmp/g6-rereview-ik14-stage python3 validation/ik14/greenfield-2/stage.py G6 A rerun initial
+IK14_WORK=/tmp/g6-rereview-ik14-stage python3 validation/ik14/greenfield-2/stage.py G6 A rerun change
+IK14_WORK=/tmp/g6-rereview-ik14-stage python3 validation/ik14/greenfield-2/stage.py G6 B rerun initial
+IK14_WORK=/tmp/g6-rereview-ik14-stage python3 validation/ik14/greenfield-2/stage.py G6 B rerun change
+```
+
+The A initial project inventory was exactly `{BRIEF.md, stub/CONTRACT.md, stub/server.mjs}`; A change added only `CHANGE.md`. B had those same project files plus the coordinator's shared `KIT/` package for arm B; B change added only `CHANGE.md`. The kit is not a G6 project source. The coordinator leak scan passed all four stages. A separate scan of the public project files used the case-insensitive pattern `evaluator|control-sidecar|/control/|controlPort|EVAL_|_DEFECT|defect[-_ ]control|reference/[AB]|drop_next|always-refuse|always-accept|<absolute-home-path-marker>/` and found no matches in any of the four staged project inputs. The evaluator fixture and control sidecar remain under `projects/G6/evaluator/fixture/`, outside staging.
+
+The evaluator was run with `NODE=<Node v22>` for each command below. Reference B commands also set `IK_BINARY=<installed ik binary>`. Exact stdout requirement vectors and verdicts:
+
+| Command suffix | Output vector | Verdict |
+|---|---|---|
+| `PROJECT_DIR=.../reference/A sh .../evaluator/run.sh initial` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0 |
+| `PROJECT_DIR=.../reference/A sh .../evaluator/run.sh change` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P C1=P; pass=true` | exit 0 |
+| `PROJECT_DIR=.../reference/B sh .../evaluator/run.sh initial` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0 |
+| `PROJECT_DIR=.../reference/B sh .../evaluator/run.sh change` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P C1=P; pass=true` | exit 0 |
+| `PROJECT_DIR=.../reference/A sh .../evaluator/run.sh` | `stage=initial; R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0; confirms default |
+
+Each control command was `PROJECT_DIR=.../controls/<ID> sh .../evaluator/run.sh <stage>`. Every run emitted `pass:false` and exited 1. `P` and `F` below are the actual per-requirement JSON `pass` booleans; each row records both applicable stage runs:
+
+| Control | Initial output vector | Change output vector | Isolated failure |
+|---|---|---|---|
+| R1 | `F P P P P P P` | `F P P P P P P P` | `expected refusal` |
+| R2 | `P F P P P P P` | `P F P P P P P P` | `unsubscribe idempotence/version mismatch` |
+| R3 | `P P F P P P P` | `P P F P P P P P` | `disabled delivery not suppressed` |
+| R4 | `P P P F P P P` | `P P P F P P P P` | `recovery did not lookup exact id` |
+| R5 | `P P P P F P P` | `P P P P F P P P` | `in-flight delivery changed captured version` |
+| R6 | `P P P P P F P` | `P P P P P F P P` | `expected refusal` |
+| R7 | `P P P P P P F` | `P P P P P P F P` | `status called provider` |
+| C1 | not run | `P P P P P P P F` | `quiet delivery not suppressed` |
+
+Always-refuse and always-accept executable stubs were stored in `/tmp/g6-control-refuse/run` and `/tmp/g6-control-accept/run`, outside staged workspaces. Each was run with `PROJECT_DIR=<stub-dir> sh .../evaluator/run.sh initial` and again with `change`. All applicable requirements were `F`, `pass:false`, exit 1 for both stubs and stages: the refusing stub rejects valid commands; the accepting stub accepts invalid commands and violates lifecycle outcomes. These are evaluator sanity baselines, not mapped defect controls.
+
+No further brief edit was needed in this rerun. No builder was dispatched, and no real arm build was run.
+
+Brief edit (coordinator): G4 brief.md "names the evaluator's equipment service" -> "names the equipment service" so the staged brief carries no evaluator wording; no requirement changed.
+
+Known limitation (coordinator, after independent re-review): projects/G4/reference/B and projects/G6/reference/B import ../../../../../../../typescript/dist/index.js and therefore validate the evaluator only while they stay in the repository tree; they are controls, not builder submissions, and are not meant to be staged. stage.py was corrected so the change stage keeps the initial project's node_modules.
+
+## Independent review of tranche 2 (model reviewer agent, 2026-11-15; not human evidence)
+First review: NOT FIT TO DISPATCH. Findings: dispatch.md named stage.py / stage_change.py / evaluate.sh that did not exist; no script staged the arm-B kit and G5 copied Desmo docs into both arms; G5 R2 passed an always-refuse stub; G5 R4 and G4 C2 were stricter than their briefs; G6 staged the change request into the initial brief; G4 and G6 reference B were not independent Desmo implementations; G6 evaluator defaulted to the change stage; builder workspaces were staged inside the repository tree beside the evaluator.
+Fixes: unified stage.py and evaluate.sh (stage outside the repo, kit for arm B only from the released tarballs, leak scan, PROMPT.md); G5 R2 requires a valid command to succeed; G5 R4 and G4 C2 aligned to their briefs; G6 brief/change split and initial default; independent Desmo reference B for G4 and G6; dispatch.md rewritten.
+Re-review: items 2-6 PASS (discriminating G5 R2, brief alignment, independent reference B, defect controls re-run in both stages, concurrent evaluations collision-free, dispatch.md consistent). Item 1: change staging dropped the builder's node_modules; fixed in stage.py (symlinks=True full copy) and verified. Remaining known limitation: reference B for G4/G6 imports the repository's typescript/dist and is a control only.
+## G6 timeout hardening rerun
+
+`projects/G6/evaluator/eval.mjs` now applies a 20-second timeout to each `./run` command and kills its detached process group. A timeout is reported as `command timed out: <argv>` and fails the requirement that invoked it. Fixture cleanup disables hold, releases held responses, resets provider state, and terminates the provider process group. HTTP requests have a 5-second timeout (1 second for cleanup routes). The 200-second evaluator watchdog kills active command/provider groups, prints JSON with completed results and each pending requirement marked false, and exits nonzero.
+
+Reference command form: `NODE=<Node v22.17.1> PROJECT_DIR="$PWD/validation/ik14/greenfield-2/projects/G6/reference/<A|B>" sh validation/ik14/greenfield-2/projects/G6/evaluator/run.sh <initial|change>`. Reference B also sets `IK_BINARY=<installed ik binary>`.
+
+| Command | Actual JSON output | Verdict |
+|---|---|---|
+| Reference A, `initial` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0 |
+| Reference A, `change` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P C1=P; pass=true` | exit 0 |
+| Reference B, `initial` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0 |
+| Reference B, `change` | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P C1=P; pass=true` | exit 0 |
+
+For each R1-R7 control, the initial and change commands were `NODE=<Node v22.17.1> PROJECT_DIR="$PWD/validation/ik14/greenfield-2/projects/G6/controls/<ID>" sh validation/ik14/greenfield-2/projects/G6/evaluator/run.sh <stage>`; C1 ran on change only. Vectors are the actual JSON `pass` booleans in requirement order; every control run returned `pass:false` and exit 1.
+
+| Control | Initial output vector | Change output vector | Isolated failure |
+|---|---|---|---|
+| R1 | `F P P P P P P` | `F P P P P P P P` | `expected refusal` |
+| R2 | `P F P P P P P` | `P F P P P P P P` | `unsubscribe idempotence/version mismatch` |
+| R3 | `P P F P P P P` | `P P F P P P P P` | `disabled delivery not suppressed` |
+| R4 | `P P P F P P P` | `P P P F P P P P` | `recovery did not lookup exact id` |
+| R5 | `P P P P F P P` | `P P P P F P P P` | `in-flight delivery changed captured version` |
+| R6 | `P P P P P F P` | `P P P P P F P P` | `expected refusal` |
+| R7 | `P P P P P P F` | `P P P P P P F P` | `status called provider` |
+| C1 | not run | `P P P P P P P F` | `quiet delivery not suppressed` |
+
+Hang isolation control: `/tmp/g6-hang-control/run` delegates all arguments except `nonsense` to reference A and blocks on `nonsense`. Commands were `NODE=<Node v22.17.1> PROJECT_DIR=/tmp/g6-hang-control sh validation/ik14/greenfield-2/projects/G6/evaluator/run.sh initial` and the same command with `change`. Initial output was `R1=P R2=P R3=P R4=P R5=P R6=P R7=F; pass=false`; change output was `R1=P R2=P R3=P R4=P R5=P R6=P R7=F C1=P; pass=false`. In both runs R7 reported `command timed out: ./run nonsense`, and the evaluator exited 1 after the 20-second command limit; no other requirement failed.
+
+Global watchdog probe: a temporary `NODE_OPTIONS` preload shortened only the watchdog interval from 200 seconds to 1 second; the evaluator was run directly on the hang control. Command: `NODE_OPTIONS=--import=file:///tmp/g6-short-watchdog.mjs <Node v22.17.1> validation/ik14/greenfield-2/projects/G6/evaluator/eval.mjs /tmp/g6-hang-control validation/ik14/greenfield-2/projects/G6/evaluator/fixture all initial`. JSON output was `R1=P R2=P R3=P R4=F R5=F R6=F R7=F; pass=false`, with `evaluator watchdog` on R4-R7; it exited 1 and emitted the pending result rows. No brief edits were needed; no builders or real arm builds were run.
+
+## G6 requirement and provider audit addendum
+
+### Edits and reasons
+
+- `projects/G6/brief.md`: clarified stdout/exit/refusal format, successful preference and delivery fields, account/message/channel/body validation, and the exact subscribe/unsubscribe version transitions. R4 now defines the uncertain result and exact-id lookup-before-retry recovery; R5 defines the held-response transition from version 1 through disabled version 2 to enabled SMS version 3. This removes ambiguity found when checking the assertions against both reference arms.
+- `projects/G6/change.md`: specified that quiet/unquiet alter only the quiet flag, preserve preference fields and version, are idempotent, apply to enabled or disabled accounts, and leave suppressed delivery terminal. This makes the change-stage expectations falsifiable.
+- `projects/G6/stub/CONTRACT.md`: enumerated provider request/response bodies, statuses, effect timing, replay/conflict behavior, lookup, and externally injected drop/hold/delay cases. This documents the provider behavior needed by R3-R6 without inventing public fault routes.
+- `projects/G6/evaluator/fixture/CONTRACT.md`: added the private fixture contract and endpoint comparison. It records every public and sidecar route/status/body, trace and effect shapes, ready-file and IPC messages, configuration/fault precedence, and the fixture-only additions. Clarified that drop/hold/delay can affect any valid non-conflicting new or replay POST.
+- `projects/G6/evaluator/eval.mjs`: refusals now require nonzero exit and a JSON object with a string `error`; R1 checks invalid account, channel, and message id refusals, no provider call, and unchanged preference; R2 checks the disabled result and preserved channel; R4 checks no `provider_id` on `uncertain`, exact recovered ids, one effect, and GET-before-no-retry-POST; R5 checks the late provider id, preserved enabled SMS version 3, and new version-3 id; R6 checks the initial delivered result and no effect from a conflicting body; C1 checks enabled and disabled preference preservation, idempotent quiet/unquiet, terminal suppression, and delivery of a new id. A first C1 draft also tested disabled-account delivery, which overlapped R3's disabled-delivery defect; that assertion was removed so each deliberate control fails only its own requirement.
+
+### Requirement-to-assertion map
+
+| Requirement | Assertions in the evaluator | Contract source |
+|---|---|---|
+| R1 | Fresh subscribe version 1; status fields and persistence in a new command; invalid account/channel/message id and unknown-account refusal output; invalid inputs leave provider request count and preference unchanged. | `brief.md` §§ command/output, subscribe, R1 |
+| R2 | Both unsubscribe results are disabled, version 2, and retain SMS; repeated unsubscribe does not increment again. | `brief.md` unsubscribe and R2 |
+| R3 | Disabled delivery returns `suppressed`; provider request and effect counts do not change. | `brief.md` delivery and R3 |
+| R4 | Dropped response returns `uncertain` without `provider_id`; recovery returns `delivered` with exact delivery/provider ids; exactly one effect exists; the exact-id GET follows the first POST and no further POST occurs. | `brief.md` delivery, R4; `stub/CONTRACT.md` POST, replay, GET, and fault behavior; fixture contract request trace |
+| R5 | The observed held POST returns a delivered version-1 result with exact ids; current preference remains enabled SMS version 3; the next message uses the version-3 id. | `brief.md` subscribe, R5; `stub/CONTRACT.md` held-response fault |
+| R6 | First message delivers; conflicting body refuses with JSON error and adds no effect; a different message id delivers. | `brief.md` delivery and R6; `stub/CONTRACT.md` POST conflict |
+| R7 | Status causes no provider request; unknown command and missing `SERVICE_URL` refuse with nonzero exit and JSON error. | `brief.md` output, status, and R7 |
+| C1 | Quiet/unquiet preserve enabled state, channel, and version for enabled and disabled accounts; repetition is idempotent; quiet suppresses without effect; old suppression remains terminal; a new id delivers after unquiet. | `change.md` |
+
+### Fixture/source comparison and isolation
+
+The endpoint-by-endpoint comparison is in `projects/G6/evaluator/fixture/CONTRACT.md`. The fixture and published `stub/server.mjs` agree on POST success/replay (HTTP 200 and the recorded result, one effect), conflict (HTTP 409 `{"error":"conflict"}`), malformed POST JSON (HTTP 400 `{"error":"invalid"}`), GET hit (HTTP 200 recorded result), GET miss (HTTP 404 `{"error":"not_found"}`), and unmatched method/path (HTTP 404 `{"error":"not_found"}`). Both commit before response and compare serialized parsed payloads. Fixture-only behavior is request tracing, injected response drop/hold/delay, the second private sidecar port and its routes, and private IPC. The ready file/stdout differs only by the fixture's added `controlPort`; the builder receives only the public port as `SERVICE_URL`.
+
+Staging commands (each change stage ran after its initial stage) and returned paths:
+
+```text
+IK14_WORK=/tmp/g6-audit-stage2 python3 validation/ik14/greenfield-2/stage.py G6 A audit initial -> /tmp/g6-audit-stage2/G6/A/audit/initial/project
+IK14_WORK=/tmp/g6-audit-stage2 python3 validation/ik14/greenfield-2/stage.py G6 A audit change -> /tmp/g6-audit-stage2/G6/A/audit/change/project
+IK14_WORK=/tmp/g6-audit-stage2 python3 validation/ik14/greenfield-2/stage.py G6 B audit initial -> /tmp/g6-audit-stage2/G6/B/audit/initial/project
+IK14_WORK=/tmp/g6-audit-stage2 python3 validation/ik14/greenfield-2/stage.py G6 B audit change -> /tmp/g6-audit-stage2/G6/B/audit/change/project
+```
+
+The case-insensitive scan covered `evaluator|control-sidecar|/control/|controlPort|EVAL_|_DEFECT|defect[-_ ]control|reference/[AB]|drop_next|always-refuse|always-accept` plus an absolute-user-path marker. It found no matches in any of the four staged G6 project inputs; the A workspaces also had no matches. A literal full-workspace B scan found only generic uses of “evaluator” in the shared `KIT/docs/machine-language.md` (lines 13 and 128), not G6 evaluator code, private routes, controls, or stubs. The G6 evaluator, sidecar, reference stubs, and defect controls remain outside staged project inputs. The shared kit was not changed.
+
+### Final reference and defect-control runs
+
+Commands used `<Node v22.17.1>`; reference B also set `IK_BINARY=<installed ik binary>`. Reference commands were `PROJECT_DIR="$PWD/validation/ik14/greenfield-2/projects/G6/reference/<A|B>" sh validation/ik14/greenfield-2/projects/G6/evaluator/run.sh <initial|change>`.
+
+| Arm and stage | Actual JSON requirement vector | Verdict |
+|---|---|---|
+| A initial | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0 |
+| A change | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P C1=P; pass=true` | exit 0 |
+| B initial | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P; pass=true` | exit 0 |
+| B change | `R1=P R2=P R3=P R4=P R5=P R6=P R7=P C1=P; pass=true` | exit 0 |
+
+Control commands were `PROJECT_DIR="$PWD/validation/ik14/greenfield-2/projects/G6/controls/<ID>" sh validation/ik14/greenfield-2/projects/G6/evaluator/run.sh <stage>`. R1-R7 ran in both stages; C1 ran on change only. Each command emitted `pass:false` and exited 1. Vectors list the actual per-requirement JSON booleans in order; every non-target requirement passed:
+
+| Control | Initial vector | Change vector | Isolated error |
+|---|---|---|---|
+| R1 | `F P P P P P P` | `F P P P P P P P` | `expected refusal` |
+| R2 | `P F P P P P P` | `P F P P P P P P` | `unsubscribe idempotence/version mismatch` |
+| R3 | `P P F P P P P` | `P P F P P P P P` | `disabled delivery not suppressed` |
+| R4 | `P P P F P P P` | `P P P F P P P P` | `recovery did not lookup exact id` |
+| R5 | `P P P P F P P` | `P P P P F P P P` | `in-flight delivery changed captured version` |
+| R6 | `P P P P P F P` | `P P P P P F P P` | `expected refusal` |
+| R7 | `P P P P P P F` | `P P P P P P F P` | `status called provider` |
+| C1 | not run | `P P P P P P P F` | `quiet delivery not suppressed` |
+
+### Final hang-control runs
+
+`/tmp/g6-hang-control/run` delegates all arguments except `nonsense` to reference A and blocks on `nonsense`. Commands were `NODE=<Node v22.17.1> PROJECT_DIR=/tmp/g6-hang-control sh validation/ik14/greenfield-2/projects/G6/evaluator/run.sh initial` and the same command with `change`.
+
+| Stage | Actual JSON vector and error | Verdict |
+|---|---|---|
+| Initial | `R1=P R2=P R3=P R4=P R5=P R6=P R7=F; pass=false`; R7 error `command timed out: ./run nonsense` | exit 1 after the 20-second per-command limit; no other requirement failed |
+| Change | `R1=P R2=P R3=P R4=P R5=P R6=P R7=F C1=P; pass=false`; R7 error `command timed out: ./run nonsense` | exit 1 after the 20-second per-command limit; no other requirement failed |
+
+The shortened global-watchdog probe used `NODE_OPTIONS=--import=file:///tmp/g6-short-watchdog.mjs <Node v22.17.1> validation/ik14/greenfield-2/projects/G6/evaluator/eval.mjs /tmp/g6-hang-control validation/ik14/greenfield-2/projects/G6/evaluator/fixture all initial`. It emitted `R1=P R2=F R3=F R4=F R5=F R6=F R7=F; pass=false`, marked R2-R7 `evaluator watchdog`, and exited 1 with the pending rows present. The short interval was 1 second; the normal evaluator watchdog remains 200 seconds.
+
+No builders or real arm builds were run.
+
+Run-2 correction (coordinator): G5 brief.md named the future change ("the change adds `paused`") in the initial requirements; removed. G5 initial builds started before this edit (run 2 attempts D-G5-r2-A and D-G5-r1-B) are recorded as invalid and rerun.

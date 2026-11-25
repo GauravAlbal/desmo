@@ -17,7 +17,7 @@ import (
 const (
 	protocolMajorDefault  = 1
 	protocolMinorDefault  = 0
-	runtimeVersionDefault = "0.5.0"
+	runtimeVersionDefault = "0.5.1"
 )
 
 func locateBinary(explicit string) (string, error) {

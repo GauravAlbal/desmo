@@ -122,7 +122,7 @@ test("job scaffold keeps the existing project and the documented commands pass",
     assert.equal(readFileSync(join(dir, "job.ik.toml"), "utf8"), readFileSync(bundledMachine(), "utf8"));
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
     assert.equal(pkg.scripts.test, "node --test job.test.mjs");
-    assert.equal(pkg.dependencies["@desmo/runtime"], "0.5.0");
+    assert.equal(pkg.dependencies["@desmo/runtime"], "0.5.1");
     assert.match(readFileSync(join(dir, "job.test.mjs"), "utf8"), /StaleCapabilityError/);
     assert.equal(existsSync(join(dir, ".ik", "checks.toml")), true);
     assert.match(readFileSync(join(dir, ".ik", "checks.toml"), "utf8"), /reach_terminal/);

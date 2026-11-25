@@ -1,0 +1,12 @@
+{
+  "commands": {
+    "pay": [
+      {
+        "name": "ok",
+        "args": {
+          "payment_ref": "ch_demo_1044"
+        }
+      }
+    ]
+  }
+}

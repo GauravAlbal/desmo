@@ -143,7 +143,7 @@ def test_python_matches_direct_cli(ik_bin: Path, tmp_path: Path) -> None:
     )
     create = {
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.0",
+        "runtime_version": "0.5.1",
         "request_id": "c",
         "op": "create",
         "aggregate_id": "agg-1",
@@ -158,7 +158,7 @@ def test_python_matches_direct_cli(ik_bin: Path, tmp_path: Path) -> None:
     )
     command = {
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.0",
+        "runtime_version": "0.5.1",
         "request_id": "s",
         "op": "command",
         "aggregate_id": "agg-1",

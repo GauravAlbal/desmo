@@ -722,7 +722,7 @@ fn crash_mid_transaction_recovers_to_last_committed_state() {
     let machine_path = machine_def("verification_attempt");
     let request = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.0",
+        "runtime_version": "0.5.1",
         "request_id": "verify-after-crash",
         "op": "verify",
     });

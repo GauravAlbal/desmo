@@ -1,6 +1,6 @@
 {
   "name": "@desmo/linux-x64",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Qualified ik binary for linux-x64. Filled at release pack; not a second kernel.",
   "os": ["linux"],
   "cpu": ["x64"],

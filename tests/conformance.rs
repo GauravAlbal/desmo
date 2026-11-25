@@ -185,7 +185,7 @@ fn corruption_fixtures_mutate_storage_then_verify_refuses() {
         let machine_path = machine_def(machine_id);
         let request = json!({
             "protocol": {"major": 1, "minor": 0},
-            "runtime_version": "0.5.0",
+            "runtime_version": "0.5.1",
             "request_id": "verify",
             "op": "verify",
         });

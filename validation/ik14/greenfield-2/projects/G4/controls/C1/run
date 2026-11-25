@@ -1,0 +1,3 @@
+#!/bin/sh
+G4_DEFECT=C1; export G4_DEFECT
+exec node "$(dirname "$0")/../reference/run.mjs" "$@"

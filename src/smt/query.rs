@@ -1030,3 +1030,97 @@ fn smt_query(mut lines: Vec<String>, names: Names, gets: Vec<String>) -> SmtQuer
         get_values: gets,
     }
 }
+#[cfg(test)]
+mod guard_language_qualification {
+    use super::*;
+    use crate::declarative::expr;
+    use crate::smt::{discover_solvers, run_smt2, SolverReply};
+    use std::time::Duration;
+
+    #[test]
+    #[ignore = "requires native Z3; dedicated qualification"]
+    fn parsed_add_guard_matches_i64_tag_oracle_and_false_controls() {
+        let solver = discover_solvers().0.expect("Z3 required for guard qualification");
+        let expr = expr::parse("$n + 1 > 0").expect("parse production guard grammar");
+        let pinned = Pinned {
+            state: "idle".into(),
+            facts: BTreeMap::new(),
+            args: BTreeMap::new(),
+        };
+        let names = names_for_expr(&expr, &pinned);
+        let term = encode_expr(&expr, &names).expect("native expression encoder");
+        let mut base = vec![
+            "(set-logic QF_LIA)".to_string(),
+            "(set-option :produce-models true)".to_string(),
+        ];
+        base.extend(declare_names(&names, "", true));
+        base.extend(range_asserts(&names, "", true));
+        base.push("(declare-const |g:err| Bool)".into());
+        base.push("(declare-const |g:val| Bool)".into());
+        let mut lines = base.clone();
+        lines.push(format!("(assert (= |g:err| {}))", term.error));
+        lines.push(format!("(assert (= |g:val| {}))", term.value));
+        let n = "|av:n|";
+        let mismatch = format!(
+            "(or (not (= |g:err| (= {n} 9223372036854775807))) \
+             (and (not |g:err|) \
+               (not (= |g:val| (and (not (= {n} 9223372036854775807)) (>= {n} 0))))))"
+        );
+        lines.push(format!("(assert {mismatch})"));
+        lines.push("(check-sat)".into());
+        lines.push(format!("(get-value ({n}))"));
+        let result = run_smt2(&solver, &join_lines(&lines), Duration::from_secs(10))
+            .expect("run tag disagreement query");
+        assert_eq!(result.reply, SolverReply::Unsat, "{}", result.raw);
+
+        let mut control = base;
+        control.push(format!("(assert (= {n} 9223372036854775807))"));
+        control.push(format!("(assert (= |g:err| {}))", term.error));
+        control.push(format!("(assert (= |g:val| {}))", term.value));
+        control.push("(declare-const |oracle:err| Bool)".into());
+        control.push("(assert (= |oracle:err| false))".into());
+        control.push("(assert (not (= |g:err| |oracle:err|)))".into());
+        control.push("(check-sat)".into());
+        control.push(format!("(get-value ({n}))"));
+        let result = run_smt2(&solver, &join_lines(&control), Duration::from_secs(10))
+            .expect("run false-overflow-oracle control");
+        assert_eq!(result.reply, SolverReply::Sat, "{}", result.raw);
+        assert_eq!(result.model.ints.get(n), Some(&i64::MAX), "{}", result.raw);
+    }
+
+    #[test]
+    #[ignore = "requires native Z3; dedicated qualification"]
+    fn overflow_fallthrough_mutant_is_sat_at_max() {
+        let solver = discover_solvers().0.expect("Z3 required for guard qualification");
+        let def = crate::declarative::parse_definition(include_str!(
+            "../../tests/fixtures/feasibility_truth/machines/overflow_guard_add_error.ik.toml"
+        ))
+        .expect("parse fixture");
+        let lowered = lower_definition(&def).expect("native lowering");
+        let later = lowered
+            .outcomes_for("go", "idle")
+            .into_iter()
+            .find(|row| row.outcome_index == 1)
+            .expect("later outcome");
+        let earlier = later.earlier[0].as_ref().expect("earlier guard");
+        let mut names = lowered.names.clone();
+        names.args = later.args.clone();
+        let first = encode_expr(earlier, &names).expect("native earlier guard");
+        let next = encode_expr(later.when.as_ref().expect("later guard"), &names)
+            .expect("native later guard");
+        let n = "|av:n|";
+        let mut lines = vec!["(set-logic QF_LIA)".into()];
+        lines.extend(declare_names(&names, "", true));
+        lines.extend(range_asserts(&names, "", true));
+        lines.push(format!("(assert (= {n} 9223372036854775807))"));
+        lines.push(format!("(assert {})", first.error));
+        lines.push(format!("(assert (not {}))", next.error));
+        lines.push(format!("(assert {})", next.value));
+        lines.push("(check-sat)".into());
+        lines.push(format!("(get-value ({n}))"));
+        let result = run_smt2(&solver, &join_lines(&lines), Duration::from_secs(10))
+            .expect("run error-as-false fallthrough mutant");
+        assert_eq!(result.reply, SolverReply::Sat, "{}", result.raw);
+        assert_eq!(result.model.ints.get(n), Some(&i64::MAX), "{}", result.raw);
+    }
+}

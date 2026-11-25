@@ -1,0 +1,3 @@
+#!/bin/sh
+printf '{"error":"refused"}\n'
+exit 1

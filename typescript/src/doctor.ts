@@ -118,6 +118,11 @@ export function renderDoctor(report: DoctorReport): string {
     `ik: ${report.runtime.ik_version_line}`,
     `ik binary: ${report.runtime.ik_binary}`,
     `versions_match: ${report.runtime.versions_match}`,
+    ...(report.runtime.versions_match
+      ? []
+      : [
+          `hint: @desmo/runtime ${report.runtime.package_version} requires matching ik ${report.runtime.package_version}; install the matching release or set IK_BINARY`,
+        ]),
     `checks: ${report.checks_toml.path} ${report.checks_toml.exists ? "present" : "absent"}`,
     `machines: ${report.machines.length === 0 ? "none" : report.machines.join(", ")}`,
     scenarioLine(report),

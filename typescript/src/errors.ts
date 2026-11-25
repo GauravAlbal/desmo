@@ -108,8 +108,56 @@ export class StoreNotFoundError extends KernelError {
   }
 }
 
+/** `IK_ILLEGAL_STATE`: the command is not legal from the aggregate's current state. */
+export class IllegalStateError extends KernelError {
+  constructor(code: string, message: string, diagnostic: Record<string, unknown>) {
+    super(code, message, diagnostic, "refused");
+    this.name = "IllegalStateError";
+  }
+}
+
+/** `IK_COMMAND_INVALID`: the command name or arguments are structurally invalid. */
+export class CommandInvalidError extends KernelError {
+  constructor(code: string, message: string, diagnostic: Record<string, unknown>) {
+    super(code, message, diagnostic, "refused");
+    this.name = "CommandInvalidError";
+  }
+}
+
+/** `IK_INVARIANT_FAILED`: a declared guard or invariant rejected the transition. */
+export class InvariantFailedError extends KernelError {
+  constructor(code: string, message: string, diagnostic: Record<string, unknown>) {
+    super(code, message, diagnostic, "refused");
+    this.name = "InvariantFailedError";
+  }
+}
+
+/** `IK_NONCE_INVALID`: generation matched, but the capability nonce did not. */
+export class NonceInvalidError extends KernelError {
+  constructor(code: string, message: string, diagnostic: Record<string, unknown>) {
+    super(code, message, diagnostic, "refused");
+    this.name = "NonceInvalidError";
+  }
+}
+
+/** `IK_MACHINE_*`: machine identity, version, or spec hash mismatch. */
+export class MachineError extends KernelError {
+  constructor(code: string, message: string, diagnostic: Record<string, unknown>) {
+    super(code, message, diagnostic, "refused");
+    this.name = "MachineError";
+  }
+}
+
 const TYPES: Record<string, typeof KernelError> = {
   IK_CAPABILITY_STALE: StaleCapabilityError,
+  IK_NONCE_INVALID: NonceInvalidError,
+  IK_ILLEGAL_STATE: IllegalStateError,
+  IK_COMMAND_INVALID: CommandInvalidError,
+  IK_INVARIANT_FAILED: InvariantFailedError,
+  IK_MACHINE_UNKNOWN: MachineError,
+  IK_MACHINE_MISMATCH: MachineError,
+  IK_MACHINE_VERSION_UNKNOWN: MachineError,
+  IK_MACHINE_HASH_MISMATCH: MachineError,
   IK_OPERATION_CONFLICT: OperationConflictError,
   IK_PROTOCOL_INVALID: ProtocolError,
   IK_PROTOCOL_VERSION_UNKNOWN: ProtocolError,

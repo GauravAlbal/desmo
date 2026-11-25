@@ -13,11 +13,13 @@ The packaged procedure is [skills/desmo/SKILL.md](../skills/desmo/SKILL.md).
 Install it into the project you are editing:
 
 ```text
+npx skills add GauravAlbal/desmo
+# or from an installed @desmo/runtime project:
 desmo skill install --dir .
 ```
 
 `desmo doctor --dir .` reports whether `.agents/skills/desmo/` is present.
-Follow `build.md`, `change.md`, or `diagnose.md`. Do not ask the human to
+Follow `audit.md` (read-only brownfield discovery), `build.md`, `change.md`, `diagnose.md`, or `readout.md`. Do not ask the human to
 choose a checker, write a corpus, inspect a payload schema, or find writers.
 
 ## Install
@@ -28,6 +30,8 @@ a read-only serverless filesystem.
 
 ```text
 ik identity <machine.ik.toml>
+ik diagram <machine.ik.toml>
+ik simulate <machine.ik.toml> --out <simulator.html>
 ik laws <machine.ik.toml>
 ik check <machine.ik.toml>
 ik profile diff <old.toml> <new.toml>

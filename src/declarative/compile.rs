@@ -309,7 +309,7 @@ fn compile_then_value(
     }
     parse_literal(value).map(ThenValue::Literal).ok_or_else(|| {
         vec![format!(
-            "`then` value `{value}` for `{fact}` is not a literal or `$arg`"
+            "`then` value `{value}` for `{fact}` is not a literal or `$arg` (use '\"text\"' for strings, \"1\" for ints, \"true\"/\"false\" for bools, \"+1\" on counters, or \"$arg\")"
         )]
     })
 }

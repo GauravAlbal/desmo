@@ -17,14 +17,16 @@ await running.command("submit", { artifact_digest: "a", baseline_digest: "b" });
 ```
 
 See `typescript/README.md`. Trace export is advisory HTML/JSON
-(`ikaros.trace.v1`); it is not authorization.
+(`ikaros.trace.v2`); it is not authorization.
 
 Install from the release files, not a registry (the commands are in the top-level `README.md`):
-the runtime tarball and the platform tarball for your machine, installed together with
+the runtime tarball and the platform tarball for your machine (`darwin-arm64` or `linux-x64`), installed together with
 `npm install --ignore-scripts`. The commands below then run from the installed package, so use
 `npx --no-install` to stop npx fetching anything:
 
+- `npx --no-install desmo demo orders`
 - `npx --no-install desmo demo stale-worker`
+- `npx --no-install desmo simulate <machine.ik.toml> [--out file.html]`
 - `npx --no-install desmo init --template job --language typescript`
 - `npx --no-install desmo doctor [--dir project] [--json]`
 - `npx --no-install desmo skill install [--dir project] [--target agent-skills-dir] [--force]`
@@ -132,6 +134,32 @@ example guarded by a test.
 `aggregate.pendingIntent` is the exact pending effect identity. `generation` on that object is the planned generation. It is absent when nothing is pending. `recordEffectOutcome(outcomeDigest, { operationId, intent })` copies effect id, aggregate id, planned generation, payload digest, and idempotency key from that intent. It does not invent a digest, call an external service, replace the planned generation with the current one, or retry. A transport failure after dispatch is submission-unknown. An empty digest, or an intent that is not the pending one, throws `EffectCompletionError` (`not-sent`) before dispatch.
 
 `record()` still accepts a complete outcome object. A partial object is `ProtocolError` (`IK_PROTOCOL_INVALID`), not a transport error: the refusal echoes the request id and the pending effect stays pending. The same outcome again is a no-op. A different digest is `EffectConflictError`. A wrong planned generation or payload digest is `EffectConflictError`. Another aggregate intent is `EffectMismatchError`. Nothing is recorded in those cases.
+The protocol's complete outcome object is `EffectOutcomeV1`:
+
+```json
+{
+  "effect_id": "publish-1",
+  "aggregate_id": "paper-1",
+  "planned_generation": 1,
+  "payload_digest": "artifact-digest",
+  "idempotency_key": "publish-1",
+  "outcome_digest": "response-digest"
+}
+```
+
+The first five fields bind the result to the pending intent; `outcome_digest` is supplied by the host. The runtime binds it but does not compute it or establish that an external operation occurred. `recordEffectOutcome(outcomeDigest, { operationId, intent })` constructs this complete object from `intent` and the supplied digest. The lower-level `record()` API requires all six fields; a partial object is refused with `IK_PROTOCOL_INVALID`. For example, after the recipe has obtained `pending` and computed `outcomeDigest`:
+
+```ts
+await aggregate.record({
+  effect_id: pending.effectId,
+  aggregate_id: pending.aggregateId,
+  planned_generation: pending.generation,
+  payload_digest: pending.payloadDigest,
+  idempotency_key: pending.idempotencyKey,
+  outcome_digest: outcomeDigest,
+});
+```
+
 
 A crash after the planning command commits leaves the pending intent: reopen and `show`. A crash after the external system answered, before record, is that same intent plus the digest the host saved. A dropped record reply is `lookupOperation` with the original capability, operation id, and effect body, not a second record. `finish` is a later command. A crash between record and finish leaves the outcome recorded and the domain state still `planned`.
 
@@ -276,7 +304,16 @@ intend to bind. Recording advances the aggregate's generation.
 
 ## Validated admission
 
-`create` then a required initialize is two operations. `createWith` is one:
-invalid input exposes no aggregate, the same operation id replays as history,
-and a dropped reply is `lookupCreateWith(aggregateId, operationId, command)`
-with no capability. See `docs/patterns.md`.
+`create` then a required initialize is two operations, and `create` refuses an
+existing `aggregateId`. `createWith` commits genesis and the initial command in
+one transaction: invalid input exposes no aggregate, the same `operationId`
+replays as a `HistoricalResult`, and a dropped reply is reconciled with
+`lookupCreateWith(aggregateId, operationId, command)` (no capability).
+
+Important: if an aggregate already exists with only `[genesis, initial_event]`
+matching the exact same machine identity and command, `createWith` treats an
+identical admission as an idempotent `ExactDuplicate` (`mutation: false`,
+returning the live `Aggregate` handle) even under a **new** `operationId`. If
+your domain requires refusing any duplicate admission of an existing id, check
+existence first (`show`) or use a unique/distinct command payload. See
+`docs/patterns.md`.

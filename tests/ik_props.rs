@@ -717,6 +717,104 @@ fn ik_prop_002_runtime_terminal_guard_cannot_partially_persist() {
     assert_eq!(projection.generation, 2);
 }
 
+#[test]
+fn terminal_pending_effect_can_resolve_while_commands_remain_refused() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("s.db");
+    let (mut store, agg, machine) = setup_wall(&dir);
+    let identity = machine.identity().clone();
+    let planned = store
+        .command(
+            machine.as_ref(),
+            &CommandRequest {
+                aggregate_id: agg.clone(),
+                machine: identity.clone(),
+                capability: cap(&identity, &agg, 0),
+                command: json!({"name": "plan"}),
+                observation: None,
+            },
+        )
+        .expect("plan commits");
+    let EffectStatus::Pending(intent) = &planned.effect else {
+        panic!("expected pending intent, got {:?}", planned.effect);
+    };
+    let intent = intent.clone();
+    assert_eq!(intent.aggregate_id, agg);
+    assert_eq!(intent.generation, planned.generation);
+
+    let done = store
+        .command(
+            machine.as_ref(),
+            &CommandRequest {
+                aggregate_id: agg.clone(),
+                machine: identity.clone(),
+                capability: planned.capability,
+                command: json!({"name": "done"}),
+                observation: None,
+            },
+        )
+        .expect("done commits");
+    assert!(done.terminal);
+    assert!(matches!(&done.effect, EffectStatus::Pending(pending) if pending == &intent));
+    let terminal = store.show(&agg).expect("terminal pending projection");
+    assert!(terminal.terminal);
+    assert_eq!(terminal.effect, EffectStatus::Pending(intent.clone()));
+
+    let err = refusal_keeps_rows(
+        &path,
+        &mut store,
+        "post-terminal mutation",
+        DiagnosticCode::IkIllegalState,
+        |s| {
+            s.command(
+                machine.as_ref(),
+                &CommandRequest {
+                    aggregate_id: agg.clone(),
+                    machine: identity.clone(),
+                    capability: done.capability.clone(),
+                    command: json!({"name": "plan"}),
+                    observation: None,
+                },
+            )
+        },
+    );
+    assert_eq!(err.rule.as_deref(), Some("terminal"));
+
+    let outcome = EffectOutcomeV1 {
+        effect_id: intent.effect_id.clone(),
+        aggregate_id: intent.aggregate_id.clone(),
+        planned_generation: intent.generation,
+        payload_digest: intent.payload_digest.clone(),
+        idempotency_key: intent.idempotency_key.clone(),
+        outcome_digest: "wall-outcome".into(),
+    };
+    let recorded = store
+        .record_effect(&EffectOutcomeRequest {
+            aggregate_id: agg.clone(),
+            machine: identity,
+            capability: done.capability,
+            effect: outcome,
+        })
+        .expect("terminal pending effect may resolve");
+    assert!(recorded.mutation);
+    assert_eq!(recorded.generation, 3);
+    assert_eq!(recorded.effect, EffectStatus::Recorded(
+        intent.clone(),
+        "wall-outcome".into(),
+        recorded.receipt.as_ref().map(|receipt| receipt.receipt_id.clone()),
+    ));
+    let receipt = recorded.receipt.expect("recording receipt");
+    let projection = store.show(&agg).expect("show");
+    assert!(projection.terminal);
+    assert_eq!(projection.generation, 3);
+    let EffectStatus::Recorded(recorded_intent, digest, receipt_id) = projection.effect else {
+        panic!("expected recorded effect");
+    };
+    assert_eq!(recorded_intent, intent);
+    assert_eq!(digest, "wall-outcome");
+    assert_eq!(receipt_id.as_deref(), Some(receipt.receipt_id.as_str()));
+}
+
 // ---------------------------------------------------------------------------
 // IK-PROP-003 — stale generation cannot mutate
 // ---------------------------------------------------------------------------

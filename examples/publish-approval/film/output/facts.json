@@ -1,0 +1,66 @@
+[
+  {
+    "id": "F0",
+    "trace_event_id": "event-1",
+    "event_index": 0,
+    "kind": "read",
+    "command": "create",
+    "on_screen_fact": "Opening state is draft"
+  },
+  {
+    "id": "F1",
+    "trace_event_id": "event-3",
+    "event_index": 2,
+    "kind": "commit",
+    "command": "approve",
+    "on_screen_fact": "Reviewer approves this exact version"
+  },
+  {
+    "id": "F2",
+    "trace_event_id": "event-4",
+    "event_index": 3,
+    "kind": "commit",
+    "command": "revise",
+    "on_screen_fact": "Author edits the document after approval"
+  },
+  {
+    "id": "F3",
+    "trace_event_id": "event-5",
+    "event_index": 4,
+    "kind": "refusal",
+    "command": "authorize_publish",
+    "on_screen_fact": "Authorization refused: it names a version nobody approved"
+  },
+  {
+    "id": "F4",
+    "trace_event_id": "event-6",
+    "event_index": 5,
+    "kind": "read",
+    "command": "show",
+    "on_screen_fact": "Fresh read of the current version"
+  },
+  {
+    "id": "F5",
+    "trace_event_id": "event-7",
+    "event_index": 6,
+    "kind": "commit",
+    "command": "approve",
+    "on_screen_fact": "Approved again, new version"
+  },
+  {
+    "id": "F6",
+    "trace_event_id": "event-9",
+    "event_index": 8,
+    "kind": "commit",
+    "command": "authorize_publish",
+    "on_screen_fact": "Publication authorized"
+  },
+  {
+    "id": "F7",
+    "trace_event_id": "event-12",
+    "event_index": 11,
+    "kind": "commit",
+    "command": "complete",
+    "on_screen_fact": "The authorized artifact is published"
+  }
+]

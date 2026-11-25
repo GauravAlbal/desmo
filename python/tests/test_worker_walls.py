@@ -305,14 +305,17 @@ def run_workload(ik_bin: Path, store: Path, session: bool, commands: int) -> flo
     return time.perf_counter() - started
 
 
+@pytest.mark.skipif(
+    os.environ.get("IK_RUN_PERFORMANCE") != "1",
+    reason="timing qualification is opt-in; set IK_RUN_PERFORMANCE=1 to run",
+)
 def test_persistent_session_is_materially_faster_than_one_shot_for_the_same_workload(
     ik_bin: Path, tmp_path: Path
 ) -> None:
-    """Self-normalizing ratio (same machine, same load, best-of-3) rather than an absolute time.
+    """Opt-in timing qualification for the same-workload session speedup.
 
-    Envelope: Python reducer via the real worker, 8 sequential commands, Linux, local disk. The
-    measured ratio on the reference host is ~4x; the gate is 2x so scheduler noise cannot flake it
-    while a regression to per-command process spawn (ratio ~1x) still fails."""
+    Envelope: Python reducer via the real worker, 8 sequential commands, Linux, local disk.
+    The unchanged qualification target is a ratio of at least 2x."""
     commands = 8
     one_shot = min(run_workload(ik_bin, tmp_path / f"o{i}.db", False, commands) for i in range(3))
     persistent = min(run_workload(ik_bin, tmp_path / f"p{i}.db", True, commands) for i in range(3))

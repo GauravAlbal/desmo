@@ -27,7 +27,7 @@ fn create_request(_store: &std::path::Path) -> Value {
     let identity = serde_json::to_value(machine.identity()).expect("identity json");
     json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.0",
+        "runtime_version": "0.5.1",
         "request_id": "c1",
         "op": "create",
         "aggregate_id": "agg-1",
@@ -119,7 +119,7 @@ fn malformed_and_unknown_field_requests_fail_closed() {
     // send a valid envelope with an unknown op instead.
     let request = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.0",
+        "runtime_version": "0.5.1",
         "request_id": "x",
         "op": "frobnicate",
     });
@@ -143,7 +143,7 @@ fn canonical_responses_are_byte_stable() {
     let create = |store: &std::path::Path| -> String {
         let request = json!({
             "protocol": {"major": 1, "minor": 0},
-            "runtime_version": "0.5.0",
+            "runtime_version": "0.5.1",
             "request_id": "c",
             "op": "create",
             "aggregate_id": "agg-1",
@@ -159,7 +159,7 @@ fn canonical_responses_are_byte_stable() {
     let stream = |store: &std::path::Path, capability: Value| -> String {
         let request = json!({
             "protocol": {"major": 1, "minor": 0},
-            "runtime_version": "0.5.0",
+            "runtime_version": "0.5.1",
             "request_id": "s",
             "op": "command",
             "aggregate_id": "agg-1",
@@ -285,7 +285,7 @@ fn partial_effect_refusal_echoes_request_id() {
     let machine = machine_def("effect_probe");
     let request = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.0",
+        "runtime_version": "0.5.1",
         "request_id": "partial-effect",
         "op": "record",
         "aggregate_id": "agg-1",

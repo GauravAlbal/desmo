@@ -48,7 +48,7 @@ const SUBCOMMANDS: &[Subcommand] = &[
     },
     Subcommand {
         name: "check",
-        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]",
+        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]",
         run: run_check,
     },
     Subcommand {
@@ -117,6 +117,11 @@ const SUBCOMMANDS: &[Subcommand] = &[
         run: crate::diagram::run,
     },
     Subcommand {
+        name: "simulate",
+        usage: "       ik simulate <machine.ik.toml> [--out <file.html>]",
+        run: crate::simulate::run,
+    },
+    Subcommand {
         name: "analysis",
         usage: "       ik analysis describe|run|validate-result|conformance ...",
         run: crate::analysis::run_cli,
@@ -139,7 +144,7 @@ pub fn dispatched_subcommand_names() -> impl Iterator<Item = &'static str> {
 }
 
 fn write_usage(mut emit: impl FnMut(&str)) {
-    emit("usage: ik --store <path> [--machine <def.toml>] [--session] create|command|record|show|replay|verify");
+    emit("usage: ik --store <path> [--machine <def.toml>] [--session] create|create_with_command|command|record|show|replay|verify|transaction|lookup_operation");
     emit("       ik --help");
     emit("       ik --version");
     for command in SUBCOMMANDS {

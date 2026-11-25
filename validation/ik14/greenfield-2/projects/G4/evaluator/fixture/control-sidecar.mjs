@@ -1,0 +1,5 @@
+import http from 'node:http';
+let sequence=0;const pending=new Map();process.on('message',m=>{if(m?.replyTo){const fn=pending.get(m.replyTo);if(fn){pending.delete(m.replyTo);fn(m.value)}}});
+const request=(action,value)=>new Promise(resolve=>{const id=++sequence;pending.set(id,resolve);process.send({id,action,value})});
+const json=(r,s,x)=>{const b=JSON.stringify(x);r.writeHead(s,{'content-type':'application/json','content-length':Buffer.byteLength(b)});r.end(b)};const body=req=>new Promise(ok=>{let b='';req.on('data',x=>b+=x);req.on('end',()=>ok(b))});
+const server=http.createServer(async(req,res)=>{const u=new URL(req.url,'http://local');if(req.method==='GET'&&u.pathname==='/control/state')return json(res,200,await request('state'));if(req.method==='POST'&&u.pathname==='/control/config'){let data;try{data=JSON.parse(await body(req))}catch{return json(res,400,{error:'invalid'})}return json(res,200,await request('config',data))}if(req.method==='POST'&&u.pathname==='/control/reset')return json(res,200,await request('reset',{}));json(res,404,{error:'not_found'})});server.listen(0,'127.0.0.1',()=>process.send({ready:true,port:server.address().port}));

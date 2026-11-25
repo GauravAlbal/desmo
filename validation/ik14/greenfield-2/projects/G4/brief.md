@@ -1,0 +1,17 @@
+# Equipment reservation desk
+
+Build `./run COMMAND ...`, one Node process per invocation, backed by a durable store in `STATE_DIR`. Each command emits exactly one JSON object on stdout; successful commands exit 0 and refusals exit nonzero with `{"error":"<code>"}`. `SERVICE_URL` names the equipment service. Do not use wall-clock time. No distributed transaction or multi-host coordination is required; concurrent local processes may access the store.
+
+A reservation requests one equipment unit for a named member. Commands are `reserve <reservation_id> <member_id> <item_id>`, `status <reservation_id>`, `advance <reservation_id>`, and `cancel <reservation_id>`. Identifiers match `^[A-Za-z0-9_-]{1,64}$`. Valid reservations begin `queued`, attempt count 0, and have a stable operation id equal to `reservation_id`. Equipment service calls use that id as idempotency key. Service may time out after applying a request; lookup by operation id reveals whether it applied. Never generate a replacement operation id.
+
+Successful reservation snapshots contain `reservation_id`, `member_id`, `item_id`, `phase` (`queued`, `uncertain`, `reserved`, `rejected`, `cancelled`), `attempts`, `operation_id`, and `equipment_id` (a string only in `reserved`, otherwise JSON null). Rejections are retryable with a finite maximum of 3 confirmed attempts. An unavailable response is uncertain and does not count as rejection. Terminal phases are reserved, rejected (three confirmed denials), and cancelled.
+
+R1. Valid reserve persists a queued reservation without contacting the service; same-store status in another process returns it. A duplicate id refuses `already_exists` without mutation or service call.
+R2. Invalid arguments and missing required environment (`STATE_DIR`, or `SERVICE_URL` for `advance`) refuse with `invalid`; an unknown command refuses `unknown_command`; an unknown reservation refuses `not_found`. Missing required environment is checked before reservation lookup. All refuse without service calls.
+R3. `advance` on queued work sends one request using the stable operation id; a confirmed grant returns `reserved` with the service equipment id. Repeated advance returns the reserved result without creating another allocation.
+R4. Confirmed denial increments attempts exactly once and remains queued until attempt 3; attempt 3 becomes terminal `rejected`. Restart preserves count; advancing terminal rejected work exits 0 with its snapshot and makes no service call.
+R5. Timeout/lost response is `uncertain`, does not consume attempts, and recovery looks up the original operation id before retrying. If lookup confirms grant, return reserved with exactly one allocation; never misreport not-sent.
+R6. Cancellation succeeds (exit 0) with phase `cancelled`, commits durably, and remains terminal across restart; a late service grant cannot change cancelled or attach an equipment id. The in-flight `advance` exits 0 with a cancelled snapshot and `equipment_id:null`; later advance exits 0 without a service call.
+R7. Status and cancellation succeed while another process awaits service; cancellation returns phase `cancelled`. The late response cannot overwrite cancellation, and the in-flight `advance` exits 0 with a cancelled snapshot and `equipment_id:null`.
+R8. A service conflict for the operation id is terminal rejected; `advance` exits 0 with that snapshot and does not allocate under a new key. Legitimate grants must not be refused.
+

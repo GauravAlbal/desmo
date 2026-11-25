@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { bundledMachine } from "./assets.js";
+import { bundledMachine, bundledOrderMachine } from "./assets.js";
 import {
   Aggregate,
   Capability,
@@ -14,7 +15,9 @@ import {
   classify,
 } from "./client.js";
 import {
+  IllegalStateError,
   KernelError,
+  MachineError,
   PreDispatchError,
   StaleCapabilityError,
   StoreNotFoundError,
@@ -274,4 +277,45 @@ test("the same operation id on two aggregates does not collide", async () => {
     command: START,
   });
   assert.equal(stillB.outcome, "committed_exact");
+});
+
+test("typed error subclasses match illegal state and machine mismatch", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "desmo-typed-err-"));
+  const store = join(dir, "orders.db");
+  const orders = await kernelAt(store).machine(bundledOrderMachine());
+  const order = await orders.create("order-1");
+  await assert.rejects(() => order.command("refund"), (err: unknown) => {
+    assert.ok(err instanceof IllegalStateError);
+    assert.ok(err instanceof KernelError);
+    assert.equal(err.code, "IK_ILLEGAL_STATE");
+    assert.equal(classify(err), "refused");
+    return true;
+  });
+  const foreign = await kernelAt(store).machine(foreignPath);
+  const wrongMachine = new Aggregate(
+    foreign,
+    order.id,
+    order.capability,
+    order.state,
+    order.generation,
+    order.terminal,
+    order.raw,
+    order.mutation,
+  );
+  await assert.rejects(() => wrongMachine.command("plan"), (err: unknown) => {
+    assert.ok(err instanceof MachineError);
+    assert.equal(classify(err), "contract_mismatch");
+    return true;
+  });
+});
+
+test("desmo demo orders succeeds and unknown subcommand exits 1", () => {
+  const cliJs = join(dirname(fileURLToPath(import.meta.url)), "cli.js");
+  const demo = spawnSync(process.execPath, [cliJs, "demo", "orders"], { encoding: "utf8" });
+  assert.equal(demo.status, 0, demo.stderr);
+  assert.match(demo.stdout, /IK_ILLEGAL_STATE/);
+  assert.match(demo.stdout, /committed \(refunded/);
+  const bogus = spawnSync(process.execPath, [cliJs, "does-not-exist"], { encoding: "utf8" });
+  assert.equal(bogus.status, 1);
+  assert.match(bogus.stderr, /unknown command/);
 });

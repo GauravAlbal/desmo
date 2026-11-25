@@ -1,258 +1,240 @@
 # Desmo
 
-Hard lifecycle invariants for fast-moving Python, Go, and TypeScript systems.
+**Find hidden state bugs in your codebase. Lock the critical ones into Rust.**
 
-> **Keep the code you change often in Python, Go, or TypeScript. Put the state
-> transitions you cannot afford to get wrong in Desmo.**
+> Your coding agent added one feature. Every test passed. Production state broke.
 
-Product: **Desmo**. Repository: `desmo`. Engine: `invariant-kernel`. Binary: `ik`.
-Python: `invariant_kernel`. Go: `github.com/GauravAlbal/desmo/go`.
-TypeScript: `@desmo/runtime`.
+Run `SELECT DISTINCT status FROM orders;` on almost any app that has been shipped fast — or edited by coding agents — and you'll find `PAID`, `NULL`, unpaid carts refunded, cancelled orders delivered by a late worker, or a rogue status nobody remembers adding. Every PR worked locally; the global lifecycle rules silently eroded because they didn't live anywhere authoritative.
 
-Desmo runs on the `invariant-kernel` engine (the `ik` binary, `.ik.toml` machine
-files, `IK_*` variables). Schema identifiers such as `ikaros.trace.v2`, and the trace
-`product` field, keep their original `ikaros` spelling so existing bundles stay valid.
+Desmo gives you two moves in one tool:
 
-The name: a desmodromic valve is driven positively in both directions rather than
-relying on a spring. Desmo refuses any lifecycle transition unless a declared rule
-and a current capability open it.
-
-Alpha. Adopt from a **versioned GitHub Release**, not a
-clone of this repo.
-
-## Why
-
-Orchestration and product code belong in Python, Go, or TypeScript. Race-sensitive
-lifecycle authority — illegal transitions, stale capability, effect
-identity, replay — belongs behind a Rust process boundary.
+1. **Audit any existing repo in 60 seconds (read-only):** install the coding-agent skill (`npx skills add GauravAlbal/desmo`), scan your codebase for implicit state machines (`status` columns, boolean flag clusters, worker races), and open a zero-dependency interactive HTML simulator (`ik simulate`) to click illegal transitions and stale-worker races yourself.
+2. **Lock the critical lifecycles into Rust + SQLite (`ik`):** keep the code you change fast in TypeScript, Python, or Go. Put the transitions you cannot afford to get wrong behind one `.ik.toml` definition — **the exact same file** `ik check` explores at build time and `ik` enforces at runtime. Callers propose **commands + generation-bound capabilities**, never destination states.
 
 ```text
-host (Python / Go / TypeScript)
-        ↓ typed client
-ik   (canonical JSON)
+host (TypeScript / Python / Go)
+        ↓ typed client (commands + capabilities, never destination states)
+ik      (single Rust binary · canonical JSON · local SQLite)
         ↓
-Desmo kernel  (authority)
+Desmo kernel  (same .ik.toml checked at build time and enforced at runtime)
 ```
 
-The host never implements kernel lifecycle transitions. An external reducer
-may implement deterministic domain reduction, but a copied handle that
-mutates after a later command is refused by Rust (`IK_CAPABILITY_STALE`).
+## What a machine looks like
 
-## 30-second example
+Define states, facts, commands, guards, effects, and invariants in one file ([examples/orders/order.ik.toml](examples/orders/order.ik.toml)):
 
-```python
-from invariant_kernel import Kernel
+```toml
+schema_version = 1
+machine_id = "order"
+machine_version = 1
 
-kernel = Kernel(store=".state/kernel.db")
-job = kernel.machine("job.ik.toml").create("job-1")
-job = job.start()
-print(job.state, job.generation)
+[facts]
+payment_ref = { type = "string", policy = "replace" }
+
+[states]
+cart = { initial = true }
+paid = {}
+delivered = {}
+returned = {}
+refunded = { terminal = true }
+cancelled = { terminal = true }
+
+[commands.pay]
+from = ["cart"]
+to = "paid"
+args = { payment_ref = "string" }
+then = { payment_ref = "$payment_ref" }
+
+[commands.deliver]
+from = ["paid"]
+to = "delivered"
+
+[commands.cancel]
+from = ["cart", "paid"]
+to = "cancelled"
+
+[commands.send_back]
+from = ["delivered"]
+to = "returned"
+
+[commands.refund]
+from = ["returned"]
+to = "refunded"
 ```
 
-```go
-k, _ := invariantkernel.Open(".state/kernel.db", invariantkernel.Options{})
-m, _ := k.Machine(ctx, "job.ik.toml")
-job, _ := m.Create(ctx, "job-1")
-job, _ = job.Command(ctx, "start", nil)
+Inspect it directly from the terminal (`ik diagram examples/orders/order.ik.toml`):
+
+```text
+6 states, 5 commands · 2 ends · every state reaches an end (structural) · shortest finish: 1 step · all rules declared
+     ● [ cart ]                  ◀── YOU ARE HERE (1 step to end)
+                                 ↗ pay → [ paid ]
+         │
+         │  cancel
+         ▼
+ ┌──▶✔ [ cancelled ]  END
+ │ also reachable:
+ │   ✔ [ refunded ]  END
+ │   ○ [ paid ]
+ └───────                        ↗ cancel → [ cancelled ]
+                                 ↗ deliver → [ delivered ]
+ ┌──▶○ [ returned ]
+ │   ○ [ delivered ]
+ └───────                        ↗ send_back → [ returned ]
 ```
 
-## When to use it
+## Audit any existing repo in 60 seconds (no rewrite required)
 
-- canonical lifecycle with illegal transitions
-- retries / exhaustion
-- approval states
-- external effects with identity
-- generation-bound authority
-- replay-sensitive durable state
-
-## When not to use it
-
-- ordinary immutable data
-- routing
-- compilation / transformation
-- business calculations
-- workflow orchestration with no hard shared invariant
-
-## Install
-
-The commands below target the `0.5.0` release candidate artifacts. The release owner must
-qualify the packed bytes and obtain source acceptance before publishing them;
-source-suite success alone does not authorize publication or a `LATEST_RELEASE`
-update. Consumers use the matching published manifest and checksums.
-
-Download `ik-darwin-arm64.tar.gz` (Apple silicon) or `ik-linux-amd64.tar.gz` (x86_64 Linux; its
-Node platform package is `linux-x64`) from the GitHub Release,
-verify `SHA256SUMS`, put `ik` on `PATH` or set `IK_BINARY`.
+Start read-only on your own codebase before adopting the runtime:
 
 ```bash
-gh release download v0.5.0 -R GauravAlbal/desmo \
-  -p 'ik-darwin-arm64.tar.gz' -p 'invariant_kernel-0.5.0-py3-none-any.whl' -p SHA256SUMS
-shasum -a 256 -c SHA256SUMS --ignore-missing
-tar -xzf ik-darwin-arm64.tar.gz
-install -m 0755 ik /usr/local/bin/ik
-ik --version   # invariant-kernel 0.5.0 protocol 1.0: must equal your client's runtime version
+# 1. Install the `ik` CLI (macOS arm64 / Linux x86_64, SHA256SUMS-verified)
+curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh
+
+# 2. Install the coding-agent skill (Claude Code, Codex, Cursor, or `skills` CLI)
+npx skills add GauravAlbal/desmo
 ```
 
-Python (locates `ik` via `IK_BINARY` or `PATH`; the wheel does **not**
-bundle the binary):
+Then ask your coding agent:
+
+> *"Find the implicit state machines in my app and check for state bugs."*
+
+The skill stays strictly read-only (`skills/desmo/audit.md`), maps every writer to your `status` columns / flag clusters, extracts a scratch `.ik.toml`, runs `ik diagram` + `ik check`, and emits a self-contained offline HTML simulator:
 
 ```bash
-pip install --no-index --no-deps invariant_kernel-0.5.0-py3-none-any.whl
+ik diagram examples/orders/order.ik.toml
+ik simulate examples/orders/order.ik.toml --out order-simulator.html
 ```
 
-Node (no registry is involved; the runtime and the platform package are installed from the
-release files, and the platform package carries the `ik` binary):
+Other tools stop at the diagram. When you find a lifecycle you actually want protected for good, switch to *"Lock this lifecycle behind Desmo"* (`skills/desmo/build.md`) — the exact `.ik.toml` you just checked and simulated becomes the runtime authority in Rust.
+
+Other architectures can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.5.1 --bin ik`.
+
+## 30-second examples
+
+### TypeScript / Node
+
+Download the `0.5.1` runtime tarball and your platform tarball (`darwin-arm64` or `linux-x64`) from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases/tag/v0.5.1) (no npm registry needed; the platform package bundles `ik`):
 
 ```bash
-gh release download v0.5.0 -R GauravAlbal/desmo \
-  -p 'desmo-runtime-0.5.0.tgz' -p 'desmo-darwin-arm64-0.5.0.tgz' -p SHA256SUMS
-shasum -a 256 -c SHA256SUMS --ignore-missing
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.5.1/desmo-runtime-0.5.1.tgz
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.5.1/desmo-darwin-arm64-0.5.1.tgz
 npm install --no-audit --no-fund --ignore-scripts \
-  ./desmo-runtime-0.5.0.tgz ./desmo-darwin-arm64-0.5.0.tgz
+  ./desmo-runtime-0.5.1.tgz ./desmo-darwin-arm64-0.5.1.tgz
+
+npx --no-install desmo demo orders        # unpaid refund & cancelled delivery refused
+npx --no-install desmo demo stale-worker  # late worker refused with IK_CAPABILITY_STALE
+npx --no-install desmo simulate examples/orders/order.ik.toml --out order-sim.html
 npx --no-install desmo doctor --dir .
 ```
 
-Use the platform package that matches your machine (`darwin-arm64`, `darwin-x64`,
-`linux-arm64` or `linux-x64`). The runtime package does not list the platform packages as
-dependencies, so installing from the two files contacts no registry for them.
+```ts
+import { Kernel, IllegalStateError } from "@desmo/runtime";
 
-Go:
+const kernel = new Kernel(".state/orders.db");
+const orders = await kernel.machine("examples/orders/order.ik.toml");
 
-```text
-require github.com/GauravAlbal/desmo/go v0.0.0-<date>-<tag-sha>
+const order = await orders.create("order-1042");
+await order.command("refund"); // throws IllegalStateError (IK_ILLEGAL_STATE) — stays in cart
+
+const paid = await order.command("pay", { payment_ref: "ch_1042" });
+console.log(paid.namedState(), paid.generation); // paid 1n
 ```
 
-Pin the release, not `main`. See [docs/upgrading.md](docs/upgrading.md).
+### Python
 
-## Define a machine
-
-A `.ik.toml` file declares facts, states, commands, guards, effects,
-and invariants. Commands are requested by name and args. Destination
-states are not sent. `ik identity machine.ik.toml` prints the kernel
-identity so clients never hash specs.
-
-Start from `machines/verification_attempt.ik.toml`.
-
-## Python external reducers
-
-The Python package can bind a deterministic, versioned semantic reducer to a
-machine:
-
-```python
-from invariant_kernel import Kernel
-
-game = Kernel(store=".state/kernel.db").reducer(
-    "my_game.reducer:WeddingWeekendReducer",
-)
-scene = game.create("wedding-weekend-01")
-scene = scene.execute(
-    {"name": "kiss_noah"},
-    {"location": "dance_floor", "consent": True},
-)
-```
-
-`Aggregate.execute(command: Mapping, observation: Optional[Mapping] = None)` is the
-generic API; `command(name, **args)` remains unchanged. A reducer is loaded
-from a stable `module:qualname` (no lambdas, closures, or callback transport)
-and receives recursively immutable input trees. It owns deterministic
-semantic reduction: deciding `noop` versus a versioned event and applying that
-event to produce semantic state/effect/outcome.
-
-Rust remains the sole authority for capability preflight, canonical
-currentness, transaction/commit, journal, projection, replay, and
-verification. Binding discovery invokes `describe` once; Rust recomputes the
-reducer binding identity and initial-state digest, then invokes `decide` /
-`apply` through strict protocol `1.0`. It commits nothing when the reducer or
-worker fails. A stale capability is rejected before a command worker starts.
-After binding, `create`, `record`, and `show` do not launch Python; semantic
-launch is limited to `command`, `replay`, and `verify`.
-
-The worker is trusted and cooperative, not an OS sandbox: Python receives no
-store path, but the protocol cannot enforce OS-level IO denial. The
-WEDDING-WEEKEND-01 / `D_KISS_NOAH` example above documents consumer shape
-only; it does not claim that interactive fiction consumer is migrated. See
-[docs/python.md](docs/python.md) for the descriptor, digest, worker, and
-failure contracts.
-
-There is no Go reducer API in this feature; the Go package remains a typed
-transport client.
-
-The `0.3.0` persistent-worker, session, and transaction contracts remain:
-workers use newline-delimited JSON-RPC 2.0, are recycled after 5000 calls,
-and are replaced after failure. `IK_REDUCER_PARANOID=1` checks calls against a
-fresh worker (off by default). `ik --store <path> --session` and Python
-`Kernel(session=True)` retain a machine/reducer and SQLite store across requests.
-`Aggregate.transaction([...])` applies an ordered all-or-nothing command batch
-under one capability; only the last step may create an effect intent.
-
-## Region authoring (`0.4.1`)
-
-Authoring schema `2` adds bounded compound and parallel regions, guarded
-child-first parent fallback, and explicit atomic joint commands. It lowers to
-the existing flat runtime definition; it adds no second execution authority.
-Schema-1 sources remain supported. See [region lowering](docs/region-lowering.md)
-for the contract, finite evidence domains, and packed-artifact qualification boundary.
-
-## ik check
+Install `ik` with the one-line installer above, then install the wheel from the release:
 
 ```bash
-ik check machine.ik.toml
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.5.1/invariant_kernel-0.5.1-py3-none-any.whl
+pip install --no-index --no-deps invariant_kernel-0.5.1-py3-none-any.whl
 ```
 
-Developer analysis. Not a lifecycle operation. Exit 0 accept, 1 refuse.
-`--json` `judgment.verdict` is `accept` or `refused`; `judgment.status`
-is `accepted`, `missing_evidence`, or `witnessed_violation`.
+```python
+from invariant_kernel import Kernel, IllegalStateError
 
-## Brownfield
+orders = Kernel(store=".state/orders.db").machine("examples/orders/order.ik.toml")
+order = orders.create("order-1042")
 
-Move **one** command family first. Delete the host branch when Desmo
-owns it. Do not keep both. Details:
-[docs/brownfield-migration.md](docs/brownfield-migration.md).
+try:
+    order.refund()
+except IllegalStateError as err:
+    print(err.code)  # IK_ILLEGAL_STATE — canonical state stays "cart"
 
-## How authority is split
+paid = order.pay(payment_ref="ch_1042")
+print(paid.state, paid.generation)  # paid 1
+```
 
-| Owner | Owns |
-|---|---|
-| Host | IO, scheduling, adapters, product orchestration |
-| Desmo | destinations, guards, capabilities, effects, replay |
-| Language client | envelopes, process, typed errors — **no** semantics |
+### Go
 
-Desmo does not learn product law. Hosts do not regain lifecycle
-authority.
+```go
+// go get github.com/GauravAlbal/desmo/go@go/v0.5.1
+k, _ := invariantkernel.Open(".state/orders.db", invariantkernel.Options{})
+m, _ := k.Machine(ctx, "examples/orders/order.ik.toml")
+order, _ := m.Create(ctx, "order-1042")
+paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
+```
 
-## Release / compatibility
+## Coding-agent skill (`skills/desmo/`)
 
-Protocol `1.0`. Runtime `0.5.0`. Persisted store schema `4`
-(`0.4.x` stores are schema `3` and migrate forward in place on first open; older
-binaries refuse schema `4`, so back up first; see [docs/upgrading.md](docs/upgrading.md)).
-Stores keep compact journal facts plus state digests; historical store schema `2`
-fails closed. Authoring schema `2` is unrelated to store schema numbering.
-`ik`, the Python client/worker, and the Go client expectation must match the
-runtime version exactly, even when protocol and store versions are unchanged.
-Consumers pin `release-manifest.json` (manifest schema `3`): version, source SHA,
-artifact file, SHA-256.
+Desmo ships an installable coding-agent skill compatible with Claude Code, Codex, Cursor, and the `skills` CLI:
 
-Upgrade: published new tag → parity against **that artifact** → move the pin.
-Rollback is the previous pin. Existing consumer pins are unchanged; this release does not migrate historical pins.
+```bash
+npx skills add GauravAlbal/desmo
+# or, inside a Node project with @desmo/runtime installed:
+npx --no-install desmo skill install --dir .
+```
 
-## Deeper docs
+- **Audit (read-only):** `skills/desmo/audit.md` — scans `status` / flag clusters, extracts a scratch `.ik.toml`, runs `ik diagram` + `ik check`, and builds an interactive offline HTML simulator with `ik simulate` (no Node package required).
+- **Enforce & evolve:** `skills/desmo/build.md`, `change.md`, `diagnose.md`, `readout.md` — locks that exact `.ik.toml` behind `ik` and verifies every change against prior machine versions.
 
-- [Greenfield](docs/greenfield.md)
-- [Brownfield](docs/brownfield-migration.md)
-- [Python](docs/python.md)
-- [TypeScript](docs/typescript.md)
-- [Go](docs/go.md)
-- [Job retrofit example](docs/examples/retrofit-job/README.md)
-- [Agent guide](docs/agent.md)
-- [Coding-agent skill](skills/desmo/SKILL.md)
-- [Machine evolution](docs/machine-evolution.md)
-- [Publish-approval example](examples/publish-approval/README.md)
-- [`ik check`](docs/ik-check.md)
-- [Feasibility validation](docs/feasibility-validation.md)
-- [Change-aware evidence](docs/change-evidence.md)
-- [Scenarios](docs/scenarios.md)
-- [Workbench report](docs/workbench-report.md)
-- [Upgrading / pins](docs/upgrading.md)
-- [Release compatibility](docs/release-compatibility.md)
-- [Diagnostics](docs/diagnostics.md)
-- [Public release checklist](docs/public-release-checklist.md)
+## Core capabilities
+
+- **Generation-bound capabilities:** every read/commit returns a capability `(generation, nonce)`. A copied or stale handle attempting to mutate after a later commit is refused by Rust (`IK_CAPABILITY_STALE`).
+- **Idempotent operation attribution:** callers attach an `operation_id` (or let the SDK generate one). On a dropped reply or timeout, `lookup_operation` distinguishes `committed_exact`, `conflict`, and `not_recorded` without silently retrying on a stale handle.
+- **Bounded compound & parallel regions (schema 2):** author orthogonal regions, guarded child-first parent fallback, and atomic joint commands in `.ik.toml`, lowered to the same flat runtime engine ([docs/region-lowering.md](docs/region-lowering.md)).
+- **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
+- **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
+- **TypeScript contract generation:** `desmo codegen machine.ik.toml --out src/machine.contract.ts` generates typed commands, optional facts, and successor unions directly from `ik schema` ([docs/typescript.md](docs/typescript.md)).
+- **Developer workbench:** `ik check`, `ik laws`, `ik scenario run`, `ik diagram`, `ik handoff`, and `ik readout` run against the exact same transition engine.
+
+## What's verified vs. what's open
+
+Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact boundary (full evidence and reproduction commands in [docs/assurance.md](docs/assurance.md)):
+
+| Claim | Status | Boundary |
+|---|---|---|
+| Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; does not stop host code from bypassing `ik`. |
+| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 139 Python, 79 TS, 44 Go tests on macOS arm64 & Linux x64. |
+| Deleted-wall mutation controls | **15/15 kernel walls killed** | Deleting any of 15 core runtime walls fails tests; client transport layers not yet mutated. |
+| Real process-crash recovery | **32 crash-matrix tests** | Kills child processes (`SIGABRT` / `exit(86)`) across 16 SQLite boundaries; trusts SQLite WAL & OS. |
+| Multi-worker linearizability | **40 seeds × 3 workers** | Finite schedule check against a sequential reference model; not universal linearizability. |
+| Dual-solver SMT / TLC / Hegel adapters | **Optional adapters** | `Z3 + cvc5` dual-solver feasibility, TLC 2.19 finite graph checks, Hegel sampling. |
+| Kani bounded proofs | **Helper only; entrypoints open** | Historical Kani proof on `validate_capability`; full `execute_command` & `execute_outcome_binding` entrypoint proofs remain **open**. |
+
+## When to use Desmo (and when not to)
+
+**Use it for:** canonical lifecycles with illegal transitions, approval gates, retries/exhaustion, external effects with idempotency keys, generation-bound authority, and crash-recoverable local SQLite state.
+
+**Do not use it for:** stateless CRUD, routing, business calculations, multi-replica shared SQLite, read-only serverless filesystems, or distributed consensus.
+
+## Naming & compatibility
+
+- **Product & repo:** Desmo (`GauravAlbal/desmo`). **Engine & binary:** `invariant-kernel` / `ik`. **Machine files:** `.ik.toml`. **Node:** `@desmo/runtime`. **Python:** `invariant_kernel`. **Go:** `github.com/GauravAlbal/desmo/go`.
+- The name comes from a *desmodromic valve*, driven positively in both directions by cam tracks instead of relying on a spring to close.
+- **Protocol `1.0` · Runtime `0.5.1` · Store schema `4`.** `ik` and your language client must match runtime versions exactly. Existing `ikaros.trace.v2` schema identifiers remain unchanged for bundle compatibility.
+
+## Documentation
+
+- [Assurance & verification boundaries](docs/assurance.md)
+- [Order lifecycle example](examples/orders/README.md) · [Publish-approval example](examples/publish-approval/README.md) · [Job retrofit example](docs/examples/retrofit-job/README.md)
+- [Machine language (`.ik.toml`)](docs/machine-language.md) · [Region lowering (schema 2)](docs/region-lowering.md)
+- [TypeScript](docs/typescript.md) · [Python](docs/python.md) · [Go](docs/go.md)
+- [Greenfield guide](docs/greenfield.md) · [Brownfield migration](docs/brownfield-migration.md) · [Patterns](docs/patterns.md)
+- [Agent guide](docs/agent.md) · [Coding-agent skill](skills/desmo/SKILL.md)
+- [`ik check`](docs/ik-check.md) · [Scenarios](docs/scenarios.md) · [Workbench report](docs/workbench-report.md) · [Diagnostics](docs/diagnostics.md)
+- [Machine evolution](docs/machine-evolution.md) · [Client recovery](docs/client-recovery.md) · [Operation identity](docs/operation-identity.md)
+- [Upgrading & pins](docs/upgrading.md) · [Release compatibility](docs/release-compatibility.md) · [Security](SECURITY.md)
+
+## License
+
+Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).

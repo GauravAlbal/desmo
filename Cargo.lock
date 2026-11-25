@@ -341,9 +341,10 @@ dependencies = [
 
 [[package]]
 name = "invariant-kernel"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "hegeltest",
+ "itoa",
  "proptest",
  "rusqlite",
  "serde",

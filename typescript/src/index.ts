@@ -17,11 +17,16 @@ export {
 export type { FailureClass } from "./client.js";
 export type { Json, OperationBody } from "./client.js";
 export {
+  CommandInvalidError,
   EffectCompletionError,
   EffectConflictError,
   EffectMismatchError,
   EffectStaleError,
+  IllegalStateError,
+  InvariantFailedError,
   KernelError,
+  MachineError,
+  NonceInvalidError,
   OperationConflictError,
   PreDispatchError,
   ProtocolError,
@@ -36,3 +41,4 @@ export { unwrapEnvelope } from "./envelope.js";
 export { locateBinary } from "./locate.js";
 export { renderTraceHtml, parseTraceBundle, TraceValidationError } from "./trace.js";
 export type { TraceBundle, TraceEvent, TraceKind, TraceOrigin } from "./trace.js";
+export { renderSimulatorHtml } from "./simulate.js";

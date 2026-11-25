@@ -1,0 +1,19 @@
+# G3 Ikaros-arm source review
+
+Scope: the two initial arm-B failures reported in `results.jsonl` lines 6 and 22 and detailed by `results/G3-B-r1-initial.json` and `results/G3-B-r2-initial.json`. The evaluator, frozen brief, stub contract, and staging scripts are present. The actual submitted projects are not: `validation/ik14/greenfield/runs/G3/B/r1/project` and `.../r2/project` are absent; `validation/ik14/greenfield/batch-001/kit-B` is absent. `stage.py` lines 3–17 shows these run-project paths are the staging destination and that arm B receives kit-B. No archived source tarball for either submission is present in the inspected tree. Therefore neither failure can be definitively attributed to submitted source.
+
+## r1 — R6 (`after-record-before-dispatch`)
+
+**Cause class: undetermined.** The initial result JSON reports R6 fail. The brief requires `CRASH_AT=after-record-before-dispatch` to cause SIGKILL before dispatch, preserve `ready`/`none`, and permit later delivery (G3 `brief.md` lines 101–105, 125). The evaluator uses that exact label and checks killed process, zero destination requests, ready/none state, subsequent delivery, and one effect (`evaluator/eval.test.mjs` lines 174–193). Those assertions match the contract. The reference control implementation also has a named hook at `validation/ik14/greenfield/batch-001/controls/_lib/desk.mjs` line 414, but it is not the missing submitted project and cannot show what the builder implemented.
+
+**Needed evidence to determine cause:** the exact submitted r1 project directory (especially its `run` entry point and crash-boundary implementation) or a content-identical archived source package. Without it, classifying this as builder error, product/documentation gap, or evaluator defect would be speculation. No evaluator defect is apparent in the available R6 check.
+
+## r2 — R2 (local refusal shape)
+
+**Cause class: evaluator/harness coverage defect for the broad shape claim; the specific submitted failure cause is undetermined.** The brief names required error fields and gives examples (G3 `brief.md` lines 25–45; envelope rule line 31). The evaluator's `expectErr` helper checks only that the command is nonzero and `obj.error` matches the expected code (`evaluator/harness.mjs` lines 180–187). The R2 tests additionally check `field` for invalid id and missing record (evaluator/eval.test.mjs lines 38–43), but do not check `field` for an overlong record, unknown command, not-found response, or either missing environment (`eval.test.mjs` lines 44–58). Thus R2 does not validate all the specified local-refusal shapes and cannot substantiate a generalized error-shape conclusion. The R2 failure itself is recorded in `results/G3-B-r2-initial.json` and `results.jsonl` line 22; the submitted response bodies and project source are unavailable, so it is not possible to identify which assertion failed or whether that failure was a builder defect.
+
+The evaluator's omissions are a real coverage defect, but they do not prove the observed R2 failure was false: the submitted run may have violated an assertion that is present. Classify the particular run's cause as **undetermined** pending the exact r2 source and captured evaluator output/response.
+
+## Consequence for 4/6
+
+Do not rewrite append-only `results.jsonl` or the recorded raw result. The reported initial outcome remains 4/6 as evaluated. Source review supports neither changing that historical figure nor treating both failures as verified product/implementation defects: r1's cause is undetermined despite a contract-aligned evaluator; r2's specific cause is undetermined and the evaluator has identified coverage gaps. The 4/6 figure should therefore be described as the recorded harness outcome, not as six-way proof that four implementations passed and two product defects were found. A source-attribution follow-up requires the two exact submitted project artifacts and the r2 evaluator trace.

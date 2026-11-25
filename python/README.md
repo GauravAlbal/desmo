@@ -18,30 +18,29 @@ Tests against the real binary:
 cargo build --bin ik
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 IK_BINARY=target/debug/ik python3 -m pytest -q python/tests
 ```
+
+The persistent-session timing qualification is opt-in; ordinary suites skip
+this timing check while the correctness, reuse, and lifecycle tests remain
+blocking. Run only that qualification with:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 IK_BINARY=target/debug/ik IK_RUN_PERFORMANCE=1 python3 -m pytest -s -q python/tests/test_worker_walls.py::test_persistent_session_is_materially_faster_than_one_shot_for_the_same_workload
+```
 `Kernel(binary=...)` or `IK_BINARY` or `PATH` locates `ik`. Wheels do not
 bundle platform binaries.
 
-The `0.4.1` client uses protocol `1.0` and requires the `0.4.1` runtime and
+The `0.5.1` client uses protocol `1.0` and requires the `0.5.1` runtime and
 worker exactly; a shared protocol major does not permit mixing runtime versions.
-Source-install checks and observed integrated-source verification are separate
-from release qualification. Before publication, the release owner must qualify
-the actual binary tarball and sdist-derived wheel, offline-installed Python,
-and real Go client from the exact committed source, including region session
-and transaction behavior, and obtain the source acceptance receipt. The GitHub
-Release records that source SHA, artifact digests, and receipt; `LATEST_RELEASE`
-is updated separately only after qualified publication. Source installation
-alone establishes none of those release conditions.
+Install `ik` with the one-line installer (`curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh`) or from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases).
 
-The additive `0.3.0` → `0.4.1` region frontend changes neither protocol `1.0`
-nor persisted store schema `3`. Both schema-1 flat machines and schema-2
-compound/parallel sources load through `kernel.machine` and `kernel.check`;
-schema-2 identities are those of the single lowered flat machine, not the
-authoring document. Authoring schema `2` is not historical persisted schema `2`,
-which remains refused. Checker ACCEPT is bounded analysis, not runtime
+Both schema-1 flat machines and schema-2 compound/parallel sources load through
+`kernel.machine` and `kernel.check`; schema-2 identities are those of the single
+lowered flat machine, not the authoring document. Persisted store schema is `4`
+(authoring schema `2` is unrelated to historical persisted schema `2`, which
+remains refused). Checker `ACCEPT` is bounded analysis, not runtime
 authorization or a proof over arbitrary inputs. Runtime invariant refusals
 raise `InvariantFailedError` and leave the aggregate's public state, generation,
-and capability unchanged. Existing consumer pins are not
-migrated by this upgrade.
+and capability unchanged.
 
 ### Transport process lifecycle
 
@@ -100,11 +99,11 @@ supported.
 from invariant_kernel import Kernel
 
 kernel = Kernel(store=".state/kernel.db")
-game = kernel.reducer("my_game.reducer:WeddingWeekendReducer")
-scene = game.create("wedding-weekend-01")
-scene = scene.execute(
-    {"name": "kiss_noah"},
-    {"location": "dance_floor", "consent": True},
+pricing = kernel.reducer("my_app.reducer:OrderPricingReducer")
+order = pricing.create("order-1042")
+order = order.execute(
+    {"name": "apply_discount", "percent": 10},
+    {"tier": "member", "subtotal_cents": 5000},
 )
 ```
 
@@ -113,10 +112,9 @@ generic reducer API. Existing `command(name, **args)` remains unchanged.
 Command, observation, state, effect, and event payload trees are recursively
 immutable (`MappingProxyType`/tuples) before reducer code sees them.
 `observation` is input to semantic reduction; it is not canonical state and
-does not bypass Rust checks. For a D_KISS_NOAH-shaped consumer, the reducer
-can decide whether the observed scene permits the command, emit a versioned
-domain event, and apply that event to produce the next state. This is only an
-API example; the interactive-fiction consumer is not claimed to be migrated.
+does not bypass Rust checks. The reducer decides whether the observed inputs
+permit the command, emits a versioned domain event, and applies that event to
+produce the next state.
 
 The public reducer contract consists of frozen
 `ReducerIdentity`, `DomainEvent`, `Decision`, `ApplyOutcome`, and
@@ -171,7 +169,7 @@ it does not enforce OS-level IO denial.
 
 ## Persistent sessions and transactions
 
-The `0.3.0` session and transaction APIs remain available in `0.4.1`.
+Persistent sessions and transactions are available in `0.5.0`.
 `Kernel(..., session=True)` or `transport.Session` uses
 `ik --store <path> --session`: one canonical JSON request and response per line,
 with the registered machine/reducer and SQLite store held open. One-shot
@@ -214,7 +212,7 @@ or `machine.rs` to write the consumer above.
 
 The Go adapter is `github.com/GauravAlbal/desmo/go`. Same
 boundary: typed transport over `ik`, no second semantics. Install `ik`
-from a private release; see [docs/go.md](../docs/go.md).
+from the GitHub Release; see [docs/go.md](../docs/go.md).
 
 There is no Go reducer API or Go reducer-parity promise; Go remains a typed
 transport client.

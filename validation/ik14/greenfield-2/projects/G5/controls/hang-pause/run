@@ -1,0 +1,9 @@
+#!/bin/sh
+if [ "$1" = pause ]; then
+  count=0
+  if [ -f "$STATE_DIR/.pause-count" ]; then count=$(cat "$STATE_DIR/.pause-count"); fi
+  count=$((count+1))
+  printf '%s\n' "$count" > "$STATE_DIR/.pause-count"
+  if [ "$count" -ge 2 ]; then while :; do sleep 60; done; fi
+fi
+exec ../reference/run "$@"

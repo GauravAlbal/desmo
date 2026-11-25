@@ -2,6 +2,7 @@
 
 use ik::declarative::evaluate::{self, GuardSpec};
 use ik::declarative::expr::{self, Cmp, CmpOp, EvalCtx, Expr, Operand};
+use ik::machine::Machine;
 use ik::smt::{encode_selectability, eval_guard_with_solver, kernel_eval, Pinned};
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -48,6 +49,59 @@ fn check_eq(expr: &Expr, pinned: &Pinned, solver: &ik::smt::SolverBin) {
     assert_eq!(kernel, smt, "mismatch expr={expr:?} pin={pinned:?}");
 }
 
+#[test]
+#[ignore = "requires native Z3; dedicated qualification"]
+fn parsed_add_guard_runtime_boundary_and_partial_tags() {
+    let solver = solver().expect("Z3 required for guard qualification");
+    let guard = parse("$n + 1 > 0");
+    for (n, expected) in [
+        (i64::MIN, ik::smt::GuardValue::False),
+        (-1, ik::smt::GuardValue::False),
+        (0, ik::smt::GuardValue::True),
+        (i64::MAX - 1, ik::smt::GuardValue::True),
+        (i64::MAX, ik::smt::GuardValue::Error),
+    ] {
+        let pinned = Pinned {
+            state: "idle".into(),
+            facts: BTreeMap::new(),
+            args: BTreeMap::from([("n".into(), json!(n))]),
+        };
+        assert_eq!(kernel_eval(&guard, &pinned), expected);
+        assert_eq!(eval_guard_with_solver(&guard, &pinned, solver).expect("solver"), expected);
+    }
+    let args = |n| BTreeMap::from([("n".to_string(), json!(n))]);
+    assert_eq!(expr::eval_partial(&guard, &BTreeMap::new(), &args(i64::MIN), Some("idle")), Some(false));
+    assert_eq!(expr::eval_partial(&guard, &BTreeMap::new(), &args(-1), Some("idle")), Some(false));
+    assert_eq!(expr::eval_partial(&guard, &BTreeMap::new(), &args(0), Some("idle")), Some(true));
+    assert_eq!(expr::eval_partial(&guard, &BTreeMap::new(), &args(i64::MAX - 1), Some("idle")), Some(true));
+    assert_eq!(expr::eval_partial(&guard, &BTreeMap::new(), &args(i64::MAX), Some("idle")), None);
+    assert_eq!(expr::eval_partial(&guard, &BTreeMap::new(), &BTreeMap::new(), Some("idle")), None);
+}
+
+
+#[test]
+#[ignore = "requires native Z3; dedicated qualification"]
+fn overflow_guard_fixture_later_arm_is_impossible_and_zero_replays() {
+    let solver = solver().expect("Z3 required for guard qualification");
+    let source = include_str!("fixtures/feasibility_truth/machines/overflow_guard_add_error.ik.toml");
+    let definition = ik::declarative::parse_definition(source).expect("parse overflow fixture");
+    let query = encode_selectability(&definition, "go", "idle", 1).expect("encode outcome 1");
+    let result = ik::smt::run_smt2(&solver, &query.text, std::time::Duration::from_secs(10))
+        .expect("solve outcome 1");
+    assert_eq!(result.reply, ik::smt::SolverReply::Unsat, "{}", result.raw);
+
+    let machine = ik::declarative::compile::compile(definition).expect("compile fixture");
+    let state = ik::smt::replay_command(
+        &machine,
+        &machine.initial_state(),
+        &ik::smt::CommandStep {
+            name: "go".into(),
+            args: BTreeMap::from([("n".into(), json!(0))]),
+        },
+    )
+    .expect("replay outcome 0 witness at n=0");
+    assert_eq!(state["state"], "ok");
+}
 #[test]
 fn toward_zero_division_matches_kernel() {
     let Some(solver) = skip_without_solver() else {

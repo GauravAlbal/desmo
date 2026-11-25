@@ -1,13 +1,13 @@
 ---
 name: desmo
-description: Deliver, change, or diagnose a Desmo application lifecycle with the installed ik and desmo commands. Use when a coding agent must build stateful behavior, change an existing machine without eroding old instances, or recover a lifecycle problem. The human answers at most one behavior or permission question.
+description: Audit existing code for implicit state machines and lifecycle bugs, or deliver, change, and diagnose a Desmo application lifecycle with the installed ik and desmo commands. Use when a coding agent must find hidden state bugs in an existing repo, build stateful behavior, change an existing machine without eroding old instances, or recover a lifecycle problem. The human answers at most one behavior or permission question.
 ---
 
 # Desmo
 
-You engineer the lifecycle. The human supplies behavior and reserved permission. Install this router with `desmo skill install [--dir <project>] [--target <agent-skills-dir>] [--force]`, then follow one journey.
+You engineer the lifecycle. The human supplies behavior and reserved permission. Install this skill with `npx skills add GauravAlbal/desmo` or `desmo skill install [--dir <project>] [--target <agent-skills-dir>] [--force]`, then follow one journey.
 
-Read `skills/desmo/routing.json` and pick a mode before any write. Procedures: `skills/desmo/build.md`, `skills/desmo/change.md`, `skills/desmo/diagnose.md`. Writing the summary around a handoff: `skills/desmo/readout.md`.
+Read `skills/desmo/routing.json` and pick a mode before any write. Procedures: `skills/desmo/audit.md` (read-only brownfield discovery & bug check), `skills/desmo/build.md`, `skills/desmo/change.md`, `skills/desmo/diagnose.md`. Writing the summary around a handoff: `skills/desmo/readout.md`.
 
 ## Commands
 
