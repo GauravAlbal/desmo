@@ -1,15 +1,15 @@
 # Desmo
 
-**Find hidden state bugs in your codebase. Lock the critical ones into Rust.**
+**Find hidden state bugs in 60s. Make illegal states impossible at runtime.**
 
-> Your coding agent added one feature. Every test passed. Production state broke.
+> Your coding agent shipped one feature. Every test passed. Production didn't.
 
-Run `SELECT DISTINCT status FROM orders;` on almost any app that has been shipped fast — or edited by coding agents — and you'll find `PAID`, `NULL`, unpaid carts refunded, cancelled orders delivered by a late worker, or a rogue status nobody remembers adding. Every PR worked locally; the global lifecycle rules silently eroded because they didn't live anywhere authoritative.
+Run `SELECT DISTINCT status FROM orders;` on almost any app that has been shipped fast — or edited by coding agents — and you'll find `PAID`, `NULL`, unpaid carts refunded, cancelled orders delivered by a late worker, or a rogue status nobody remembers adding. Every PR passed its unit tests; the global lifecycle rules silently broke because nothing enforced them at runtime.
 
 Desmo gives you two moves in one tool:
 
 1. **Audit any existing repo in 60 seconds (read-only):** install the coding-agent skill (`npx skills add GauravAlbal/desmo`), scan your codebase for implicit state machines (`status` columns, boolean flag clusters, worker races), and open a zero-dependency interactive HTML simulator (`ik simulate`) to click illegal transitions and stale-worker races yourself.
-2. **Lock the critical lifecycles into Rust + SQLite (`ik`):** keep the code you change fast in TypeScript, Python, or Go. Put the transitions you cannot afford to get wrong behind one `.ik.toml` definition — **the exact same file** `ik check` explores at build time and `ik` enforces at runtime. Callers propose **commands + generation-bound capabilities**, never destination states.
+2. **Enforce critical lifecycles at runtime (no rewrite, zero Rust to write):** keep your app in TypeScript, Python, or Go. Define the rules once in one `.ik.toml` file — **the exact same file** `ik check` explores before deploy and `ik` (a single zero-dependency Rust + SQLite binary) enforces at runtime. Callers propose **commands + generation-bound capabilities**, never destination states.
 
 ```text
 host (TypeScript / Python / Go)
@@ -105,7 +105,7 @@ ik diagram examples/orders/order.ik.toml
 ik simulate examples/orders/order.ik.toml --out order-simulator.html
 ```
 
-Other tools stop at the diagram. When you find a lifecycle you actually want protected for good, switch to *"Lock this lifecycle behind Desmo"* (`skills/desmo/build.md`) — the exact `.ik.toml` you just checked and simulated becomes the runtime authority in Rust.
+Other tools stop at the diagram. When you find a lifecycle you actually want protected for good, switch to *"Enforce this lifecycle with Desmo"* (`skills/desmo/build.md`) — the exact `.ik.toml` you just checked and simulated becomes the runtime authority (single binary, zero Rust code to write).
 
 Other architectures can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.5.1 --bin ik`.
 
