@@ -18,7 +18,7 @@ from .errors import PreDispatchError, TransportError, raise_diagnostic
 
 PROTOCOL_MAJOR = 1
 PROTOCOL_MINOR = 0
-RUNTIME_VERSION = "0.5.1"
+RUNTIME_VERSION = "0.6.0"
 _MAX_OUTPUT = 1024 * 1024
 _PROCESS_MARKER_ENV = "IK_PROCESS_TREE_TOKEN"
 
@@ -129,6 +129,8 @@ def _communicate_bounded(
     input_text: Optional[str],
     timeout: float,
     process_token: str,
+    *,
+    reap_on_success: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     captures: dict[str, tuple[bytes, bool]] = {}
     failures: list[BaseException] = []
@@ -181,9 +183,15 @@ def _communicate_bounded(
         _kill_process_tree(proc, process_token)
         proc.wait()
     else:
-        # A completed process may not leave descendants holding inherited pipes,
-        # including descendants that created another process group.
-        _kill_process_tree(proc, process_token)
+        if reap_on_success or proc.returncode != 0:
+            _kill_process_tree(proc, process_token)
+        else:
+            for thread in threads:
+                thread.join(timeout=0.02)
+            # Only run the expensive `ps eww` process-tree scan if a stray descendant
+            # is still holding an inherited pipe open after the child exited cleanly.
+            if any(thread.is_alive() for thread in threads):
+                _kill_process_tree(proc, process_token)
     for thread in threads:
         thread.join()
 
@@ -417,7 +425,9 @@ def _run_worker(
         start_new_session=True,
         env=child_env,
     )
-    return _communicate_bounded(proc, argv, payload, timeout, process_token)
+    return _communicate_bounded(
+        proc, argv, payload, timeout, process_token, reap_on_success=True
+    )
 
 
 def parse_version(binary: str) -> tuple[str, int, int]:
@@ -456,6 +466,20 @@ def run_identity(binary: str, machine: str | Path, timeout: float) -> dict[str, 
         raise TransportError("IK_TRANSPORT", f"ik identity returned non-JSON: {proc.stdout!r}") from exc
     if not isinstance(data, dict):
         raise TransportError("IK_TRANSPORT", "ik identity returned a non-object")
+    return data
+
+
+def run_schema(binary: str, machine: str | Path, timeout: float) -> dict[str, Any]:
+    proc = _run([binary, "schema", str(machine)], timeout=timeout)
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout).strip()
+        raise TransportError("IK_TRANSPORT", err or f"ik schema exited {proc.returncode}")
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise TransportError("IK_TRANSPORT", "ik schema returned non-JSON") from exc
+    if not isinstance(data, dict):
+        raise TransportError("IK_TRANSPORT", "ik schema returned non-object")
     return data
 
 
@@ -556,6 +580,7 @@ class Session:
         self._uncertain: set[str] = set()
         self._responses: "queue.Queue[Optional[str]]" = queue.Queue()
         self._stderr: list[str] = []
+        self._stderr_len = 0
         self._process_token = uuid.uuid4().hex
         child_env = os.environ.copy()
         child_env[_PROCESS_MARKER_ENV] = self._process_token
@@ -583,8 +608,9 @@ class Session:
     def _read_stderr(self) -> None:
         assert self._proc.stderr is not None
         for line in self._proc.stderr:
-            if sum(map(len, self._stderr)) < _MAX_OUTPUT:
+            if self._stderr_len < _MAX_OUTPUT:
                 self._stderr.append(line)
+                self._stderr_len += len(line)
 
     def _fail(self, reason: str, request: Optional[Mapping[str, Any]] = None) -> TransportError:
         self._broken = reason

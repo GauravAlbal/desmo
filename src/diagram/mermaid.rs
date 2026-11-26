@@ -6,6 +6,9 @@ pub(super) fn render(diagram: &Diagram) -> String {
     if diagram.kind == DiagramKind::Recovery {
         return recovery_mermaid(diagram);
     }
+    if let Some(regions) = &diagram.regions {
+        return region_mermaid(regions);
+    }
     let mut out = String::from("flowchart LR\n");
     out.push_str("    classDef here stroke-width:3px\n");
     out.push_str("    classDef stuck stroke-width:2px\n");
@@ -106,6 +109,52 @@ fn edge_label(hop: &Hop) -> String {
         label.push_str(" (guard)");
     }
     display_label(&label)
+}
+
+fn region_mermaid(view: &super::RegionView) -> String {
+    let mut out = String::from("flowchart LR\n");
+    for lane in &view.lanes {
+        let sub_id = mermaid_id(&format!("region_{}", lane.name));
+        out.push_str(&format!(
+            "    subgraph {sub_id}[\"{}\"]\n",
+            quoted(&lane.name)
+        ));
+        for state in &lane.states {
+            let nid = mermaid_id(&format!("{}_{}", lane.name, state));
+            let label = quoted(&display_label(state));
+            if lane.terminals.contains(state) {
+                out.push_str(&format!("        {nid}((\"{label}\"))\n"));
+            } else {
+                out.push_str(&format!("        {nid}[\"{label}\"]\n"));
+            }
+        }
+        for hop in lane.hops.iter().chain(lane.parent_hops.iter()) {
+            let from_id = mermaid_id(&format!("{}_{}", lane.name, hop.from));
+            let to_id = mermaid_id(&format!("{}_{}", lane.name, hop.to));
+            let mut label = hop.command.clone();
+            if !hop.guard.is_empty() {
+                label.push_str(&format!(" ({})", hop.guard));
+            }
+            out.push_str(&format!(
+                "        {from_id} --> |{}| {to_id}\n",
+                quoted(&display_label(&label))
+            ));
+        }
+        out.push_str("    end\n");
+    }
+    for joint in &view.joints {
+        let jid = mermaid_id(&format!("joint_{}", joint.command));
+        let mut label = format!("joint: {}", joint.command);
+        if !joint.guard.is_empty() {
+            label.push_str(&format!(" ({})", joint.guard));
+        }
+        out.push_str(&format!("    {jid}{{\"{}\"}}\n", quoted(&display_label(&label))));
+        for (region, _from, to) in &joint.legs {
+            let to_id = mermaid_id(&format!("{region}_{to}"));
+            out.push_str(&format!("    {jid} -.-> {to_id}\n"));
+        }
+    }
+    out
 }
 
 fn recovery_mermaid(diagram: &Diagram) -> String {

@@ -137,7 +137,7 @@ export function renderInstall(plan: InstallPlan): string {
     head,
     `next: point the coding agent at ${join(plan.destination, "SKILL.md")}`,
     `next: desmo doctor --dir ${plan.projectDir}`,
-    "next: open SKILL.md and follow build.md, change.md, or diagnose.md",
+    "next: open SKILL.md and follow audit.md, build.md, change.md, or diagnose.md",
     "",
   ].join("\n");
 }

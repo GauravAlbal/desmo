@@ -345,7 +345,10 @@ impl CaseCorpus {
 
 /// Explore from the real initial state using the real evaluator.
 pub fn explore(machine: &CompiledMachine, corpus: &CaseCorpus, bounds: Bounds) -> Exploration {
-    explore_graph(machine, corpus, bounds).0
+    let def = machine.definition();
+    let graph = machine_graph(def);
+    let analysis = analyze(&graph);
+    walk(machine, def, &graph, &analysis, corpus, bounds, None, false).0
 }
 
 /// The same traversal, retaining the finite graph the explorer actually walked.
@@ -357,7 +360,8 @@ pub fn explore_graph(
     let def = machine.definition();
     let graph = machine_graph(def);
     let analysis = analyze(&graph);
-    let (run, mut traced) = walk(machine, def, &graph, &analysis, corpus, bounds, None);
+    let (run, traced) = walk(machine, def, &graph, &analysis, corpus, bounds, None, true);
+    let mut traced = traced.expect("graph builder requested");
     traced.restrictions = input_restrictions(def, corpus);
     (run, traced)
 }
@@ -372,7 +376,7 @@ pub fn explore_with_invariant_witnesses(
     let graph = machine_graph(def);
     let analysis = analyze(&graph);
     let mut refusals = BTreeMap::new();
-    let (run, _traced) = walk(
+    let (run, _) = walk(
         machine,
         def,
         &graph,
@@ -380,10 +384,12 @@ pub fn explore_with_invariant_witnesses(
         corpus,
         bounds,
         Some(&mut refusals),
+        false,
     );
     (run, refusals.into_values().collect())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn walk(
     machine: &CompiledMachine,
     def: &Definition,
@@ -392,11 +398,12 @@ fn walk(
     corpus: &CaseCorpus,
     bounds: Bounds,
     mut invariant_refusals: Option<&mut BTreeMap<String, InvariantRefusalWitness>>,
-) -> (Exploration, RuntimeGraph) {
+    build_graph: bool,
+) -> (Exploration, Option<RuntimeGraph>) {
     let mut queue = VecDeque::new();
-    let mut seen = BTreeSet::new();
+    let mut seen = std::collections::HashSet::<[u8; 32]>::new();
     let initial = machine.initial_state();
-    let initial_key = digest_json(&initial);
+    let initial_key = crate::canonical::sha256_value_raw(&initial);
     seen.insert(initial_key);
     queue.push_back(Node {
         state: initial.clone(),
@@ -424,7 +431,8 @@ fn walk(
         &[],
         false,
     );
-    let mut traced = GraphBuilder::start(&initial, &analysis.terminal_states);
+    let mut traced = build_graph.then(|| GraphBuilder::start(&initial, &analysis.terminal_states));
+    let all_candidates = candidates(def, corpus);
 
     while let Some(node) = queue.pop_front() {
         nodes += 1;
@@ -433,8 +441,21 @@ fn walk(
             incomplete_reason = Some("max_nodes".to_string());
             break;
         }
-        traced.mark_expanded(&node.state);
-        for candidate in candidates(def, corpus) {
+        if let Some(gb) = traced.as_mut() {
+            gb.mark_expanded(&node.state);
+        }
+        let cur_state_name = node.state.get("state").and_then(Value::as_str);
+        for candidate in &all_candidates {
+            if !build_graph {
+                if let (Some(st), Some(cdef)) =
+                    (cur_state_name, def.commands.get(&candidate.command_name))
+                {
+                    if !cdef.from.iter().any(|s| s == st) {
+                        refusal_classes.insert(crate::diagnostic::DiagnosticCode::IkIllegalState.as_str());
+                        continue;
+                    }
+                }
+            }
             match classify(machine, &node.state, &candidate.command) {
                 Step::Commit {
                     next,
@@ -442,7 +463,9 @@ fn walk(
                     outcome_index,
                 } => {
                     edges += 1;
-                    traced.record_commit(&node.state, &next, terminal, &candidate);
+                    if let Some(gb) = traced.as_mut() {
+                        gb.record_commit(&node.state, &next, terminal, candidate);
+                    }
                     record_executed(
                         &mut executed_commands,
                         &mut executed_command_sources,
@@ -472,12 +495,14 @@ fn walk(
                         &path,
                         terminal,
                     );
-                    let key = digest_json(&next);
+                    let key = crate::canonical::sha256_value_raw(&next);
                     if !seen.insert(key) {
                         continue;
                     }
                     if terminal {
-                        traced.close_terminal(&next);
+                        if let Some(gb) = traced.as_mut() {
+                            gb.close_terminal(&next);
+                        }
                         continue;
                     }
                     if node.depth + 1 >= bounds.max_depth {
@@ -491,7 +516,11 @@ fn walk(
                         depth: node.depth + 1,
                     });
                 }
-                Step::Noop => traced.record_loop(&node.state, &candidate, "noop"),
+                Step::Noop => {
+                    if let Some(gb) = traced.as_mut() {
+                        gb.record_loop(&node.state, candidate, "noop");
+                    }
+                }
                 Step::Refuse {
                     diagnostic,
                     outcome_index,
@@ -501,15 +530,17 @@ fn walk(
                         def,
                         invariant_refusals.as_deref_mut(),
                         &node.path,
-                        &candidate,
+                        candidate,
                         &diagnostic,
                         outcome_index,
                     );
-                    traced.record_loop(
-                        &node.state,
-                        &candidate,
-                        &format!("refused:{}", diagnostic.code.as_str()),
-                    );
+                    if let Some(gb) = traced.as_mut() {
+                        gb.record_loop(
+                            &node.state,
+                            candidate,
+                            &format!("refused:{}", diagnostic.code.as_str()),
+                        );
+                    }
                 }
             }
         }
@@ -544,7 +575,7 @@ fn walk(
         ),
         witnesses,
     };
-    (exploration, traced.finish())
+    (exploration, traced.map(GraphBuilder::finish))
 }
 
 fn record_invariant_refusal(

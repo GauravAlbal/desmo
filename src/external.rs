@@ -615,6 +615,10 @@ struct Worker {
     replies: Receiver<Vec<u8>>,
     stderr: Arc<Mutex<Vec<u8>>>,
     process_token: String,
+    #[cfg(unix)]
+    reaper_tx: Option<mpsc::Sender<()>>,
+    #[cfg(unix)]
+    reaper_thread: Option<thread::JoinHandle<()>>,
     next_id: u64,
     calls: u64,
 }
@@ -666,12 +670,32 @@ impl Worker {
         let stderr = Arc::new(Mutex::new(Vec::new()));
         let stderr_sink = Arc::clone(&stderr);
         thread::spawn(move || capture_stderr(stderr_pipe, stderr_sink));
+        #[cfg(unix)]
+        let (reaper_tx, reaper_thread) = {
+            let (tx, rx) = mpsc::channel::<()>();
+            let child_pid = child.id();
+            let token = process_token.clone();
+            let handle = thread::spawn(move || {
+                while rx.recv().is_ok() {
+                    // Coalesce bursts (e.g., replay/verify) into a single sweep off the write-lock path.
+                    while rx.try_recv().is_ok() {}
+                    let mut stray = tree_targets(Some(child_pid), &token);
+                    stray.remove(&child_pid);
+                    kill_pids(stray);
+                }
+            });
+            (Some(tx), Some(handle))
+        };
         Ok(Worker {
             child,
             stdin: Some(stdin),
             replies,
             stderr,
             process_token,
+            #[cfg(unix)]
+            reaper_tx,
+            #[cfg(unix)]
+            reaper_thread,
             next_id: 0,
             calls: 0,
         })
@@ -731,14 +755,11 @@ impl Worker {
         if let Some(error) = reply.get("error") {
             return Err(protocol_error(format!("reducer JSON-RPC error: {error}")));
         }
-        // A reducer must not leave descendants alive, even ones that detached into their own
-        // session; the long-lived worker itself is the only process allowed to survive a call.
+        // Reap any stray descendants off the SQLite write-lock hot path via the coalescing
+        // background reaper thread so calls return immediately without waiting on `ps eww`.
         #[cfg(unix)]
-        {
-            let root = matches!(self.child.try_wait(), Ok(None)).then(|| self.child.id());
-            let mut stray = tree_targets(root, &self.process_token);
-            stray.remove(&self.child.id());
-            kill_pids(stray);
+        if let Some(tx) = &self.reaper_tx {
+            let _ = tx.send(());
         }
         reply
             .get_mut("result")
@@ -770,6 +791,13 @@ impl Worker {
 
 impl Drop for Worker {
     fn drop(&mut self) {
+        #[cfg(unix)]
+        {
+            drop(self.reaper_tx.take());
+            if let Some(handle) = self.reaper_thread.take() {
+                let _ = handle.join();
+            }
+        }
         // EOF on stdin ends the worker loop; escalate only if it does not exit promptly.
         drop(self.stdin.take());
         let deadline = Instant::now() + Duration::from_millis(500);

@@ -209,7 +209,7 @@ fn create_with_command_hides_invalid_admission_and_replays_the_operation() {
     let identity = machine_identity(&machine);
     let bad = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.1",
+        "runtime_version": "0.6.0",
         "request_id": "bad",
         "op": "create_with_command",
         "aggregate_id": "doc-bad",
@@ -221,7 +221,7 @@ fn create_with_command_hides_invalid_admission_and_replays_the_operation() {
     assert_eq!(code, 1, "{stdout}");
     let missing = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.1",
+        "runtime_version": "0.6.0",
         "request_id": "show",
         "op": "show",
         "aggregate_id": "doc-bad"
@@ -235,7 +235,7 @@ fn create_with_command_hides_invalid_admission_and_replays_the_operation() {
 
     let good = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.1",
+        "runtime_version": "0.6.0",
         "request_id": "good",
         "op": "create_with_command",
         "aggregate_id": "doc-good",
@@ -257,7 +257,7 @@ fn create_with_command_hides_invalid_admission_and_replays_the_operation() {
 
     let lookup = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.1",
+        "runtime_version": "0.6.0",
         "request_id": "look",
         "op": "lookup_operation",
         "aggregate_id": "doc-good",

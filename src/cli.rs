@@ -48,7 +48,7 @@ const SUBCOMMANDS: &[Subcommand] = &[
     },
     Subcommand {
         name: "check",
-        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]",
+        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]",
         run: run_check,
     },
     Subcommand {
@@ -118,8 +118,13 @@ const SUBCOMMANDS: &[Subcommand] = &[
     },
     Subcommand {
         name: "simulate",
-        usage: "       ik simulate <machine.ik.toml> [--out <file.html>]",
+        usage: "       ik simulate <machine.ik.toml> [--out <file.html>] [--open]",
         run: crate::simulate::run,
+    },
+    Subcommand {
+        name: "codegen",
+        usage: "       ik codegen <machine.ik.toml> --lang ts|py|go [--out <file>] [--check] [--import-from <specifier>] [--package <name>]",
+        run: crate::codegen::run,
     },
     Subcommand {
         name: "analysis",
@@ -144,12 +149,17 @@ pub fn dispatched_subcommand_names() -> impl Iterator<Item = &'static str> {
 }
 
 fn write_usage(mut emit: impl FnMut(&str)) {
-    emit("usage: ik --store <path> [--machine <def.toml>] [--session] create|create_with_command|command|record|show|replay|verify|transaction|lookup_operation");
-    emit("       ik --help");
-    emit("       ik --version");
+    emit("Desmo (ik) — find hidden state bugs and enforce state machines at runtime");
+    emit("");
+    emit("Commands:");
     for command in SUBCOMMANDS {
         emit(command.usage);
     }
+    emit("");
+    emit("Runtime (JSON wire / persistent session):");
+    emit("usage: ik --store <path> [--machine <def.toml>] [--session] create|create_with_command|command|record|show|replay|verify|transaction|lookup_operation");
+    emit("       ik --help");
+    emit("       ik --version");
 }
 
 /// Dispatch the named subcommands; `None` means the legacy envelope mode.
@@ -164,6 +174,10 @@ fn run_subcommand(args: &[String]) -> Option<i32> {
 
 /// Run one CLI invocation. Returns the process exit code.
 pub fn run(args: &[String]) -> i32 {
+    if args.is_empty() {
+        write_usage(|line| println!("{line}"));
+        return 0;
+    }
     if let Some(code) = run_subcommand(args) {
         return code;
     }
@@ -532,7 +546,7 @@ impl StoreSlot {
 /// The reducer is registered once and bound for the session; each request is still validated and
 /// dispatched independently, so a failed request never corrupts the session.
 fn run_session(parsed: &Flags) -> i32 {
-    use std::io::BufRead;
+    use std::io::{BufRead, Write};
     let mut registry = MachineRegistry::new();
     let mut cli_machine: Option<RegisteredMachine> = None;
     if let Some(path) = &parsed.machine {
@@ -554,6 +568,8 @@ fn run_session(parsed: &Flags) -> i32 {
     }
     let mut bound: Option<(String, RegisteredMachine)> = None;
     let mut stores = StoreSlot::new(parsed.store.clone());
+    let stdout = std::io::stdout();
+    let mut out = stdout.lock();
     for line in std::io::stdin().lock().lines() {
         let Ok(line) = line else {
             eprintln!("ik: failed to read session request");
@@ -570,7 +586,20 @@ fn run_session(parsed: &Flags) -> i32 {
             cli_machine.as_ref(),
             &mut stores,
         );
-        println!("{}", canonical_json(&response));
+        if let Err(err) = writeln!(out, "{}", canonical_json(&response)) {
+            if err.kind() == std::io::ErrorKind::BrokenPipe {
+                return 0;
+            }
+            eprintln!("ik: failed to write session response: {err}");
+            return 2;
+        }
+        if let Err(err) = out.flush() {
+            if err.kind() == std::io::ErrorKind::BrokenPipe {
+                return 0;
+            }
+            eprintln!("ik: failed to flush session response: {err}");
+            return 2;
+        }
     }
     0
 }
@@ -1088,8 +1117,8 @@ fn run_schema_inner(args: &[String]) -> Result<i32, String> {
         Some(_) if args.len() > 1 => Err(format!("unexpected argument `{}`", args[1])),
         Some(path) => {
             let compiled = load_def(Path::new(path)).map_err(|errors| errors.join("; "))?;
-            let def = load_definition(Path::new(path)).map_err(|errors| errors.join("; "))?;
-            let schema = crate::declarative::schema::machine_schema(&def, compiled.identity());
+            let schema =
+                crate::declarative::schema::machine_schema(compiled.definition(), compiled.identity());
             println!("{}", canonical_json(&schema));
             Ok(0)
         }
@@ -1118,9 +1147,9 @@ fn run_laws_inner(args: &[String]) -> Result<i32, String> {
         Some(_) if args.len() > 1 => Err(format!("unexpected argument `{}`", args[1])),
         Some(path) => {
             let compiled = load_def(Path::new(path)).map_err(|errors| errors.join("; "))?;
-            let def = load_definition(Path::new(path)).map_err(|errors| errors.join("; "))?;
+            let def = compiled.definition();
             let identity = compiled.identity();
-            let plan = crate::declarative::verification_plan(&def);
+            let plan = crate::declarative::verification_plan(def);
             let laws: Vec<Value> = def
                 .invariants
                 .iter()
@@ -1161,7 +1190,7 @@ fn run_laws_inner(args: &[String]) -> Result<i32, String> {
                     "spec_hash": identity.spec_hash,
                     "laws": laws,
                     "commands": commands,
-                    "unguarded_arguments": crate::declarative::gaps::unguarded_arguments(&def),
+                    "unguarded_arguments": crate::declarative::gaps::unguarded_arguments(def),
                 }))
             );
             Ok(0)
@@ -1174,7 +1203,7 @@ fn run_check(args: &[String]) -> i32 {
         Ok(code) => code,
         Err(msg) => {
             eprintln!("ik check: {msg}");
-            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]");
+            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
             2
         }
     }
@@ -1188,7 +1217,9 @@ struct CheckFlags {
     profile: Option<PathBuf>,
     release: bool,
     json: bool,
+    compact: bool,
     plan: bool,
+    region_product_bound: Option<usize>,
     template_only: bool,
 }
 
@@ -1201,13 +1232,14 @@ fn path_value(args: &[String], i: usize, flag: &str) -> Result<PathBuf, String> 
 fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
     let mut path: Option<PathBuf> = None;
     let mut values: BTreeMap<&str, PathBuf> = BTreeMap::new();
-    let (mut release, mut json, mut plan) = (false, false, false);
+    let (mut release, mut json, mut compact, mut plan) = (false, false, false, false);
+    let mut region_product_bound: Option<usize> = None;
     let mut template: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "-h" | "--help" => {
-                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--profile <checks.toml>] [--plan]");
+                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
                 return Ok(None);
             }
             flag @ ("--prior" | "--corpus" | "--baseline" | "--profile") => {
@@ -1218,8 +1250,25 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
                 i += 1;
                 template = Some(path_value(args, i, "--corpus-template")?);
             }
+            "--region-product-bound" => {
+                i += 1;
+                let raw = args
+                    .get(i)
+                    .ok_or("--region-product-bound requires a positive integer")?;
+                let parsed = raw
+                    .parse::<usize>()
+                    .map_err(|_| format!("invalid --region-product-bound `{raw}`"))?;
+                if parsed == 0 {
+                    return Err("--region-product-bound must be >= 1".into());
+                }
+                region_product_bound = Some(parsed);
+            }
             "--release" => release = true,
             "--json" => json = true,
+            "--compact" => {
+                compact = true;
+                json = true;
+            }
             "--plan" => plan = true,
             flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
             name if path.is_none() => path = Some(PathBuf::from(name)),
@@ -1246,18 +1295,30 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
         profile: values.remove("--profile"),
         release,
         json,
+        compact,
         plan,
+        region_product_bound,
         template_only,
     }))
 }
 
-fn load_definition_file(path: &Path) -> Result<crate::declarative::Definition, String> {
-    load_source_file(path).map(|source| source.definition)
+fn load_definition_file(
+    path: &Path,
+    limits: crate::declarative::region::RegionLimits,
+) -> Result<crate::declarative::Definition, String> {
+    load_source_file_with_limits(path, limits).map(|source| source.definition)
 }
 
 fn load_source_file(path: &Path) -> Result<crate::declarative::region::SourceDefinition, String> {
+    load_source_file_with_limits(path, crate::declarative::region::RegionLimits::default())
+}
+
+fn load_source_file_with_limits(
+    path: &Path,
+    limits: crate::declarative::region::RegionLimits,
+) -> Result<crate::declarative::region::SourceDefinition, String> {
     let src = std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    crate::declarative::region::parse_source(&src)
+    crate::declarative::region::parse_source_with_limits(&src, limits)
         .map_err(|e| format!("parse {}: {}", path.display(), e.join("; ")))
 }
 
@@ -1271,7 +1332,13 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
     if flags.plan && flags.profile.is_none() {
         return Err("--plan requires --profile".into());
     }
-    let source = load_source_file(&flags.path)?;
+    let region_limits = match flags.region_product_bound {
+        Some(region_product_bound) => {
+            crate::declarative::region::RegionLimits { region_product_bound }
+        }
+        None => crate::declarative::region::RegionLimits::default(),
+    };
+    let source = load_source_file_with_limits(&flags.path, region_limits)?;
     let new = &source.definition;
     let corpus = load_corpus(&flags.path, flags.corpus.as_deref(), new)?;
     let profile = load_check_profile(flags.profile.as_deref(), new)?;
@@ -1281,7 +1348,7 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
     let old = flags
         .prior
         .as_deref()
-        .map(load_definition_file)
+        .map(|p| load_definition_file(p, region_limits))
         .transpose()?;
     let baseline = load_baseline(flags.baseline.as_deref(), &new.machine_id)?;
     let bounds = profile
@@ -1404,7 +1471,27 @@ fn emit_check(
     envelope: Option<&crate::declarative::profile::ProfileEnvelope>,
     hint: Option<&str>,
 ) -> Result<(), String> {
-    if flags.json {
+    if flags.compact {
+        let mut value = json!({
+            "verdict": result.verdict,
+            "status": result.flat.judgment.status,
+            "release_verdict": result.flat.release.release.verdict,
+            "machine_id": result.flat.report.machine_id,
+            "spec_hash": result.flat.report.spec_hash,
+            "obligations": {
+                "total": result.flat.report.obligations.total,
+                "satisfied": result.flat.report.obligations.satisfied,
+                "uncovered": result.flat.report.obligations.uncovered,
+                "falsified": result.flat.report.obligations.falsified,
+                "incomplete": result.flat.report.obligations.incomplete,
+                "uncovered_ids": result.flat.report.obligations.uncovered_ids,
+            },
+            "reasons": result.flat.judgment.reasons,
+            "invariant_witnesses": crate::declarative::region::invariant_witness_json(&result.invariant_refusals),
+        });
+        attach_check_extras(&mut value, envelope, hint)?;
+        println!("{}", canonical_json(&value));
+    } else if flags.json {
         let mut value = json!({
             "verdict": result.verdict,
             "judgment": result.flat.judgment,

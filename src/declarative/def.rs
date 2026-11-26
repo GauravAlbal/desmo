@@ -136,6 +136,7 @@ pub struct Definition {
     pub machine_version: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(default)]
     pub facts: BTreeMap<String, FactDef>,
     pub states: BTreeMap<String, StateDef>,
     pub commands: BTreeMap<String, CommandDef>,
@@ -233,6 +234,46 @@ pub struct InvariantDef {
     pub assert: String,
 }
 
+/// Closest candidate within Levenshtein edit distance 2 (for "did you mean?" diagnostics).
+pub fn did_you_mean<'a>(needle: &str, candidates: &[&'a str]) -> Option<&'a str> {
+    let mut best: Option<(&'a str, usize)> = None;
+    for &cand in candidates {
+        if cand == needle {
+            continue;
+        }
+        let d = edit_distance(needle, cand);
+        let max_d = if needle.len() <= 3 { 1 } else { 2 };
+        if d <= max_d && best.map_or(true, |(_, bd)| d < bd) {
+            best = Some((cand, d));
+        }
+    }
+    best.map(|(s, _)| s)
+}
+
+fn edit_distance(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    let mut prev: Vec<usize> = (0..=b.len()).collect();
+    let mut curr = vec![0; b.len() + 1];
+    for (i, &ca) in a.iter().enumerate() {
+        curr[0] = i + 1;
+        for (j, &cb) in b.iter().enumerate() {
+            let cost = usize::from(ca != cb);
+            curr[j + 1] = (prev[j + 1] + 1).min(curr[j] + 1).min(prev[j] + cost);
+        }
+        std::mem::swap(&mut prev, &mut curr);
+    }
+    prev[b.len()]
+}
+
+fn suggest_suffix(needle: &str, keys: impl Iterator<Item = impl AsRef<str>>) -> String {
+    let owned: Vec<String> = keys.map(|k| k.as_ref().to_string()).collect();
+    let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+    did_you_mean(needle, &refs)
+        .map(|s| format!("; did you mean `{s}`?"))
+        .unwrap_or_default()
+}
+
 /// Static-check failure collection.
 pub type StaticErrors = Vec<String>;
 
@@ -293,14 +334,17 @@ fn check_facts(def: &Definition, errors: &mut Vec<String>) {
             errors.push(format!("fact `{name}` uses a reserved word"));
         }
         if !matches!(fact.ty.as_str(), "int" | "string" | "bool") {
-            errors.push(format!("fact `{name}` has unknown type `{}`", fact.ty));
+            errors.push(format!(
+                "fact `{name}` has unknown type `{}` (expected one of: int, string, bool)",
+                fact.ty
+            ));
         }
         if !matches!(
             fact.policy.as_str(),
             "counter" | "replace" | "once" | "kernel_only"
         ) {
             errors.push(format!(
-                "fact `{name}` has unknown policy `{}`",
+                "fact `{name}` has unknown policy `{}` (expected one of: counter, replace, once, kernel_only)",
                 fact.policy
             ));
         }
@@ -365,8 +409,9 @@ fn check_command_sources(def: &Definition, cmd: &CommandDef, name: &str, errors:
     }
     for from in &cmd.from {
         if !def.states.contains_key(from) {
+            let hint = suggest_suffix(from, def.states.keys());
             errors.push(format!(
-                "command `{name}` references unknown source state `{from}`"
+                "command `{name}` references unknown source state `{from}`{hint}"
             ));
         }
         if let Some(s) = def.states.get(from) {
@@ -407,7 +452,7 @@ fn check_command_args(
         }
         if !matches!(ty.as_str(), "int" | "string" | "bool") {
             errors.push(format!(
-                "command `{name}` argument `${arg}` has unknown type `{ty}`"
+                "command `{name}` argument `${arg}` has unknown type `{ty}` (expected one of: int, string, bool)"
             ));
         }
     }
@@ -416,7 +461,8 @@ fn check_command_args(
 fn check_command_to(def: &Definition, cmd: &CommandDef, name: &str, errors: &mut Vec<String>) {
     let Some(to) = &cmd.to else { return };
     if !def.states.contains_key(to) {
-        errors.push(format!("command `{name}` targets unknown state `{to}`"));
+        let hint = suggest_suffix(to, def.states.keys());
+        errors.push(format!("command `{name}` targets unknown state `{to}`{hint}"));
     }
 }
 
@@ -470,8 +516,9 @@ fn check_outcome(
     errors: &mut Vec<String>,
 ) {
     if !def.states.contains_key(&outcome.to) {
+        let hint = suggest_suffix(&outcome.to, def.states.keys());
         errors.push(format!(
-            "command `{name}` outcome {i} targets unknown state `{}`",
+            "command `{name}` outcome {i} targets unknown state `{}`{hint}",
             outcome.to
         ));
     }

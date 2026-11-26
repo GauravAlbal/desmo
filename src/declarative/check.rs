@@ -5,10 +5,9 @@
 
 use super::compile::compile;
 use super::def::Definition;
-use super::diff::diff_machines;
 use super::evidence::discharge_exploration;
 use super::explore::{explore, Bounds, CaseCorpus, Exploration};
-use super::local::{change_local_guards, LocalAdequacy};
+use super::local::LocalAdequacy;
 use super::plan::{plan_diff, verification_plan, VerificationObligationV1, VerificationPlanV1};
 use super::release::{release_evidence, ReleaseEvidence, ReleaseInputs};
 use super::report::{judge_acceptance, report_from_evidence, AcceptJudgment, VerificationReportV1};
@@ -93,10 +92,36 @@ pub(crate) fn check_with_run(
         (explore(&new_machine, corpus, bounds), Vec::new())
     };
     let discharges = discharge_exploration(&new_plan, &new_run);
-    let local = if let Some(old) = prior {
-        change_local_guards(old, new, corpus, bounds)?
-    } else {
-        Vec::new()
+    let old_compiled = prior
+        .map(|old| compile(old.clone()))
+        .transpose()
+        .map_err(|e| e.join("; "))?;
+    let old_run = old_compiled
+        .as_ref()
+        .map(|m| explore(m, corpus, bounds));
+    let machine_diff = match (prior, old_compiled.as_ref(), old_run.as_ref()) {
+        (Some(old), Some(old_machine), Some(old_r)) => Some(super::diff::diff_machines_with_runs(
+            old,
+            new,
+            old_machine,
+            &new_machine,
+            old_r,
+            &new_run,
+            corpus,
+            bounds,
+        )?),
+        _ => None,
+    };
+    let local = match machine_diff.as_ref() {
+        Some(diff) => super::local::change_local_guards_with_runs(
+            new,
+            &new_machine,
+            &new_run,
+            diff,
+            corpus,
+            bounds,
+        )?,
+        None => Vec::new(),
     };
     let report = report_from_evidence(&new_plan, &discharges, &local);
     let diff = match prior {
@@ -136,14 +161,6 @@ pub(crate) fn check_with_run(
         corpus,
         bounds,
     });
-    let old_run = prior
-        .map(|old| compile(old.clone()).map(|m| explore(&m, corpus, bounds)))
-        .transpose()
-        .map_err(|e| e.join("; "))?;
-    let machine_diff = match prior {
-        Some(old) => Some(diff_machines(old, new, corpus, bounds)?),
-        None => None,
-    };
     let mut text = render_packet(RenderArgs {
         new,
         new_plan: &new_plan,

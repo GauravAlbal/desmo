@@ -1,17 +1,18 @@
 //! `ik simulate`: render a zero-dependency, self-contained interactive HTML simulator
-//! from a declarative `.ik.toml` machine via `ik schema`.
+//! from a declarative `.ik.toml` machine.
 //!
-//! Advisory structural explorer only: derives strictly from `crate::declarative::schema`
-//! and never acts as runtime execution authority. Guard expressions, invariants, and
-//! durable commits are evaluated authoritatively by the Rust `ik` runtime.
+//! Advisory explorer derived from the compiled `.ik.toml` definition (states, facts,
+//! guards, `then` updates, invariants, effects, and schema-2 regions). Guard previews
+//! and fact updates mirror the declared rules for exploration; durable commits and
+//! production authority are enforced exclusively by the Rust `ik` runtime.
 
 use crate::canonical::canonical_json;
-use crate::declarative::{load_def, load_definition};
+use crate::declarative::{load_def, Definition};
 use crate::machine::Machine;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-const USAGE: &str = "usage: ik simulate <machine.ik.toml> [--out <file.html>]";
+const USAGE: &str = "usage: ik simulate <machine.ik.toml> [--out <file.html>] [--open]";
 
 pub fn run(args: &[String]) -> i32 {
     match run_inner(args) {
@@ -31,6 +32,7 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
     }
     let mut machine: Option<PathBuf> = None;
     let mut out: Option<PathBuf> = None;
+    let mut open_browser = false;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -39,6 +41,7 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
                 let value = args.get(i).ok_or("--out requires a path")?;
                 out = Some(PathBuf::from(value));
             }
+            "--open" => open_browser = true,
             flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
             path if machine.is_none() => machine = Some(PathBuf::from(path)),
             other => return Err(format!("unexpected argument `{other}`")),
@@ -47,11 +50,22 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
     }
     let machine = machine.ok_or("machine definition path is required")?;
     let compiled = load_def(&machine).map_err(|errors| errors.join("; "))?;
-    let def = load_definition(&machine).map_err(|errors| errors.join("; "))?;
-    let schema = crate::declarative::schema::machine_schema(&def, compiled.identity());
+    let def = compiled.definition();
+    let mut schema = crate::declarative::schema::machine_schema(def, compiled.identity());
+    enrich_schema_with_def(&mut schema, def, &machine);
     let html = render_simulator_html(&schema)?;
 
-    if let Some(out_path) = out {
+    let target_out = match (out, open_browser) {
+        (Some(path), _) => Some(path),
+        (None, true) => Some(std::env::temp_dir().join(format!(
+            "{}-v{}-simulator.html",
+            compiled.identity().machine_id,
+            compiled.identity().version
+        ))),
+        (None, false) => None,
+    };
+
+    if let Some(out_path) = target_out {
         write_html_file(&out_path, &html)?;
         let identity = compiled.identity();
         println!(
@@ -62,10 +76,133 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
             def.states.len(),
             def.commands.len()
         );
+        if open_browser {
+            open_in_browser(&out_path)?;
+        }
     } else {
         print!("{html}");
     }
     Ok(0)
+}
+
+fn open_in_browser(path: &Path) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let launcher = "open";
+    #[cfg(target_os = "linux")]
+    let launcher = "xdg-open";
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    let launcher = "open";
+
+    std::process::Command::new(launcher)
+        .arg(path)
+        .spawn()
+        .map_err(|err| format!("failed to launch `{launcher}` for {}: {err}", path.display()))?;
+    Ok(())
+}
+
+/// Attach full compiled rule metadata (initial facts, guards, `then` updates, invariants,
+/// effects, and schema-2 regions) to the `ik schema` payload so the simulator can preview
+/// real guards, live facts, pending-effect locks, and export `scenario.json`.
+fn enrich_schema_with_def(schema: &mut Value, def: &Definition, source_path: &Path) {
+    let Some(root) = schema.as_object_mut() else {
+        return;
+    };
+    root.insert(
+        "source_path".to_string(),
+        Value::String(source_path.display().to_string()),
+    );
+
+    if let Some(facts_arr) = root.get_mut("facts").and_then(Value::as_array_mut) {
+        for item in facts_arr.iter_mut() {
+            if let Some(obj) = item.as_object_mut() {
+                if let Some(name) = obj.get("name").and_then(Value::as_str) {
+                    if let Some(fdef) = def.facts.get(name) {
+                        if let Some(init) = &fdef.initial {
+                            obj.insert("initial".to_string(), init.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(cmds_arr) = root.get_mut("commands").and_then(Value::as_array_mut) {
+        for item in cmds_arr.iter_mut() {
+            if let Some(obj) = item.as_object_mut() {
+                let Some(name) = obj.get("name").and_then(Value::as_str).map(str::to_string) else {
+                    continue;
+                };
+                let Some(cdef) = def.commands.get(&name) else {
+                    continue;
+                };
+                let outcomes: Vec<Value> = if let Some(list) = &cdef.outcomes {
+                    list.iter()
+                        .map(|o| {
+                            json!({
+                                "to": o.to,
+                                "when": o.when,
+                                "then": o.then.clone().unwrap_or_default(),
+                            })
+                        })
+                        .collect()
+                } else if let Some(to) = &cdef.to {
+                    vec![json!({
+                        "to": to,
+                        "when": cdef.when,
+                        "then": cdef.then.clone().unwrap_or_default(),
+                    })]
+                } else {
+                    Vec::new()
+                };
+                obj.insert("outcomes".to_string(), Value::Array(outcomes));
+                if let Some(eff) = &cdef.effect {
+                    obj.insert(
+                        "effect".to_string(),
+                        json!({
+                            "kind": eff.kind,
+                            "id": eff.id,
+                        }),
+                    );
+                }
+            }
+        }
+    }
+
+    let inv_defs: Vec<Value> = def
+        .invariants
+        .iter()
+        .map(|(name, inv)| {
+            json!({
+                "name": name,
+                "when": inv.when,
+                "assert": inv.assert,
+            })
+        })
+        .collect();
+    root.insert("invariant_defs".to_string(), Value::Array(inv_defs));
+
+    if def.chart.hierarchical && !def.chart.regions.is_empty() {
+        let regions: Vec<Value> = def
+            .chart
+            .regions
+            .iter()
+            .map(|(name, r)| {
+                let states: Vec<&String> = r.states.keys().collect();
+                json!({
+                    "name": name,
+                    "states": states,
+                })
+            })
+            .collect();
+        let coords: serde_json::Map<String, Value> = def
+            .origin
+            .products
+            .iter()
+            .map(|(flat, parts)| (flat.clone(), json!(parts)))
+            .collect();
+        root.insert("regions".to_string(), Value::Array(regions));
+        root.insert("state_coords".to_string(), Value::Object(coords));
+    }
 }
 
 fn write_html_file(path: &Path, html: &str) -> Result<(), String> {
@@ -175,19 +312,15 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     --accent-soft: #FFF1EA;
     --ok: #136F41;
     --ok-soft: #ECF8F1;
+    --warn: #8A5300;
+    --warn-soft: #FFF8E6;
     --mono: ui-monospace, "IBM Plex Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--sans);
-    line-height: 1.45;
-  }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.45; }
   .accent-strip { height: 5px; background: var(--accent); width: 100%; }
-  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 28px 48px; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 28px 48px; }
   header {
     display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end;
     gap: 16px; padding-bottom: 18px; border-bottom: 1.5px solid var(--line);
@@ -205,11 +338,9 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     font: 500 12.5px/1.5 var(--mono); color: var(--sec);
   }
   .advisory strong { color: var(--ink); }
-  .grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 22px; align-items: start; }
-  @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
-  .card {
-    background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden;
-  }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(350px, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; }
   .card-head {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     padding: 12px 16px; background: var(--surf); border-bottom: 1px solid var(--line);
@@ -218,12 +349,22 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   .card-body { padding: 16px; }
   .stage { background: var(--surf); padding: 12px; overflow-x: auto; }
   svg#graph { width: 100%; height: auto; display: block; min-height: 280px; }
+  .regions-bar {
+    display: none; flex-wrap: wrap; gap: 8px; padding: 10px 16px;
+    border-top: 1px solid var(--line); background: var(--surf);
+    font: 600 12px/1.3 var(--mono);
+  }
+  .regions-bar.show { display: flex; }
+  .region-chip {
+    padding: 4px 10px; border-radius: 6px; background: var(--paper); border: 1px solid var(--line); color: var(--ink);
+  }
+  .region-chip span { color: var(--sec); font-weight: 500; }
   .status-bar {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
     padding: 14px 16px; border-top: 1px solid var(--line); background: var(--paper);
   }
   .stat-label { font: 600 11px/1 var(--mono); color: var(--sec); text-transform: uppercase; margin-bottom: 4px; }
-  .stat-val { font: 600 16px/1.2 var(--mono); color: var(--ink); word-break: break-all; }
+  .stat-val { font: 600 15.5px/1.2 var(--mono); color: var(--ink); word-break: break-all; }
   .banner {
     margin: 14px 16px 0; padding: 12px 14px; border-radius: 8px; display: none;
     font: 600 13px/1.45 var(--mono);
@@ -231,12 +372,34 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   .banner.show { display: block; }
   .banner.refused { background: var(--accent-soft); border: 1.5px solid var(--accent); color: var(--accent-ink); }
   .banner.committed { background: var(--ok-soft); border: 1.5px solid var(--ok); color: var(--ok); }
+  .banner.pending { background: var(--warn-soft); border: 1.5px solid #D99B00; color: var(--warn); }
+  .effect-bar {
+    margin: 12px 16px 0; padding: 12px 14px; border-radius: 8px; display: none;
+    background: var(--warn-soft); border: 1.5px solid #D99B00;
+    font: 600 12.5px/1.4 var(--mono); color: var(--warn);
+  }
+  .effect-bar.show { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
   .section-title {
     font: 600 11.5px/1 var(--mono); color: var(--sec); text-transform: uppercase;
     letter-spacing: 0.05em; margin: 14px 0 8px;
   }
   .section-title:first-child { margin-top: 0; }
   .cmd-list { display: flex; flex-direction: column; gap: 8px; }
+  .cmd-item { display: flex; flex-direction: column; gap: 6px; }
+  .arg-row {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px;
+    background: var(--surf); border: 1px solid var(--line); border-radius: 6px;
+    font: 500 11.5px/1 var(--mono); align-items: center;
+  }
+  .arg-row label { display: inline-flex; align-items: center; gap: 5px; color: var(--sec); }
+  .arg-row input {
+    width: 118px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
+    font: 500 12px/1.2 var(--mono); background: var(--paper); color: var(--ink);
+  }
+  .arg-row select {
+    padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
+    font: 500 12px/1.2 var(--mono); background: var(--paper); color: var(--ink);
+  }
   button.cmd {
     width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px;
     cursor: pointer; font: 600 13.5px/1.3 var(--mono);
@@ -244,15 +407,12 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     transition: transform 0.08s ease, background 0.12s ease;
   }
   button.cmd:active { transform: scale(0.99); }
-  button.cmd.legal {
-    background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink);
-  }
+  button.cmd.legal { background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink); }
   button.cmd.legal:hover { background: #23282D; }
-  button.cmd.illegal {
-    background: var(--paper); color: var(--accent-ink); border: 1.5px dashed var(--accent);
-  }
+  button.cmd.illegal { background: var(--paper); color: var(--accent-ink); border: 1.5px dashed var(--accent); }
   button.cmd.illegal:hover { background: var(--accent-soft); }
-  .cmd-sub { font: 400 11.5px/1.2 var(--mono); opacity: 0.82; }
+  .cmd-sub { font: 400 11.5px/1.2 var(--mono); opacity: 0.85; text-align: right; }
+  .guard-tag { display: block; font: 400 11px/1.3 var(--mono); opacity: 0.78; margin-top: 2px; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
   button.tool {
     padding: 7px 11px; border-radius: 6px; border: 1.5px solid var(--ink);
@@ -263,24 +423,22 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   button.tool.stale { border-color: var(--accent); color: var(--accent-ink); }
   button.tool.stale:hover { background: var(--accent-soft); }
   button.tool:disabled { opacity: 0.4; cursor: not-allowed; }
-  .log {
-    max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
-    font: 500 12px/1.4 var(--mono);
-  }
+  .log { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font: 500 12px/1.4 var(--mono); }
   .log-row {
     padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surf);
     display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
   }
   .log-row.refused { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
   .log-row.committed { background: var(--paper); border-color: var(--line); color: var(--ink); }
-  .pill {
-    display: inline-block; padding: 2px 7px; border-radius: 4px;
-    font: 700 10.5px/1.2 var(--mono); text-transform: uppercase;
-  }
+  .pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font: 700 10.5px/1.2 var(--mono); text-transform: uppercase; }
   .pill.ok { background: var(--ink); color: var(--paper); }
   .pill.bad { background: var(--accent); color: var(--paper); }
-  .facts-box { font: 500 12.5px/1.5 var(--mono); color: var(--sec); }
-  .facts-box code { color: var(--ink); font-weight: 600; }
+  .facts-table { width: 100%; border-collapse: collapse; font: 500 12.5px/1.4 var(--mono); }
+  .facts-table th, .facts-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  .facts-table th { font-size: 11px; color: var(--sec); text-transform: uppercase; }
+  .facts-table td.val { color: var(--ink); font-weight: 600; }
+  .inv-list { margin-top: 10px; font: 500 12px/1.45 var(--mono); color: var(--sec); display: flex; flex-direction: column; gap: 4px; }
+  .inv-list code { color: var(--ink); font-weight: 600; }
   .branch-pick {
     margin-top: 8px; padding: 10px; border-radius: 8px; background: var(--surf);
     border: 1px solid var(--line); display: none;
@@ -294,20 +452,21 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 <div class="wrap">
   <header>
     <div>
-      <div class="kicker">Desmo · Interactive Structural Simulator</div>
+      <div class="kicker">Desmo · Interactive Lifecycle Simulator</div>
       <h1 id="machine-title">__MACHINE_ID__</h1>
       <div class="meta">version __VERSION__ · spec_hash __SHORT_HASH__ · __STATES_LEN__ states · __COMMANDS_LEN__ commands</div>
     </div>
     <div class="toolbar">
       <button class="tool" id="btn-save-handle" type="button">Copy Capability Handle</button>
       <button class="tool stale" id="btn-fire-stale" type="button" disabled>Fire Stale Handle</button>
+      <button class="tool" id="btn-export" type="button">Export scenario.json</button>
       <button class="tool" id="btn-reset" type="button">Reset</button>
     </div>
   </header>
 
   <div class="advisory">
     <strong>Advisory structural simulation</strong> derived from <code>ik schema</code> (<code>__SHORT_HASH__</code>).
-    Legal source states, terminal locks, and capability generations follow the declared machine shape; guard expressions, invariants, and durable commits are evaluated authoritatively by the Rust <code>ik</code> runtime.
+    Legal transitions, capability generations, live facts, guard previews, and pending-effect locks mirror the declared <code>.ik.toml</code> rules; durable commits and authoritative verification run inside the Rust <code>ik</code> runtime.
   </div>
 
   <div class="grid">
@@ -317,9 +476,17 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
         <span id="stale-badge">No copied handle</span>
       </div>
       <div id="banner" class="banner" role="status"></div>
+      <div id="effect-bar" class="effect-bar">
+        <span id="effect-label"></span>
+        <div class="toolbar">
+          <button class="tool" id="btn-eff-ok" type="button">Record Succeeded</button>
+          <button class="tool stale" id="btn-eff-fail" type="button">Record Failed</button>
+        </div>
+      </div>
       <div class="stage">
         <svg id="graph" viewBox="0 0 880 340" aria-label="Interactive state machine graph"></svg>
       </div>
+      <div id="regions-bar" class="regions-bar"></div>
       <div class="status-bar">
         <div>
           <div class="stat-label">Current State</div>
@@ -330,7 +497,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
           <div class="stat-val" id="stat-cap"></div>
         </div>
         <div>
-          <div class="stat-label">Terminal Lock</div>
+          <div class="stat-label">Terminal / Effect Lock</div>
           <div class="stat-val" id="stat-term"></div>
         </div>
       </div>
@@ -356,10 +523,10 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 
       <div class="card">
         <div class="card-head">
-          <span>Schema Metadata</span>
+          <span>Live Facts &amp; Invariants</span>
           <span id="inv-count"></span>
         </div>
-        <div class="card-body facts-box" id="facts-box"></div>
+        <div class="card-body" id="facts-box"></div>
       </div>
 
       <div class="card">
@@ -381,19 +548,223 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   const SVG_NS = "http://www.w3.org/2000/svg";
   const initialObj = SCHEMA.states.find((s) => s.initial) || SCHEMA.states[0];
   const stateMap = new Map(SCHEMA.states.map((s) => [s.name, s]));
+  const factDefs = new Map((SCHEMA.facts || []).map((f) => [f.name, f]));
+
+  function initialFacts() {
+    const out = {};
+    for (const f of (SCHEMA.facts || [])) {
+      if (f.initial !== undefined) out[f.name] = f.initial;
+    }
+    return out;
+  }
 
   let current = initialObj ? initialObj.name : "";
+  let facts = initialFacts();
   let generation = 0;
   let nonce = "n0-a1f4";
   let savedHandle = null;
+  let pendingEffect = null;
   let lastRefusal = null;
   let pendingBranch = null;
   let events = [];
+  let scenarioSteps = [];
+  const argValues = new Map();
+
+  function defaultArg(arg) {
+    if (arg.type === "int") return "1";
+    if (arg.type === "bool") return "true";
+    return arg.name + "_1";
+  }
+
+  function getCmdArgs(cmd) {
+    const out = {};
+    for (const a of (cmd.args || [])) {
+      const key = cmd.name + "." + a.name;
+      const raw = argValues.has(key) ? argValues.get(key) : defaultArg(a);
+      if (a.type === "int") {
+        const n = Number(raw);
+        if (!Number.isInteger(n)) return { error: "argument $" + a.name + " requires an integer" };
+        out[a.name] = n;
+      } else if (a.type === "bool") {
+        out[a.name] = raw === "true" || raw === true;
+      } else {
+        out[a.name] = String(raw);
+      }
+    }
+    return { values: out };
+  }
 
   function nextNonce(g) {
     const tag = ((g * 2654435761) >>> 0).toString(16).slice(0, 4).padStart(4, "0");
     return "n" + g + "-" + tag;
   }
+
+  // Advisory evaluator for Desmo guard & invariant expressions (returns true, false, or null if unsupported)
+  function evalExpr(src, stateName, factState, args) {
+    if (!src || !src.trim()) return true;
+    try {
+      const toks = tokenize(src);
+      let idx = 0;
+      const peek = () => toks[idx];
+      const next = () => toks[idx++];
+      function parseOr() {
+        let v = parseAnd();
+        while (peek() && peek().t === "op" && peek().v === "||") { next(); const r = parseAnd(); v = v || r; }
+        return v;
+      }
+      function parseAnd() {
+        let v = parseAtom();
+        while (peek() && peek().t === "op" && peek().v === "&&") { next(); const r = parseAtom(); v = v && r; }
+        return v;
+      }
+      function parseAtom() {
+        const tk = peek();
+        if (!tk) throw new Error("eof");
+        if (tk.t === "(") { next(); const v = parseOr(); if (!next() || toks[idx - 1].t !== ")") throw new Error(")"); return v; }
+        if (tk.t === "id" && (tk.v === "exists" || tk.v === "not_exists")) {
+          const fn = next().v;
+          if (next().t !== "(") throw new Error("(");
+          const f = next();
+          if (next().t !== ")") throw new Error(")");
+          const has = Object.prototype.hasOwnProperty.call(factState, f.v) && factState[f.v] !== undefined && factState[f.v] !== null;
+          return fn === "exists" ? has : !has;
+        }
+        if (tk.t === "id" && tk.v === "text_in") {
+          next();
+          if (next().t !== "(") throw new Error("(");
+          const val = parseOperand();
+          if (next().t !== ",") throw new Error(",");
+          const setTok = next();
+          if (next().t !== ",") throw new Error(",");
+          const minN = next().v;
+          if (next().t !== ",") throw new Error(",");
+          const maxN = next().v;
+          if (next().t !== ")") throw new Error(")");
+          if (typeof val !== "string") return false;
+          if (val.length < minN || val.length > maxN) return false;
+          const re = new RegExp("^[" + setTok.v.replace(/[\\\]^]/g, "\\$&") + "]*$");
+          return re.test(val);
+        }
+        const left = parseOperand();
+        const op = next();
+        if (!op || op.t !== "op") throw new Error("cmp");
+        const right = parseOperand();
+        if (left === undefined || right === undefined) return false;
+        if (op.v === "==") return left === right;
+        if (op.v === "!=") return left !== right;
+        if (op.v === "<") return left < right;
+        if (op.v === "<=") return left <= right;
+        if (op.v === ">") return left > right;
+        if (op.v === ">=") return left >= right;
+        throw new Error("op");
+      }
+      function parseOperand() {
+        let base = parsePrimary();
+        while (peek() && peek().t === "op" && ["+", "-", "*", "/"].includes(peek().v)) {
+          const op = next().v;
+          const rhs = parsePrimary();
+          if (typeof base !== "number" || typeof rhs !== "number") return undefined;
+          if (op === "+") base = base + rhs;
+          else if (op === "-") base = base - rhs;
+          else if (op === "*") base = base * rhs;
+          else if (op === "/") base = rhs === 0 ? undefined : Math.trunc(base / rhs);
+        }
+        return base;
+      }
+      function parsePrimary() {
+        const tk = next();
+        if (!tk) throw new Error("operand");
+        if (tk.t === "int" || tk.t === "str" || tk.t === "bool") return tk.v;
+        if (tk.t === "$") return args[tk.v];
+        if (tk.t === "id") return tk.v === "state" ? stateName : factState[tk.v];
+        throw new Error("primary");
+      }
+      const res = parseOr();
+      return idx === toks.length ? Boolean(res) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function tokenize(s) {
+    const out = [];
+    let i = 0;
+    while (i < s.length) {
+      const c = s[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === "(" || c === ")" || c === ",") { out.push({ t: c }); i++; continue; }
+      if (c === "$") {
+        i++; let id = "";
+        while (i < s.length && /[A-Za-z0-9_]/.test(s[i])) id += s[i++];
+        out.push({ t: "$", v: id }); continue;
+      }
+      if (c === "'" || c === '"') {
+        const q = c; i++; let str = "";
+        while (i < s.length && s[i] !== q) str += s[i++];
+        if (i >= s.length) throw new Error("unterminated");
+        i++; out.push({ t: "str", v: str }); continue;
+      }
+      if (/[0-9]/.test(c)) {
+        let num = "";
+        while (i < s.length && /[0-9]/.test(s[i])) num += s[i++];
+        out.push({ t: "int", v: Number(num) }); continue;
+      }
+      if (/[+\-*/]/.test(c)) { out.push({ t: "op", v: c }); i++; continue; }
+      if (/[&|=!<>]/.test(c)) {
+        let op = "";
+        while (i < s.length && /[&|=!<>]/.test(s[i])) op += s[i++];
+        out.push({ t: "op", v: op }); continue;
+      }
+      if (/[A-Za-z_]/.test(c)) {
+        let id = "";
+        while (i < s.length && /[A-Za-z0-9_]/.test(s[i])) id += s[i++];
+        if (id === "true") out.push({ t: "bool", v: true });
+        else if (id === "false") out.push({ t: "bool", v: false });
+        else out.push({ t: "id", v: id });
+        continue;
+      }
+      throw new Error("char");
+    }
+    return out;
+  }
+
+  function applyThen(factState, thenMap, args) {
+    const next = { ...factState };
+    for (const [k, raw] of Object.entries(thenMap || {})) {
+      const expr = String(raw).trim();
+      if (expr.startsWith("$")) {
+        next[k] = args[expr.slice(1)];
+      } else if (expr.startsWith("+") || expr.startsWith("-")) {
+        const delta = Number(expr);
+        next[k] = (typeof next[k] === "number" ? next[k] : 0) + delta;
+      } else if (expr === "true" || expr === "false") {
+        next[k] = expr === "true";
+      } else if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
+        next[k] = expr.slice(1, -1);
+      } else if (/^-?\d+$/.test(expr)) {
+        next[k] = Number(expr);
+      } else {
+        next[k] = expr;
+      }
+    }
+    return next;
+  }
+
+  function checkInvariants(nextState, nextFacts) {
+    for (const inv of (SCHEMA.invariant_defs || [])) {
+      if (inv.when) {
+        const gate = evalExpr(inv.when, nextState, nextFacts, {});
+        if (gate === false) continue;
+      }
+      const ok = evalExpr(inv.assert, nextState, nextFacts, {});
+      if (ok === false) return inv;
+    }
+    return null;
+  }
+
+  const maxNameLen = Math.max(8, ...SCHEMA.states.map((s) => s.name.length));
+  const NW = Math.min(260, Math.max(122, Math.round(maxNameLen * 8.4 + 28)));
+  const NH = 44;
 
   function computeLayout() {
     const depth = new Map();
@@ -432,9 +803,9 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 
     const colKeys = Array.from(cols.keys()).sort((a, b) => a - b);
     const maxRows = Math.max(1, ...Array.from(cols.values()).map((c) => c.length));
-    const colGap = 216;
+    const colGap = Math.max(216, NW + 94);
     const rowGap = 136;
-    const padX = 105;
+    const padX = Math.max(105, Math.round(NW / 2 + 44));
     const padY = 92;
     const width = Math.max(880, padX * 2 + Math.max(1, colKeys.length - 1) * colGap);
     const height = Math.max(290, padY * 2 + Math.max(1, maxRows - 1) * rowGap + 40);
@@ -467,14 +838,9 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     const mInk = el("marker", { id: "arr-ink", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" });
     mInk.appendChild(el("path", { d: "M 0 1 L 10 5 L 0 9 z", fill: "#111315" }));
     defs.appendChild(mInk);
-    const mAcc = el("marker", { id: "arr-acc", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" });
-    mAcc.appendChild(el("path", { d: "M 0 1 L 10 5 L 0 9 z", fill: "#FF671D" }));
-    defs.appendChild(mAcc);
     svg.appendChild(defs);
 
-    const NW = 122, NH = 44;
     const edgeCounts = new Map();
-
     function drawEdgeLabel(lx, ly, text, active) {
       const w = Math.max(30, text.length * 7.2 + 10);
       svg.appendChild(el("rect", { x: lx - w / 2, y: ly - 10, width: w, height: 15, rx: 3, fill: "#F2F5F6" }));
@@ -556,7 +922,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       }));
       svg.appendChild(el("text", {
         x: p.x, y: p.y + 4.5, "text-anchor": "middle",
-        "font-family": "var(--mono)", "font-size": 13.5, "font-weight": 600,
+        "font-family": "var(--mono)", "font-size": 13, "font-weight": 600,
         fill: isCur ? "#FFFFFF" : "#111315",
       }, st.name));
 
@@ -584,25 +950,55 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     b.textContent = "";
   }
 
-  function commitTransition(cmd, nextState) {
+  function commitOutcome(cmd, outcome, args) {
     const fromState = current;
+    const nextState = outcome.to || current;
+    const nextFacts = applyThen(facts, outcome.then || {}, args);
+    const violated = checkInvariants(nextState, nextFacts);
+    if (violated) {
+      refuseCommand(cmd, "IK_INVARIANT_FAILED", "invariant `" + violated.name + "` (" + violated.assert + ") failed on target state `" + nextState + "`.", args);
+      return;
+    }
     current = nextState;
+    facts = nextFacts;
     generation += 1;
     nonce = nextNonce(generation);
     lastRefusal = null;
     pendingBranch = null;
+    if (cmd.plans_effect) {
+      const effKind = (cmd.effect && cmd.effect.kind) || cmd.name;
+      pendingEffect = { kind: effKind, generation };
+    }
+    scenarioSteps.push({
+      kind: "command",
+      label: cmd.name + "-" + generation,
+      name: cmd.name,
+      args,
+      expect: "committed",
+    });
     events.unshift({
       kind: "committed",
       label: cmd.name + ": " + fromState + " → " + nextState,
-      detail: "gen " + generation + (cmd.plans_effect ? " · effect planned" : ""),
+      detail: "gen " + generation + (cmd.plans_effect ? " · effect pending" : ""),
     });
-    setBanner("committed", "✓ COMMITTED: " + cmd.name + " (" + fromState + " → " + nextState + ") · capability advanced to gen " + generation);
+    setBanner(
+      cmd.plans_effect ? "pending" : "committed",
+      "✓ COMMITTED: " + cmd.name + " (" + fromState + " → " + nextState + ") · capability advanced to gen " + generation + (cmd.plans_effect ? " · pending effect locks further commands until recorded." : "")
+    );
     renderAll();
   }
 
-  function refuseCommand(cmd, code, detail) {
+  function refuseCommand(cmd, code, detail, args) {
     lastRefusal = { command: cmd.name, code, targetState: cmd.successors[0] || null };
     pendingBranch = null;
+    scenarioSteps.push({
+      kind: "command",
+      label: cmd.name + "-refused-" + (scenarioSteps.length + 1),
+      name: cmd.name,
+      args: args || {},
+      expect: "refused",
+      code,
+    });
     events.unshift({
       kind: "refused",
       label: cmd.name + " refused (" + code + ")",
@@ -613,21 +1009,56 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   }
 
   function onClickCommand(cmd) {
+    const parsedArgs = getCmdArgs(cmd);
+    if (parsedArgs.error) {
+      refuseCommand(cmd, "IK_COMMAND_INVALID", parsedArgs.error, {});
+      return;
+    }
+    const args = parsedArgs.values;
+    if (pendingEffect) {
+      refuseCommand(cmd, "IK_EFFECT_PENDING", "effect `" + pendingEffect.kind + "` (gen " + pendingEffect.generation + ") is pending; record its outcome before proposing new commands.", args);
+      return;
+    }
     const curState = stateMap.get(current);
     if (curState && curState.terminal) {
-      refuseCommand(cmd, "IK_ILLEGAL_STATE", "state " + current + " is terminal; no further commands may commit.");
+      refuseCommand(cmd, "IK_ILLEGAL_STATE", "state `" + current + "` is terminal; no further commands may commit.", args);
       return;
     }
     if (!cmd.from.includes(current)) {
-      refuseCommand(cmd, "IK_ILLEGAL_STATE", "command " + cmd.name + " is legal only from [" + cmd.from.join(", ") + "], not " + current + ".");
+      refuseCommand(cmd, "IK_ILLEGAL_STATE", "command `" + cmd.name + "` is legal only from [" + cmd.from.join(", ") + "], not `" + current + "`.", args);
       return;
     }
-    if (cmd.successors.length > 1) {
-      pendingBranch = cmd;
+    const outcomes = cmd.outcomes && cmd.outcomes.length
+      ? cmd.outcomes
+      : cmd.successors.map((to) => ({ to, when: null, then: {} }));
+
+    let indeterminate = false;
+    for (const o of outcomes) {
+      if (!o.when) {
+        if (outcomes.length > 1 && !cmd.outcomes) {
+          pendingBranch = { cmd, outcomes, args };
+          renderAll();
+          return;
+        }
+        commitOutcome(cmd, o, args);
+        return;
+      }
+      const matched = evalExpr(o.when, current, facts, args);
+      if (matched === true) {
+        commitOutcome(cmd, o, args);
+        return;
+      }
+      if (matched === null) {
+        indeterminate = true;
+      }
+    }
+    if (indeterminate) {
+      pendingBranch = { cmd, outcomes, args };
       renderAll();
       return;
     }
-    commitTransition(cmd, cmd.successors[0] || current);
+    const guardList = outcomes.map((o) => o.when).filter(Boolean).join(" | ");
+    refuseCommand(cmd, "IK_INVARIANT_FAILED", "guard not satisfied for `" + cmd.name + "` (" + guardList + ").", args);
   }
 
   function renderCommands() {
@@ -641,12 +1072,23 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 
     for (const cmd of SCHEMA.commands) {
       const legal = !isTerm && cmd.from.includes(current);
+      const wrap = document.createElement("div");
+      wrap.className = "cmd-item";
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "cmd " + (legal ? "legal" : "illegal");
 
       const left = document.createElement("span");
       left.textContent = cmd.name + (cmd.args.length ? "(" + cmd.args.map((a) => a.name).join(", ") + ")" : "()");
+      const guards = (cmd.outcomes || []).map((o) => o.when).filter(Boolean);
+      if (guards.length > 0) {
+        const g = document.createElement("span");
+        g.className = "guard-tag";
+        g.textContent = "when: " + guards.join(" | ");
+        left.appendChild(g);
+      }
+
       const right = document.createElement("span");
       right.className = "cmd-sub";
       right.textContent = legal
@@ -655,7 +1097,39 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       btn.appendChild(left);
       btn.appendChild(right);
       btn.addEventListener("click", () => onClickCommand(cmd));
-      (legal ? legalEl : illegalEl).appendChild(btn);
+      wrap.appendChild(btn);
+
+      if (legal && cmd.args && cmd.args.length > 0) {
+        const row = document.createElement("div");
+        row.className = "arg-row";
+        for (const a of cmd.args) {
+          const key = cmd.name + "." + a.name;
+          if (!argValues.has(key)) argValues.set(key, defaultArg(a));
+          const lbl = document.createElement("label");
+          lbl.textContent = "$" + a.name + ":";
+          if (a.type === "bool") {
+            const sel = document.createElement("select");
+            for (const opt of ["true", "false"]) {
+              const o = document.createElement("option");
+              o.value = opt; o.textContent = opt;
+              if (String(argValues.get(key)) === opt) o.selected = true;
+              sel.appendChild(o);
+            }
+            sel.addEventListener("change", () => argValues.set(key, sel.value));
+            lbl.appendChild(sel);
+          } else {
+            const inp = document.createElement("input");
+            inp.type = a.type === "int" ? "number" : "text";
+            inp.value = String(argValues.get(key));
+            inp.addEventListener("input", () => argValues.set(key, inp.value));
+            lbl.appendChild(inp);
+          }
+          row.appendChild(lbl);
+        }
+        wrap.appendChild(row);
+      }
+
+      (legal ? legalEl : illegalEl).appendChild(wrap);
     }
 
     if (!legalEl.firstChild) {
@@ -671,13 +1145,13 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     if (pendingBranch) {
       pick.className = "branch-pick show";
       document.getElementById("branch-prompt").textContent =
-        "Command " + pendingBranch.name + " has guarded outcomes (evaluated by ik at runtime). Pick a successor to explore:";
-      for (const dst of pendingBranch.successors) {
+        "Select an outcome for " + pendingBranch.cmd.name + " (runtime ik evaluates guards authoritatively):";
+      for (const o of pendingBranch.outcomes) {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "tool";
-        b.textContent = "→ " + dst;
-        b.addEventListener("click", () => commitTransition(pendingBranch, dst));
+        b.textContent = "→ " + o.to + (o.when ? " [" + o.when + "]" : "");
+        b.addEventListener("click", () => commitOutcome(pendingBranch.cmd, o, pendingBranch.args));
         btns.appendChild(b);
       }
     } else {
@@ -689,7 +1163,36 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     document.getElementById("stat-state").textContent = current;
     document.getElementById("stat-cap").textContent = "gen " + generation + " · " + nonce;
     const isTerm = Boolean(stateMap.get(current) && stateMap.get(current).terminal);
-    document.getElementById("stat-term").textContent = isTerm ? "LOCKED (terminal)" : "Open";
+    document.getElementById("stat-term").textContent = isTerm
+      ? "LOCKED (terminal)"
+      : (pendingEffect ? "LOCKED (effect pending)" : "Open");
+
+    const effBar = document.getElementById("effect-bar");
+    if (pendingEffect) {
+      effBar.className = "effect-bar show";
+      document.getElementById("effect-label").textContent =
+        "Pending effect `" + pendingEffect.kind + "` bound to gen " + pendingEffect.generation + " — record outcome to unlock:";
+    } else {
+      effBar.className = "effect-bar";
+    }
+
+    const regBar = document.getElementById("regions-bar");
+    regBar.textContent = "";
+    if (SCHEMA.regions && SCHEMA.state_coords && SCHEMA.state_coords[current]) {
+      regBar.className = "regions-bar show";
+      const coords = SCHEMA.state_coords[current];
+      SCHEMA.regions.forEach((r, idx) => {
+        const chip = document.createElement("div");
+        chip.className = "region-chip";
+        const sp = document.createElement("span");
+        sp.textContent = r.name + ": ";
+        chip.appendChild(sp);
+        chip.appendChild(document.createTextNode(coords[idx] || "?"));
+        regBar.appendChild(chip);
+      });
+    } else {
+      regBar.className = "regions-bar";
+    }
 
     const badge = document.getElementById("stale-badge");
     const fireBtn = document.getElementById("btn-fire-stale");
@@ -706,18 +1209,50 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 
     const factsBox = document.getElementById("facts-box");
     factsBox.textContent = "";
-    const fLine = document.createElement("div");
-    fLine.textContent = SCHEMA.facts.length
-      ? "Facts: " + SCHEMA.facts.map((f) => f.name + ": " + f.type + " (" + f.policy + ")").join(" · ")
-      : "Facts: none declared";
-    factsBox.appendChild(fLine);
-    const iLine = document.createElement("div");
-    iLine.style.marginTop = "6px";
-    iLine.textContent = SCHEMA.invariants.length
-      ? "Invariants: " + SCHEMA.invariants.join(", ")
-      : "Invariants: structural transition rules only";
-    factsBox.appendChild(iLine);
-    document.getElementById("inv-count").textContent = SCHEMA.invariants.length + " invariant(s)";
+    if ((SCHEMA.facts || []).length > 0) {
+      const tbl = document.createElement("table");
+      tbl.className = "facts-table";
+      const thead = document.createElement("thead");
+      thead.innerHTML = "<tr><th>Fact</th><th>Type / Policy</th><th>Current</th></tr>";
+      tbl.appendChild(thead);
+      const tbody = document.createElement("tbody");
+      for (const f of SCHEMA.facts) {
+        const tr = document.createElement("tr");
+        const td1 = document.createElement("td"); td1.textContent = f.name;
+        const td2 = document.createElement("td"); td2.textContent = f.type + " (" + f.policy + ")";
+        const td3 = document.createElement("td"); td3.className = "val";
+        td3.textContent = Object.prototype.hasOwnProperty.call(facts, f.name) ? JSON.stringify(facts[f.name]) : "unset";
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+      factsBox.appendChild(tbl);
+    } else {
+      const none = document.createElement("div");
+      none.className = "meta";
+      none.textContent = "No facts declared.";
+      factsBox.appendChild(none);
+    }
+
+    const invList = document.createElement("div");
+    invList.className = "inv-list";
+    const invs = SCHEMA.invariant_defs || (SCHEMA.invariants || []).map((n) => ({ name: n, assert: "" }));
+    if (invs.length > 0) {
+      for (const inv of invs) {
+        const line = document.createElement("div");
+        const code = document.createElement("code");
+        code.textContent = inv.name;
+        line.appendChild(code);
+        if (inv.assert) {
+          line.appendChild(document.createTextNode(": " + (inv.when ? "when (" + inv.when + ") " : "") + inv.assert));
+        }
+        invList.appendChild(line);
+      }
+    } else {
+      invList.textContent = "Invariants: structural transition rules only";
+    }
+    factsBox.appendChild(invList);
+    document.getElementById("inv-count").textContent = invs.length + " invariant(s)";
 
     const logEl = document.getElementById("event-log");
     logEl.textContent = "";
@@ -746,6 +1281,41 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     }
   }
 
+  function recordEffect(outcome) {
+    if (!pendingEffect) return;
+    const eff = pendingEffect;
+    pendingEffect = null;
+    generation += 1;
+    nonce = nextNonce(generation);
+    events.unshift({
+      kind: "committed",
+      label: "record(" + eff.kind + " = " + outcome + ")",
+      detail: "gen " + generation + " · unlocked",
+    });
+    setBanner("committed", "✓ RECORDED: effect `" + eff.kind + "` " + outcome + " · capability advanced to gen " + generation + ".");
+    renderAll();
+  }
+
+  function exportScenario() {
+    const doc = {
+      scenario_version: 1,
+      machine: SCHEMA.source_path || (SCHEMA.machine.machine_id + ".ik.toml"),
+      aggregate: SCHEMA.machine.machine_id + "-sim-1",
+      steps: scenarioSteps,
+    };
+    const json = JSON.stringify(doc, null, 2) + "\n";
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = SCHEMA.machine.machine_id + ".scenario.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setBanner("committed", "✓ EXPORTED: " + a.download + " (" + scenarioSteps.length + " steps) — run with `ik scenario run`.");
+  }
+
   function renderAll() {
     renderGraph();
     renderCommands();
@@ -766,20 +1336,28 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
         candidate,
         "IK_CAPABILITY_STALE",
         "copied handle held gen " + savedHandle.generation + " (" + savedHandle.nonce + "), but current aggregate is at gen " + generation + ".",
+        {}
       );
     } else {
       setBanner("committed", "Copied handle is still at current gen " + generation + ". Advance the state first, then fire the copied handle to observe IK_CAPABILITY_STALE.");
     }
   });
 
+  document.getElementById("btn-eff-ok").addEventListener("click", () => recordEffect("succeeded"));
+  document.getElementById("btn-eff-fail").addEventListener("click", () => recordEffect("failed"));
+  document.getElementById("btn-export").addEventListener("click", exportScenario);
+
   document.getElementById("btn-reset").addEventListener("click", () => {
     current = initialObj ? initialObj.name : "";
+    facts = initialFacts();
     generation = 0;
     nonce = nextNonce(0);
     savedHandle = null;
+    pendingEffect = null;
     lastRefusal = null;
     pendingBranch = null;
     events = [];
+    scenarioSteps = [];
     clearBanner();
     renderAll();
   });

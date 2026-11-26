@@ -13,7 +13,7 @@ function bundle(overrides: Record<string, unknown> = {}): Record<string, unknown
   return {
     schema: "ikaros.trace.v2",
     product: "Ikaros",
-    runtime_version: "0.5.1",
+    runtime_version: "0.6.0",
     advisory: true,
     origin: "observed",
     reproducible: false,

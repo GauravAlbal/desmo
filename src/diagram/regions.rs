@@ -92,7 +92,7 @@ fn parallel_size_fact(view: &RegionView) -> Option<String> {
     for size in &sizes {
         product = product.saturating_mul(*size);
     }
-    if product == 0 || product >= crate::declarative::region::PRODUCT_BOUND {
+    if product == 0 || product > crate::declarative::region::PRODUCT_BOUND {
         return None;
     }
     let joined = sizes

@@ -111,11 +111,41 @@ pub fn diff_machines(
     }
     let old_machine = compile(old.clone()).map_err(|e| e.join("; "))?;
     let new_machine = compile(new.clone()).map_err(|e| e.join("; "))?;
-    let structural = structural_delta(old, new);
     let old_run = explore(&old_machine, corpus, bounds);
     let new_run = explore(&new_machine, corpus, bounds);
-    let walk = first_divergence(&old_machine, &new_machine, corpus, bounds);
-    let executable = executable_delta(&old_run, &new_run, walk.found);
+    diff_machines_with_runs(
+        old,
+        new,
+        &old_machine,
+        &new_machine,
+        &old_run,
+        &new_run,
+        corpus,
+        bounds,
+    )
+}
+
+/// Compare two already-compiled and already-explored machines without redundant work.
+#[allow(clippy::too_many_arguments)]
+pub fn diff_machines_with_runs(
+    old: &Definition,
+    new: &Definition,
+    old_machine: &CompiledMachine,
+    new_machine: &CompiledMachine,
+    old_run: &Exploration,
+    new_run: &Exploration,
+    corpus: &CaseCorpus,
+    bounds: Bounds,
+) -> Result<MachineDiff, String> {
+    if old.machine_id != new.machine_id {
+        return Err(format!(
+            "machine_id mismatch: `{}` vs `{}`",
+            old.machine_id, new.machine_id
+        ));
+    }
+    let structural = structural_delta(old, new);
+    let walk = first_divergence(old_machine, new_machine, corpus, bounds);
+    let executable = executable_delta(old_run, new_run, walk.found);
     let observation = if executable.dimension.is_none() {
         "observed_no_difference_within_bound".to_string()
     } else {
@@ -123,8 +153,8 @@ pub fn diff_machines(
     };
     Ok(MachineDiff {
         schema_version: 2,
-        old_machine: identity_of(&old_machine),
-        new_machine: identity_of(&new_machine),
+        old_machine: identity_of(old_machine),
+        new_machine: identity_of(new_machine),
         bound: bounds,
         case_corpus_digest: corpus.digest(),
         observation,

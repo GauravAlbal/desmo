@@ -1,24 +1,38 @@
 package invariantkernel
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	protocolMajorDefault  = 1
 	protocolMinorDefault  = 0
-	runtimeVersionDefault = "0.5.1"
+	runtimeVersionDefault = "0.6.0"
+	maxSessionLineBytes   = 4 * 1024 * 1024
 )
+
+func decodeJSONMap(raw []byte) (map[string]any, error) {
+	var out map[string]any
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func locateBinary(explicit string) (string, error) {
 	if explicit != "" {
@@ -33,7 +47,7 @@ func locateBinary(explicit string) (string, error) {
 	if found, err := exec.LookPath("ik"); err == nil {
 		return found, nil
 	}
-	return "", &TransportError{Message: "ik binary not found; pass Options.Binary or set IK_BINARY"}
+	return "", &TransportError{Message: "ik binary not found; pass Options.Binary or set IK_BINARY", Unsent: true}
 }
 
 func parseVersion(ctx context.Context, binary string) (runtime string, major, minor uint64, err error) {
@@ -41,7 +55,7 @@ func parseVersion(ctx context.Context, binary string) (runtime string, major, mi
 	cmd := exec.CommandContext(ctx, binary, "--version")
 	out, runErr := cmd.Output()
 	if runErr != nil {
-		return runtime, major, minor, nil
+		return "", 0, 0, &TransportError{Op: "version", Message: runErr.Error(), Err: runErr, Unsent: neverStarted(runErr)}
 	}
 	parts := strings.Fields(string(out))
 	if len(parts) >= 2 {
@@ -72,8 +86,8 @@ func runIdentity(ctx context.Context, binary, machine string) (map[string]any, e
 		}
 		return nil, &TransportError{Op: "identity", Message: msg, Err: err}
 	}
-	var data map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &data); err != nil {
+	data, err := decodeJSONMap(stdout.Bytes())
+	if err != nil {
 		return nil, &TransportError{Op: "identity", Message: "ik identity returned non-JSON", Err: err}
 	}
 	return data, nil
@@ -143,25 +157,153 @@ func invoke(ctx context.Context, binary, store, machine string, request map[stri
 		}
 		return nil, &TransportError{Op: asString(request["op"]), Message: msg, Err: runErr}
 	}
-	var envelope map[string]any
-	if err := json.Unmarshal(raw, &envelope); err != nil {
+	envelope, err := decodeJSONMap(raw)
+	if err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = "ik returned non-JSON stdout"
 		}
 		return nil, &TransportError{Op: asString(request["op"]), Message: msg, Err: err}
 	}
+	return unwrapGoEnvelope(asString(request["op"]), envelope)
+}
+
+func unwrapGoEnvelope(op string, envelope map[string]any) (map[string]any, error) {
 	if ok, _ := envelope["ok"].(bool); ok {
 		result, _ := envelope["result"].(map[string]any)
 		if result == nil {
-			return nil, &TransportError{Op: asString(request["op"]), Message: "successful envelope missing object result"}
+			return nil, &TransportError{Op: op, Message: "successful envelope missing object result"}
 		}
 		return result, nil
 	}
 	if diag, ok := envelope["diagnostic"].(map[string]any); ok {
 		return nil, fromDiagnostic(diag)
 	}
-	return nil, &TransportError{Op: asString(request["op"]), Message: "refused envelope without diagnostic"}
+	return nil, &TransportError{Op: op, Message: "refused envelope without diagnostic"}
+}
+
+type sessionProc struct {
+	mu     sync.Mutex
+	cmd    *exec.Cmd
+	stdin  io.WriteCloser
+	lines  chan sessionLine
+	stderr bytes.Buffer
+	broken bool
+}
+
+type sessionLine struct {
+	data []byte
+	err  error
+}
+
+func startSession(binary, store, machine string) (*sessionProc, error) {
+	args := []string{"--store", store}
+	if machine != "" {
+		args = append(args, "--machine", machine)
+	}
+	args = append(args, "--session")
+	cmd := exec.Command(binary, args...)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, &TransportError{Op: "session", Message: err.Error(), Err: err, Unsent: true}
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, &TransportError{Op: "session", Message: err.Error(), Err: err, Unsent: true}
+	}
+	s := &sessionProc{
+		cmd:   cmd,
+		stdin: stdin,
+		lines: make(chan sessionLine, 1),
+	}
+	cmd.Stderr = &s.stderr
+	if err := cmd.Start(); err != nil {
+		return nil, &TransportError{Op: "session", Message: err.Error(), Err: err, Unsent: neverStarted(err)}
+	}
+	go func() {
+		reader := bufio.NewReaderSize(stdout, 64*1024)
+		for {
+			line, readErr := reader.ReadBytes('\n')
+			if len(line) > maxSessionLineBytes {
+				s.lines <- sessionLine{err: errors.New("ik session line exceeded limit")}
+				close(s.lines)
+				return
+			}
+			if len(line) > 0 {
+				s.lines <- sessionLine{data: bytes.TrimSpace(line)}
+			}
+			if readErr != nil {
+				if !errors.Is(readErr, io.EOF) {
+					s.lines <- sessionLine{err: readErr}
+				}
+				close(s.lines)
+				return
+			}
+		}
+	}()
+	return s, nil
+}
+
+func (s *sessionProc) invoke(ctx context.Context, request map[string]any) (map[string]any, error) {
+	op := asString(request["op"])
+	payload, err := json.Marshal(request)
+	if err != nil {
+		return nil, &TransportError{Op: op, Message: "encode request", Err: err, Unsent: true}
+	}
+	payload = append(payload, '\n')
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.broken {
+		return nil, &TransportError{Op: op, Message: "ik session unusable", Unsent: true}
+	}
+	if _, err := s.stdin.Write(payload); err != nil {
+		s.killLocked()
+		return nil, &TransportError{Op: op, Message: err.Error(), Err: err}
+	}
+	select {
+	case <-ctx.Done():
+		s.killLocked()
+		return nil, &TransportError{Op: op, Message: "timed out or canceled", Err: ctx.Err()}
+	case line, ok := <-s.lines:
+		if !ok {
+			s.killLocked()
+			msg := strings.TrimSpace(s.stderr.String())
+			if msg == "" {
+				msg = "ik session closed unexpectedly"
+			}
+			return nil, &TransportError{Op: op, Message: msg}
+		}
+		if line.err != nil {
+			s.killLocked()
+			return nil, &TransportError{Op: op, Message: line.err.Error(), Err: line.err}
+		}
+		envelope, err := decodeJSONMap(line.data)
+		if err != nil {
+			s.killLocked()
+			return nil, &TransportError{Op: op, Message: "ik session returned non-JSON", Err: err}
+		}
+		return unwrapGoEnvelope(op, envelope)
+	}
+}
+
+func (s *sessionProc) killLocked() {
+	s.broken = true
+	_ = s.stdin.Close()
+	if s.cmd.Process != nil {
+		_ = s.cmd.Process.Kill()
+	}
+	_ = s.cmd.Wait()
+}
+
+func (s *sessionProc) close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.broken {
+		return nil
+	}
+	s.broken = true
+	_ = s.stdin.Close()
+	return s.cmd.Wait()
 }
 
 // neverStarted reports whether Run failed before the process existed, so the request was

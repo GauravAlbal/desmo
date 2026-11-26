@@ -1,6 +1,6 @@
 {
   "name": "@desmo/runtime",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Typed Node adapter over the authoritative ik binary",
   "type": "module",
   "main": "./dist/index.js",

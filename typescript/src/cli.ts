@@ -191,7 +191,7 @@ function initJob(target: string): void {
           start: "node job.mjs",
           test: "node --test job.test.mjs",
         },
-        dependencies: { "@desmo/runtime": "0.5.1" },
+        dependencies: { "@desmo/runtime": "0.6.0" },
       },
       null,
       2,

@@ -9,6 +9,11 @@ use serde::Serialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+/// Canonical JSON string for a `serde_json::Value` without re-cloning the tree.
+pub fn canonical_json_value(value: &Value) -> String {
+    serde_json::to_string(value).expect("canonical JSON emission cannot fail")
+}
+
 /// Canonical JSON string for any serializable value (sorted keys, no whitespace).
 pub fn canonical_json<T: Serialize + ?Sized>(value: &T) -> String {
     // to_value builds serde_json::Map (BTreeMap) objects, which iterate in sorted
@@ -23,21 +28,29 @@ pub fn canonical_json<T: Serialize + ?Sized>(value: &T) -> String {
 /// Integer tokens must fit serde's exact signed/unsigned range. Floating-point
 /// tokens must decode to a finite `f64`. Returns false without promising a
 /// complete normalization when any token is outside that shared contract.
+fn normalize_number(number: &serde_json::Number) -> Option<serde_json::Number> {
+    if let Some(value) = number.as_i64() {
+        Some(serde_json::Number::from(value))
+    } else if let Some(value) = number.as_u64() {
+        Some(serde_json::Number::from(value))
+    } else {
+        // Reject integer tokens outside i64/u64 that serde_json silently widened to f64.
+        let text = number.to_string();
+        if text.contains(['.', 'e', 'E']) {
+            number
+                .as_f64()
+                .filter(|v| v.is_finite())
+                .and_then(serde_json::Number::from_f64)
+        } else {
+            None
+        }
+    }
+}
+
 pub fn normalize_shared_numbers(value: &mut Value) -> bool {
     match value {
         Value::Number(number) => {
-            let text = number.to_string();
-            let normalized = if text.contains(['.', 'e', 'E']) {
-                number
-                    .as_f64()
-                    .filter(|value| value.is_finite())
-                    .and_then(serde_json::Number::from_f64)
-            } else if let Some(value) = number.as_i64() {
-                Some(serde_json::Number::from(value))
-            } else {
-                number.as_u64().map(serde_json::Number::from)
-            };
-            if let Some(normalized) = normalized {
+            if let Some(normalized) = normalize_number(number) {
                 *number = normalized;
                 true
             } else {
@@ -51,7 +64,12 @@ pub fn normalize_shared_numbers(value: &mut Value) -> bool {
 }
 
 pub fn has_only_shared_numbers(value: &Value) -> bool {
-    normalize_shared_numbers(&mut value.clone())
+    match value {
+        Value::Number(number) => normalize_number(number).is_some(),
+        Value::Array(values) => values.iter().all(has_only_shared_numbers),
+        Value::Object(values) => values.values().all(has_only_shared_numbers),
+        _ => true,
+    }
 }
 
 /// Canonical JSON bytes for any serializable value.
@@ -80,10 +98,24 @@ pub fn digest_parts(parts: &[&[u8]]) -> String {
     hex_encode(&hasher.finalize())
 }
 
+/// Hex sha256 of a `serde_json::Value` without cloning the tree.
+pub fn digest_value(value: &Value) -> String {
+    sha256_hex(canonical_json_value(value).as_bytes())
+}
+
+/// Raw 32-byte sha256 of a `serde_json::Value` (compact key for explorer visited sets).
+pub fn sha256_value_raw(value: &Value) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(canonical_json_value(value).as_bytes());
+    hasher.finalize().into()
+}
+
 fn hex_encode(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
-    for b in bytes {
-        out.push_str(&format!("{b:02x}"));
+    for &b in bytes {
+        out.push(HEX[(b >> 4) as usize] as char);
+        out.push(HEX[(b & 0x0f) as usize] as char);
     }
     out
 }

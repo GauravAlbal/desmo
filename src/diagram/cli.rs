@@ -229,7 +229,7 @@ fn draw(invocation: &Invocation) -> Result<String, String> {
             }
         }
     };
-    let findings = load_findings(&invocation.evidence);
+    let findings = load_findings(&invocation.evidence)?;
     let subject = def
         .as_ref()
         .map(|item| item.machine_id.as_str())
@@ -270,18 +270,16 @@ fn draw(invocation: &Invocation) -> Result<String, String> {
     Ok(body)
 }
 
-fn load_findings(paths: &[PathBuf]) -> Vec<Value> {
+fn load_findings(paths: &[PathBuf]) -> Result<Vec<Value>, String> {
     if paths.is_empty() {
-        return Vec::new();
+        return Ok(Vec::new());
     }
     let mut direct = Vec::new();
     for path in paths {
-        let Ok(text) = fs::read_to_string(path) else {
-            continue;
-        };
-        let Ok(value) = serde_json::from_str::<Value>(&text) else {
-            continue;
-        };
+        let text = fs::read_to_string(path)
+            .map_err(|err| format!("failed to read --evidence {}: {err}", path.display()))?;
+        let value = serde_json::from_str::<Value>(&text)
+            .map_err(|err| format!("invalid JSON in --evidence {}: {err}", path.display()))?;
         if let Some(arr) = value.get("findings").and_then(Value::as_array) {
             direct.extend(arr.clone());
         } else if value.get("status").is_some() {
@@ -289,8 +287,8 @@ fn load_findings(paths: &[PathBuf]) -> Vec<Value> {
         }
     }
     if !direct.is_empty() {
-        return direct;
+        return Ok(direct);
     }
     let report = crate::report::report_value(paths);
-    report["findings"].as_array().cloned().unwrap_or_default()
+    Ok(report["findings"].as_array().cloned().unwrap_or_default())
 }

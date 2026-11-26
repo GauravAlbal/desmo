@@ -555,6 +555,7 @@ enum Tok {
     Op(String),
     LParen,
     RParen,
+    Error(String),
 }
 
 struct Tokenizer {
@@ -638,7 +639,7 @@ impl Tokenizer {
             self.pos += 1;
         }
         if self.pos >= self.chars.len() {
-            return None;
+            return Some(Tok::Error(format!("unterminated string literal (missing closing {quote})")));
         }
         self.pos += 1;
         Some(Tok::Str(s))
@@ -650,7 +651,12 @@ impl Tokenizer {
             num.push(self.chars[self.pos]);
             self.pos += 1;
         }
-        num.parse::<i64>().ok().map(Tok::Int)
+        match num.parse::<i64>() {
+            Ok(n) => Some(Tok::Int(n)),
+            Err(_) => Some(Tok::Error(format!(
+                "integer literal `{num}` overflows 64-bit signed integer"
+            ))),
+        }
     }
 
     fn take_ident(&mut self) -> String {
@@ -892,6 +898,7 @@ fn operand_from(tok: Tok) -> Result<Operand, String> {
         Tok::Str(s) => Ok(Operand::Literal(Value::String(s))),
         Tok::Int(n) => Ok(Operand::Literal(Value::Number(n.into()))),
         Tok::Bool(b) => Ok(Operand::Literal(Value::Bool(b))),
+        Tok::Error(msg) => Err(msg),
         _ => Err("expected an operand".to_string()),
     }
 }
@@ -961,16 +968,20 @@ fn finish_scale(operand: Operand, tokens: &mut Tokenizer) -> Result<Operand, Str
 
 fn comparison_operator_error(tok: Option<Tok>) -> String {
     match tok {
+        Some(Tok::Error(msg)) => msg,
         Some(Tok::Op(op)) if is_unsupported_arith_op(&op) => unsupported_operator(&op),
         Some(tok) => {
             format!("expected a comparison operator, got {tok:?}; supported forms: {GUARD_FORMS}")
         }
-        None => format!("expected a comparison operator; supported forms: {GUARD_FORMS}"),
+        None => format!(
+            "expected a comparison operator (for boolean facts/args write `flag == true` or `flag == false`); supported forms: {GUARD_FORMS}"
+        ),
     }
 }
 
 fn trailing_token_error(tok: &Tok, pos: usize) -> String {
     match tok {
+        Tok::Error(msg) => msg.clone(),
         Tok::Op(op) if is_unsupported_arith_op(op) => unsupported_operator(op),
         _ => format!("unexpected token {tok:?} at position {pos}; supported forms: {GUARD_FORMS}"),
     }

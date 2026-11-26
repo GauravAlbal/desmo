@@ -15,7 +15,7 @@ Inspect-only does not authorize writes. Do not widen the mode because a write wo
    - `committed_exact` is history: not a new commit and not a current handle.
    - `conflict` means the same id was used with different semantics or a refreshed capability. Do not refresh and resend.
    - `not_recorded` is what that read saw. It is not a refusal, not a cancellation, and not permission to retry.
-4. `ik --store <path> --machine <machine.ik.toml> replay` and `ik --store <path> --machine <machine.ik.toml> verify` audit the journal. They do not answer whether an operation committed. They are not permission to repair by rewriting rows.
+4. `ik --store <path> --machine <machine.ik.toml> verify` audits the journal read-only (`investigate_only`). `ik --store <path> --machine <machine.ik.toml> replay` can rebuild divergent projections and belongs in `authorized_repair`, not `investigate_only`. Neither answers whether a specific operation committed or authorizes rewriting rows.
 5. Separate a few causes with different observable predictions. Run the cheapest discriminating test in scratch or on an allowed read before any repair.
 6. `ik scenario run <machine.ik.toml> <scenario.json> --out <dir>` reproduces on a fresh scratch store. There is no `--store` flag. Confirm a requested crash or drop boundary fired; absence of injection is not a crash pass. `ik scenario reproduce <bundle-dir> --out <dir>` matches a bundle aside from runtime identity. See `docs/scenarios.md`.
 7. `ik check <machine.ik.toml> --profile <checks.toml> [--plan] [--corpus <cases.json>] [--json]` explains which goals were examined. `--plan` does not explore. A missing corpus case is `input_coverage_gap`, not unreachability. This does not authorize a production commit. See `docs/ik-check.md`.
