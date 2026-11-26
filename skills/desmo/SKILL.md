@@ -16,7 +16,7 @@ You engineer the lifecycle. The human supplies behavior and reserved permission.
 
 ## Commands & resolution
 
-`ik` is the single kernel binary (`demo`, `init`, `doctor`, `diagram`, `simulate`, `check`, `codegen`, `laws`, `corpus`, `scenario`, `identity`, `schema`, `operations`, `census`, `report`, `handoff`, `readout`, plus `--store`/`--session` runtime modes). Resolve it before assuming it is missing:
+`ik` is the single kernel binary (`demo`, `init`, `doctor`, `diagram`, `simulate`, `check`, `codegen`, `laws`, `corpus`, `scenario`, `guard`, `identity`, `schema`, `operations`, `events`, `census`, `store`, `report`, `handoff`, `readout`, plus `--store`/`--session` runtime modes and `--help-all` for advanced commands). Resolve it before assuming it is missing:
 - **Global install (all languages):** `ik` on `PATH` (or `$HOME/.local/bin/ik`, or `IK_BINARY`).
 - **Node/TypeScript:** `node_modules/@desmo/<platform>/bin/ik` (e.g. `darwin-arm64`, `linux-x64`); `desmo` runs as `npx --no-install desmo ...` or `node node_modules/@desmo/runtime/dist/cli.js ...`.
 - **Python / Go:** `ik` on `PATH` or `IK_BINARY`.

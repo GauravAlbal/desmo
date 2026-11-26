@@ -30,6 +30,7 @@ Write a draft declarative model in a fresh temporary directory (for example `/tm
 
 ### Minimal `.ik.toml` syntax reference
 ```toml
+#:schema https://raw.githubusercontent.com/GauravAlbal/desmo/main/schema/ik.schema.json
 schema_version = 1
 machine_id = "order"
 machine_version = 1
@@ -37,6 +38,7 @@ machine_version = 1
 [facts] # optional if no facts; types: "string" | "int" | "bool"; policy: "replace" | "counter" | "once"
 payment_ref = { type = "string", policy = "replace" }
 retries = { type = "int", policy = "counter", initial = 0 }
+cleared = { type = "bool", policy = "replace", initial = false }
 
 [states]
 cart = { initial = true }
@@ -50,7 +52,7 @@ from = ["cart"]
 to = "paid"
 args = { payment_ref = "string" }
 when = "text_in($payment_ref, 'A-Za-z0-9._-', 1, 64)" # $prefix for args, bare name for facts
-then = { payment_ref = "$payment_ref" }               # string literals in then need inner quotes: '"cleared"'
+then = { payment_ref = "$payment_ref", cleared = true } # native bool/int & checked i64 math (e.g. "retries + 1") supported
 
 [commands.refund]
 from = ["returned"]
@@ -62,11 +64,12 @@ Run the read-only / scratch workbench commands against that scratch model:
 ```text
 ik identity <machine.ik.toml>
 ik diagram <machine.ik.toml>
+ik check <machine.ik.toml> --auto-seed --summary
 ik laws <machine.ik.toml>
 ik simulate <machine.ik.toml> --out <simulator.html>
 ```
 
-*(Only run `ik corpus init` + `ik check --corpus` if you are writing real domain witness cases; starter placeholder corpora typically refuse on guarded commands and are not required for a 60-second audit.)*
+*(`ik check` with `--auto-seed` requires zero hand-written corpus and catches structural traps plus invariant violations right away; use `ik corpus init` + `--corpus` when testing custom business witness cases.)*
 
 If `ik` is not on `PATH` yet, tell the user it can be installed in one command from the official release (`curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh`) before running the workbench and generating the interactive simulator.
 
@@ -91,6 +94,6 @@ Present a concise report to the user containing:
 4. **Interactive simulator path** (`<scratch>/<name>-simulator.html` when generated — clearly labeled as an interactive scratch simulator, not runtime authority).
 5. **Honest recommendation:**
    - **Keep in host** if the flow is simple CRUD or has no hard shared invariant.
-   - **Harden behind Desmo** if illegal transitions, stale workers, or crash recovery matter — offer to switch to `build.md` (beside this file) to lock this exact `.ik.toml` behind `ik` (one command family first, deleting the old direct status writes once Desmo owns them).
+   - **Harden behind Desmo** if illegal transitions, stale workers, or crash recovery matter — offer to switch to `build.md` (beside this file) to lock this exact `.ik.toml` behind `ik` (one command family first, projecting read-only via `ik events`, and adding `ik guard init --machine <machine.ik.toml> --table <table>` to prevent bypass writes once Desmo owns the transition).
 
 State plainly that an audit examines the extracted model and observed call sites; it is not a proof of the entire application and modifies no source or production data.

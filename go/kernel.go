@@ -157,6 +157,13 @@ func (k *Kernel) Verify(ctx context.Context, m *Machine, aggregateID string) (ma
 	return k.call(ctx, "verify", m, fields)
 }
 
+// Events streams committed events strictly after opts.Since paired with each aggregate's latest projection.
+func (k *Kernel) Events(ctx context.Context, opts EventsOptions) (*EventFeed, error) {
+	ctx, cancel := k.bound(ctx)
+	defer cancel()
+	return runEvents(ctx, k.Binary, k.Store, opts.Since, opts.AggregateID, opts.Limit)
+}
+
 func (k *Kernel) bound(ctx context.Context) (context.Context, context.CancelFunc) {
 	if ctx == nil {
 		ctx = context.Background()

@@ -100,7 +100,7 @@ const SUBCOMMANDS: &[Subcommand] = &[
     Subcommand {
         group: "Model & Verify",
         name: "guard",
-        usage: "       ik guard init [--out <path>] [--force] | check [--config <path>] [--dir <path>] [--json]",
+        usage: "       ik guard init [--machine <m.ik.toml>] [--table <name>] [--out <path>] [--force] | check [--config <path>] [--dir <path>] [--json]",
         run: crate::guard::run,
     },
     Subcommand {
@@ -206,10 +206,19 @@ pub fn dispatched_subcommand_names() -> impl Iterator<Item = &'static str> {
     SUBCOMMANDS.iter().map(|command| command.name)
 }
 
-fn write_usage(mut emit: impl FnMut(&str)) {
+fn write_usage(emit: impl FnMut(&str)) {
+    write_usage_filtered(false, emit);
+}
+
+fn write_usage_filtered(include_advanced: bool, mut emit: impl FnMut(&str)) {
     emit("Desmo (ik) — find hidden state bugs and enforce state machines at runtime");
     let mut current_group = "";
+    let mut advanced_count = 0usize;
     for command in SUBCOMMANDS {
+        if !include_advanced && command.group == "Advanced & Adapters" {
+            advanced_count += 1;
+            continue;
+        }
         if command.group != current_group {
             emit("");
             emit(&format!("{}:", command.group));
@@ -217,10 +226,17 @@ fn write_usage(mut emit: impl FnMut(&str)) {
         }
         emit(command.usage);
     }
+    if !include_advanced && advanced_count > 0 {
+        emit("");
+        emit(&format!(
+            "Advanced & Adapters: ({advanced_count} hidden — run `ik --help-all` to show all commands)"
+        ));
+    }
     emit("");
     emit("Runtime (JSON wire / persistent session):");
     emit("usage: ik --store <path> [--machine <def.toml>] [--session] create|create_with_command|command|record|show|replay|verify|transaction|lookup_operation");
     emit("       ik --help");
+    emit("       ik --help-all");
     emit("       ik --version");
 }
 
@@ -561,6 +577,10 @@ fn parse_args(args: &[String]) -> Result<Option<Flags>, String> {
             }
             "-h" | "--help" => {
                 write_usage(|line| println!("{line}"));
+                return Ok(None);
+            }
+            "--help-all" => {
+                write_usage_filtered(true, |line| println!("{line}"));
                 return Ok(None);
             }
             flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),

@@ -202,3 +202,25 @@ def test_check_wrapper_is_developer_surface(ik_bin: Path, store: Path) -> None:
     )
     assert "VERDICT" in result.text
     assert result.verdict in {"accept", "refused"}
+
+
+def test_kernel_events_cursor_pagination(ik_bin: Path, tmp_path: Path) -> None:
+    k = kernel(ik_bin, tmp_path / "events.db")
+    orders = k.machine(REPO / "examples" / "orders" / "order.ik.toml")
+    orders.create("ord-1").pay(payment_ref="ch_1")
+    orders.create("ord-2")
+
+    page1 = k.events(since=0, limit=2)
+    assert page1.schema == "ik.events.v1"
+    assert page1.has_more is True
+    assert len(page1.events) == 2
+    assert page1.events[0].is_latest_for_aggregate is False
+    assert page1.events[1].event_type == "pay"
+    assert page1.events[1].is_latest_for_aggregate is True
+    assert page1.events[1].current_projection.state["state"] == "paid"
+
+    page2 = k.events(since=page1.next_cursor)
+    assert page2.has_more is False
+    assert len(page2.events) == 1
+    assert page2.events[0].aggregate_id == "ord-2"
+    assert page2.events[0].is_latest_for_aggregate is True

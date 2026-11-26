@@ -511,6 +511,39 @@ def run_check(
     return proc.stdout, proc.returncode == 0
 
 
+def run_events(
+    binary: str,
+    store: str | Path,
+    *,
+    since: int = 0,
+    aggregate_id: Optional[str] = None,
+    limit: Optional[int] = None,
+    timeout: float,
+) -> dict[str, Any]:
+    argv = [binary, "events", str(store), "--since", str(since)]
+    if aggregate_id is not None:
+        argv.extend(["--aggregate", aggregate_id])
+    if limit is not None:
+        argv.extend(["--limit", str(limit)])
+    argv.append("--json")
+    try:
+        proc = _run(argv, timeout=timeout)
+    except FileNotFoundError as exc:
+        raise PreDispatchError("IK_TRANSPORT", f"ik binary not found: {binary}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise TransportError("IK_TRANSPORT", f"ik events timed out after {timeout}s") from exc
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip()
+        raise TransportError("IK_TRANSPORT", err or f"ik events exited {proc.returncode}")
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise TransportError("IK_TRANSPORT", f"ik events returned invalid JSON: {exc}") from exc
+    if not isinstance(data, dict) or data.get("schema") != "ik.events.v1":
+        raise TransportError("IK_TRANSPORT", "ik events returned an unexpected payload schema")
+    return data
+
+
 def _unwrap(envelope: Any, op: str) -> dict[str, Any]:
     if not isinstance(envelope, dict):
         raise TransportError("IK_TRANSPORT", "ik returned a non-object envelope")

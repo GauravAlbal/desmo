@@ -60,13 +60,18 @@ fn help_subcommand_names(help: &str) -> Vec<String> {
 
 #[test]
 fn help_lists_every_dispatched_subcommand_and_the_binary_accepts_each() {
-    let (help, _, code) = ik(&["--help"]);
+    let (short_help, _, short_code) = ik(&["--help"]);
+    assert_eq!(short_code, Some(0));
+    assert!(short_help.contains("--help-all"), "short help:\n{short_help}");
+    assert!(!short_help.contains("feasibility-backend"), "advanced commands belong under --help-all:\n{short_help}");
+
+    let (help, _, code) = ik(&["--help-all"]);
     assert_eq!(code, Some(0));
     let help_names = help_subcommand_names(&help);
     let dispatched: Vec<String> = ik::cli::dispatched_subcommand_names()
         .map(str::to_string)
         .collect();
-    assert_eq!(help_names, dispatched, "help:\n{help}");
+    assert_eq!(help_names, dispatched, "help-all:\n{help}");
     assert!(
         dispatched.iter().any(|name| name == "scenario"),
         "{dispatched:?}"

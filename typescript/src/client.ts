@@ -349,6 +349,51 @@ function outcomeWire(intent: EffectIntent, outcomeDigest: string): Record<string
   };
 }
 
+export interface EventsOptions {
+  since?: number | bigint;
+  aggregateId?: string;
+  limit?: number;
+}
+
+export interface EventProjection {
+  state: Json;
+  sequence: number | bigint;
+  generation: number | bigint;
+  terminal: boolean;
+}
+
+export interface EventCursorRow {
+  cursor: number | bigint;
+  aggregateId: string;
+  sequence: number | bigint;
+  generation: number | bigint;
+  machineId: string;
+  machineVersion: number | bigint;
+  machineSpecHash: string;
+  eventKind: string;
+  eventType: string;
+  eventVersion: number | bigint;
+  command: Json;
+  stateDigest: string;
+  terminal: boolean;
+  effectDelta: Json;
+  eventHash: string;
+  prevEventHash: string;
+  isLatestForAggregate: boolean;
+  currentProjection: EventProjection;
+  raw: Record<string, Json>;
+}
+
+export interface EventFeed {
+  schema: string;
+  store: string;
+  since: number | bigint;
+  nextCursor: number | bigint;
+  hasMore: boolean;
+  events: EventCursorRow[];
+  raw: Record<string, Json>;
+}
+
 export interface EffectRunResult<T = undefined> {
   planned: Aggregate;
   recorded: Aggregate | HistoricalResult;
@@ -986,6 +1031,65 @@ export class Kernel {
 
   machine(path: string): Promise<Machine> {
     return this.loadMachine(path);
+  }
+
+  /** Stream ordered events after `since` cursor with each aggregate's latest projection. */
+  async events(options: EventsOptions = {}): Promise<EventFeed> {
+    const argv = ["events", this.store, "--since", String(options.since ?? 0)];
+    if (options.aggregateId !== undefined) {
+      argv.push("--aggregate", options.aggregateId);
+    }
+    if (options.limit !== undefined) {
+      argv.push("--limit", String(options.limit));
+    }
+    argv.push("--json");
+    const data = await runJson(this.binary, argv, this.timeoutMs);
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new TransportError("ik events returned a non-object");
+    }
+    const rec = data as Record<string, Json>;
+    if (rec.schema !== "ik.events.v1" || !Array.isArray(rec.events)) {
+      throw new TransportError("ik events returned an unexpected schema");
+    }
+    const events: EventCursorRow[] = rec.events.map((item) => {
+      const row = item as Record<string, Json>;
+      const proj = row.current_projection as Record<string, Json>;
+      return {
+        cursor: row.cursor as number | bigint,
+        aggregateId: String(row.aggregate_id ?? ""),
+        sequence: row.sequence as number | bigint,
+        generation: row.generation as number | bigint,
+        machineId: String(row.machine_id ?? ""),
+        machineVersion: row.machine_version as number | bigint,
+        machineSpecHash: String(row.machine_spec_hash ?? ""),
+        eventKind: String(row.event_kind ?? ""),
+        eventType: String(row.event_type ?? ""),
+        eventVersion: row.event_version as number | bigint,
+        command: row.command as Json,
+        stateDigest: String(row.state_digest ?? ""),
+        terminal: Boolean(row.terminal),
+        effectDelta: row.effect_delta as Json,
+        eventHash: String(row.event_hash ?? ""),
+        prevEventHash: String(row.prev_event_hash ?? ""),
+        isLatestForAggregate: Boolean(row.is_latest_for_aggregate),
+        currentProjection: {
+          state: proj.state as Json,
+          sequence: proj.sequence as number | bigint,
+          generation: proj.generation as number | bigint,
+          terminal: Boolean(proj.terminal),
+        },
+        raw: row,
+      };
+    });
+    return {
+      schema: String(rec.schema),
+      store: String(rec.store ?? ""),
+      since: rec.since as number | bigint,
+      nextCursor: rec.next_cursor as number | bigint,
+      hasMore: Boolean(rec.has_more),
+      events,
+      raw: rec,
+    };
   }
 
   private async loadMachine(path: string): Promise<Machine> {
