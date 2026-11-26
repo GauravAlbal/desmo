@@ -1090,6 +1090,176 @@ impl Store {
     }
 }
 
+/// Summary returned by read-only whole-store verification (`ik store verify`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ReadonlyVerifyReport {
+    pub store_id: String,
+    pub aggregates: usize,
+    pub events: usize,
+    pub operations: usize,
+    pub mode: &'static str,
+}
+
+/// Verify an entire SQLite store over a strictly read-only `rusqlite::Connection`.
+///
+/// Always checks schema metadata, zero orphan rows in `receipts` / `journal` /
+/// `operations`, every operation binding, every aggregate's full hash chain and
+/// deterministic receipts, and every materialized `aggregates` projection row
+/// against the journal-derived state digest, terminality, generation, nonce,
+/// effect status, sequence, and tip receipt/event hash.
+///
+/// When `machines` is `Some(list)`, additionally requires every aggregate's
+/// `(machine_id, version, spec_hash)` to match one supplied machine and replays
+/// every event through `replay_events`.
+pub(crate) fn verify_connection_readonly(
+    conn: &Connection,
+    machines: Option<&[Box<dyn Machine>]>,
+) -> Result<ReadonlyVerifyReport, Diagnostic> {
+    let schema_version = meta_value(conn, "schema_version")?;
+    if schema_version != SCHEMA_VERSION.to_string() {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkStoreCorrupt,
+            crate::diagnostic::NO_RULE,
+            format!("unsupported store schema version `{schema_version}` (expected {SCHEMA_VERSION})"),
+        ));
+    }
+    let store_id = meta_value(conn, "store_id")?;
+
+    verify_no_orphan_receipts(conn)?;
+    let orphan_journal: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM journal WHERE aggregate_id NOT IN (SELECT aggregate_id FROM aggregates)",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(map_sqlite)?;
+    if orphan_journal != 0 {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProjectionCorrupt,
+            Some("journal.orphan"),
+            format!("found {orphan_journal} orphan journal row(s) without an aggregate"),
+        ));
+    }
+    let orphan_ops: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM operations WHERE aggregate_id NOT IN (SELECT aggregate_id FROM aggregates)",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(map_sqlite)?;
+    if orphan_ops != 0 {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkProjectionCorrupt,
+            Some("operations.orphan"),
+            format!("found {orphan_ops} orphan operation row(s) without an aggregate"),
+        ));
+    }
+
+    verify_operations(conn, None)?;
+    let total_operations: i64 = conn
+        .query_row("SELECT COUNT(*) FROM operations", [], |row| row.get(0))
+        .map_err(map_sqlite)?;
+    let ids = aggregate_ids(conn, None)?;
+    let mut total_events: usize = 0;
+
+    for id in &ids {
+        let agg = AggregateId(id.clone());
+        let events = load_events(conn, &agg)?;
+        total_events += events.len();
+        verify_chain(&events)?;
+        verify_receipts(conn, &events)?;
+        let snapshot = load_snapshot(conn, &agg)?;
+
+        let mut effect = EffectStatus::None;
+        for event in &events {
+            if event.aggregate_id != agg
+                || event.machine_id != snapshot.machine.machine_id
+                || event.machine_version != snapshot.machine.version.0
+                || event.machine_spec_hash != snapshot.machine.spec_hash.0
+            {
+                return Err(Diagnostic::new(
+                    DiagnosticCode::IkJournalCorrupt,
+                    Some("journal.identity"),
+                    format!(
+                        "journal identity disagrees with aggregate `{}` at sequence {}",
+                        agg.0, event.sequence
+                    ),
+                ));
+            }
+            effect = runtime::apply_effect_delta(&effect, &event.effect_delta, &event.hash);
+        }
+
+        let last = events.last().expect("verify_chain ensures non-empty journal");
+        let expected_nonce =
+            runtime::derive_nonce(&snapshot.machine, &agg, last.generation);
+        let expected_receipt_id = runtime::receipt_from_event(last).receipt_id;
+        let projection_matches = digest_json(&snapshot.state) == last.state_digest
+            && snapshot.terminal == last.terminal
+            && snapshot.generation == last.generation
+            && snapshot.nonce == expected_nonce
+            && snapshot.effect == effect
+            && snapshot.sequence == last.sequence
+            && snapshot.last_event_hash == last.hash
+            && snapshot.last_receipt_id == expected_receipt_id;
+        if !projection_matches {
+            return Err(Diagnostic::new(
+                DiagnosticCode::IkProjectionCorrupt,
+                Some("projection.replay"),
+                format!("stored projection for `{}` disagrees with journal", agg.0),
+            ));
+        }
+
+        if let Some(loaded) = machines {
+            let machine = loaded
+                .iter()
+                .find(|m| m.identity() == &snapshot.machine)
+                .ok_or_else(|| {
+                    Diagnostic::new(
+                        DiagnosticCode::IkMachineMismatch,
+                        crate::diagnostic::NO_RULE,
+                        format!(
+                            "no `--machine` matched aggregate `{}` (`{}` v{} {})",
+                            agg.0,
+                            snapshot.machine.machine_id,
+                            snapshot.machine.version.0,
+                            snapshot.machine.spec_hash.0
+                        ),
+                    )
+                })?;
+            let replayed = replay_events(machine.as_ref(), &events)?;
+            let semantic_matches = replayed.state == snapshot.state
+                && replayed.terminal == snapshot.terminal
+                && replayed.generation == snapshot.generation
+                && replayed.nonce == snapshot.nonce
+                && replayed.effect == snapshot.effect
+                && replayed.sequence == snapshot.sequence
+                && replayed.last_event_hash == snapshot.last_event_hash;
+            if !semantic_matches {
+                return Err(Diagnostic::new(
+                    DiagnosticCode::IkProjectionCorrupt,
+                    Some("projection.replay"),
+                    format!(
+                        "stored projection for `{}` disagrees with machine replay",
+                        agg.0
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(ReadonlyVerifyReport {
+        store_id,
+        aggregates: ids.len(),
+        events: total_events,
+        operations: usize::try_from(total_operations).unwrap_or(0),
+        mode: if machines.is_some() {
+            "semantic"
+        } else {
+            "cryptographic"
+        },
+    })
+}
+
 /// Pure, deterministic construction of the genesis event, its receipt, and the
 /// execution step for the initial command of an atomic create-with-command
 /// request. Deterministic in (machine, aggregate id, command, observation), so the

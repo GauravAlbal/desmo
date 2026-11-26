@@ -569,3 +569,58 @@ func TestRunEffectHelper(t *testing.T) {
 		t.Fatalf("expected duplicate plan refusal without running executor, got err=%v ran=%v", err, ran)
 	}
 }
+
+func TestLargeInt64PrecisionPreserved(t *testing.T) {
+	dir := t.TempDir()
+	specPath := filepath.Join(dir, "bignum.ik.toml")
+	spec := `schema_version = 1
+machine_id = "bignum"
+machine_version = 1
+
+[facts]
+amount = { type = "int", policy = "replace" }
+
+[states]
+idle = { initial = true }
+set = { terminal = true }
+
+[commands.store]
+from = ["idle"]
+to = "set"
+args = { amount = "int" }
+then = { amount = "$amount" }
+`
+	if err := os.WriteFile(specPath, []byte(spec), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	k, err := invariantkernel.Open(filepath.Join(dir, "bignum.db"), invariantkernel.Options{
+		Binary:  ikBin(t),
+		Session: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+	ctx := context.Background()
+	m, err := k.Machine(ctx, specPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	agg, err := m.Create(ctx, "b-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want int64 = 9007199254740993 // 2^53 + 1: loses precision if decoded as float64
+	next, err := agg.Command(ctx, "store", map[string]any{"amount": want})
+	if err != nil {
+		t.Fatal(err)
+	}
+	facts := next.Facts()
+	num, ok := facts["amount"].(json.Number)
+	if !ok {
+		t.Fatalf("expected json.Number for fact amount, got %T (%v)", facts["amount"], facts["amount"])
+	}
+	if num.String() != "9007199254740993" {
+		t.Fatalf("expected exact int64 9007199254740993, got %s", num.String())
+	}
+}

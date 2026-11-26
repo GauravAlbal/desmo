@@ -98,6 +98,12 @@ const SUBCOMMANDS: &[Subcommand] = &[
         run: crate::scenario::run,
     },
     Subcommand {
+        group: "Model & Verify",
+        name: "guard",
+        usage: "       ik guard init [--out <path>] [--force] | check [--config <path>] [--dir <path>] [--json]",
+        run: crate::guard::run,
+    },
+    Subcommand {
         group: "Inspect & Store",
         name: "identity",
         usage: "       ik identity <machine.ik.toml>",
@@ -117,9 +123,21 @@ const SUBCOMMANDS: &[Subcommand] = &[
     },
     Subcommand {
         group: "Inspect & Store",
+        name: "events",
+        usage: "       ik events <store.sqlite> [--since <cursor>] [--aggregate <id>] [--limit <n>] [--json]",
+        run: crate::events::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
         name: "census",
         usage: "       ik census <store.sqlite> [--json]",
         run: crate::census::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "store",
+        usage: "       ik store verify <store.sqlite> [--machine <m.ik.toml>]... [--json]",
+        run: crate::store_verify::run,
     },
     Subcommand {
         group: "Inspect & Store",

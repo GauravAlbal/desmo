@@ -81,6 +81,54 @@ pub struct InvariantSpec<'a> {
     pub assert_rule: &'a str,
 }
 
+/// Discrete outcome-gate classification shared by runtime selection, ordered diagnostics,
+/// and Kani bounded proofs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum GateStep {
+    Unconditional,
+    True,
+    False,
+    Error,
+}
+
+fn gate_step(gate: &Gate) -> GateStep {
+    match gate {
+        Gate::Unconditional => GateStep::Unconditional,
+        Gate::True => GateStep::True,
+        Gate::False => GateStep::False,
+        Gate::Error(_) => GateStep::Error,
+    }
+}
+
+/// Core ordered-gate decision rule:
+/// - `Some(Ok(true))`: match, stop here (`Unconditional` | `True`)
+/// - `None`: continue to next arm (`False`)
+/// - `Some(Err(()))`: refuse immediately (`Error`) and never fall through
+pub(crate) fn decide_gate_step(step: GateStep) -> Option<Result<(), ()>> {
+    match step {
+        GateStep::Unconditional | GateStep::True => Some(Ok(())),
+        GateStep::False => None,
+        GateStep::Error => Some(Err(())),
+    }
+}
+
+/// Evaluate ordered outcomes across a slice of discrete gate results.
+#[cfg(any(kani, test))]
+pub(crate) fn select_first_matching_gate(gates: &[GateStep]) -> Result<Option<usize>, usize> {
+    let mut index = 0;
+    while index < gates.len() {
+        let step = gates[index];
+        if let Some(decision) = decide_gate_step(step) {
+            return match decision {
+                Ok(()) => Ok(Some(index)),
+                Err(()) => Err(index),
+            };
+        }
+        index += 1;
+    }
+    Ok(None)
+}
+
 /// Evaluate ordered outcomes. A guard evaluation error refuses; it does not
 /// become `false` and it does not fall through to a later candidate.
 pub fn select_outcomes(
@@ -96,8 +144,9 @@ pub fn select_outcomes(
             candidates.push(not_considered(index, spec));
             continue;
         }
-        match evaluate_gate(spec.when, ctx) {
-            Gate::Unconditional | Gate::True => {
+        let gate = evaluate_gate(spec.when, ctx);
+        match decide_gate_step(gate_step(&gate)) {
+            Some(Ok(())) => {
                 selected = Some(index);
                 candidates.push(candidate(
                     index,
@@ -110,10 +159,13 @@ pub fn select_outcomes(
                     None,
                 ));
             }
-            Gate::False => {
+            None => {
                 candidates.push(candidate(index, spec, GuardEvaluation::False, false, None));
             }
-            Gate::Error(reason) => {
+            Some(Err(())) => {
+                let Gate::Error(reason) = gate else {
+                    unreachable!("decide_gate_step returned Err only for Gate::Error");
+                };
                 candidates.push(candidate(
                     index,
                     spec,
@@ -249,10 +301,14 @@ pub fn select_outcome_fast(
     ctx: &EvalCtx<'_>,
 ) -> Result<Option<usize>, Diagnostic> {
     for (index, spec) in specs.iter().enumerate() {
-        match evaluate_gate(spec.when, ctx) {
-            Gate::Unconditional | Gate::True => return Ok(Some(index)),
-            Gate::False => continue,
-            Gate::Error(reason) => {
+        let gate = evaluate_gate(spec.when, ctx);
+        match decide_gate_step(gate_step(&gate)) {
+            Some(Ok(())) => return Ok(Some(index)),
+            None => continue,
+            Some(Err(())) => {
+                let Gate::Error(reason) = gate else {
+                    unreachable!("decide_gate_step returned Err only for Gate::Error");
+                };
                 return Err(Diagnostic::new(
                     DiagnosticCode::IkInvariantFailed,
                     Some(spec.when_rule.to_string()),
@@ -348,4 +404,97 @@ fn candidate(
 
 fn not_considered(index: usize, spec: &GuardSpec<'_>) -> CandidateEvaluation {
     candidate(index, spec, GuardEvaluation::NotConsidered, false, None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ordered_gate_step_never_falls_through_after_error() {
+        assert_eq!(
+            select_first_matching_gate(&[GateStep::False, GateStep::True, GateStep::Unconditional]),
+            Ok(Some(1))
+        );
+        assert_eq!(
+            select_first_matching_gate(&[GateStep::False, GateStep::Error, GateStep::True]),
+            Err(1)
+        );
+        assert_eq!(
+            select_first_matching_gate(&[GateStep::False, GateStep::False]),
+            Ok(None)
+        );
+    }
+}
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    fn any_gate_step() -> GateStep {
+        let tag: u8 = kani::any();
+        kani::assume(tag < 4);
+        match tag {
+            0 => GateStep::Unconditional,
+            1 => GateStep::True,
+            2 => GateStep::False,
+            _ => GateStep::Error,
+        }
+    }
+
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn prove_ordered_guard_error_never_falls_through() {
+        let gates = [
+            any_gate_step(),
+            any_gate_step(),
+            any_gate_step(),
+            any_gate_step(),
+        ];
+        let len_u8: u8 = kani::any();
+        kani::assume(len_u8 <= 4);
+        let len = len_u8 as usize;
+        let slice = &gates[..len];
+
+        match select_first_matching_gate(slice) {
+            Ok(Some(winner)) => {
+                assert!(winner < len);
+                assert!(matches!(
+                    slice[winner],
+                    GateStep::Unconditional | GateStep::True
+                ));
+                let mut i = 0;
+                while i < winner {
+                    assert_eq!(slice[i], GateStep::False);
+                    i += 1;
+                }
+                kani::cover!(
+                    winner > 0 && slice[0] == GateStep::False,
+                    "fallthrough only past false"
+                );
+            }
+            Err(err_idx) => {
+                assert!(err_idx < len);
+                assert_eq!(slice[err_idx], GateStep::Error);
+                let mut i = 0;
+                while i < err_idx {
+                    assert_eq!(slice[i], GateStep::False);
+                    i += 1;
+                }
+                kani::cover!(
+                    err_idx + 1 < len
+                        && matches!(slice[err_idx + 1], GateStep::True | GateStep::Unconditional),
+                    "error stops before later matching arm"
+                );
+            }
+            Ok(None) => {
+                let mut i = 0;
+                while i < len {
+                    assert_eq!(slice[i], GateStep::False);
+                    i += 1;
+                }
+                kani::cover!(len > 0, "all false yields none");
+            }
+        }
+    }
 }

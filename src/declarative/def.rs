@@ -200,8 +200,13 @@ pub struct CommandDef {
     /// Declared command arguments: name -> "int" | "string" | "bool".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub args: Option<BTreeMap<String, String>>,
-    /// Fact assignments applied on commit: `fact = literal | $arg`, or `+N` on a counter.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// Fact assignments applied on commit: `fact = literal | $arg`, or `+N` on a counter,
+    /// or a checked integer arithmetic expression. Accepts native TOML bool/int values too.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::declarative::def::deserialize_optional_then"
+    )]
     pub then: Option<BTreeMap<String, String>>,
     /// Declare that this transition plans one external effect.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -214,8 +219,44 @@ pub struct OutcomeDef {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub when: Option<String>,
     pub to: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::declarative::def::deserialize_optional_then"
+    )]
     pub then: Option<BTreeMap<String, String>>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ThenTomlValue {
+    Str(String),
+    Int(i64),
+    Bool(bool),
+}
+
+/// Deserialize an optional `then` assignment map, normalizing native TOML integers and booleans
+/// into the exact canonical string representation (`42` -> `"42"`, `true` -> `"true"`) so
+/// existing `spec_hash` values and downstream consumers stay identical.
+pub(crate) fn deserialize_optional_then<'de, D>(
+    deserializer: D,
+) -> Result<Option<BTreeMap<String, String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let raw: Option<BTreeMap<String, ThenTomlValue>> = Option::deserialize(deserializer)?;
+    Ok(raw.map(|map| {
+        map.into_iter()
+            .map(|(k, v)| {
+                let s = match v {
+                    ThenTomlValue::Str(s) => s,
+                    ThenTomlValue::Int(n) => n.to_string(),
+                    ThenTomlValue::Bool(b) => b.to_string(),
+                };
+                (k, s)
+            })
+            .collect()
+    }))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -568,7 +609,10 @@ fn check_effect(cmd: &CommandDef, name: &str, errors: &mut Vec<String>) {
             effect.idempotency_key.as_deref().unwrap_or(""),
         ),
     ] {
-        if let Some(arg) = value.strip_prefix('$') {
+        if let Some(arg) = value
+            .strip_prefix('$')
+            .filter(|a| !a.is_empty() && a.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_'))
+        {
             if !cmd
                 .args
                 .as_ref()
@@ -871,7 +915,10 @@ fn check_then(
             ));
             continue;
         }
-        if let Some(arg) = value.strip_prefix('$') {
+        if let Some(arg) = value
+            .strip_prefix('$')
+            .filter(|a| !a.is_empty() && a.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_'))
+        {
             match cmd.args.as_ref().and_then(|a| a.get(arg)) {
                 None => issues.push(format!(
                     "`then` for `{fact}` references unknown arg `${arg}`"
@@ -891,15 +938,49 @@ fn check_then(
                     fdef.ty,
                     then_type_hint(&fdef.ty)
                 )),
-                None => issues.push(format!(
-                    "`then` value `{value}` for `{fact}` is not a literal or `$arg` ({})",
-                    then_type_hint(&fdef.ty)
-                )),
+                None => match crate::declarative::expr::parse_then_arith(value) {
+                    Ok(Some(op)) => {
+                        if fdef.ty != "int" {
+                            issues.push(format!(
+                                "`then` arithmetic expression `{value}` for `{fact}` requires an `int` fact, found `{}`",
+                                fdef.ty
+                            ));
+                        } else {
+                            let mut expr_issues = Vec::new();
+                            let _ = operand_ty(&op, def, cmd, &mut expr_issues);
+                            for issue in expr_issues {
+                                issues.push(format!("`then` for `{fact}`: {issue}"));
+                            }
+                        }
+                    }
+                    Ok(None) => issues.push(format!(
+                        "`then` value `{value}` for `{fact}` is not a literal or `$arg` ({})",
+                        then_type_hint(&fdef.ty)
+                    )),
+                    Err(msg) => {
+                        if attempt_looks_like_arith(value) {
+                            issues.push(format!(
+                                "`then` expression `{value}` for `{fact}` error: {msg}"
+                            ));
+                        } else {
+                            issues.push(format!(
+                                "`then` value `{value}` for `{fact}` is not a literal or `$arg` ({})",
+                                then_type_hint(&fdef.ty)
+                            ));
+                        }
+                    }
+                },
             }
         }
     }
     let _ = cmd_name;
     issues
+}
+
+fn attempt_looks_like_arith(value: &str) -> bool {
+    !value.starts_with('"')
+        && !value.starts_with('\'')
+        && value.chars().any(|c| matches!(c, '+' | '-' | '*' | '/'))
 }
 
 fn then_type_hint(ty: &str) -> &'static str {

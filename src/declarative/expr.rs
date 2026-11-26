@@ -168,6 +168,98 @@ pub fn eval(expr: &Expr, ctx: &EvalCtx) -> Result<bool, String> {
         Expr::TextIn(pred) => eval_text_in(pred, ctx),
     }
 }
+
+/// Checked `i64` arithmetic operations used identically by runtime guards, `then` updates, and Kani proofs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ArithOpKind {
+    Add,
+    Sub,
+    Mul,
+    DivPos,
+}
+
+/// Pure, checked `i64` binary arithmetic kernel with zero heap allocations.
+#[inline]
+pub(crate) fn checked_i64_binary(
+    kind: ArithOpKind,
+    left: i64,
+    right: i64,
+) -> Result<i64, &'static str> {
+    match kind {
+        ArithOpKind::Add => left.checked_add(right).ok_or("integer arithmetic overflow"),
+        ArithOpKind::Sub => left.checked_sub(right).ok_or("integer arithmetic overflow"),
+        ArithOpKind::Mul => left.checked_mul(right).ok_or("integer arithmetic overflow"),
+        ArithOpKind::DivPos => {
+            if right <= 0 {
+                Err("division requires a positive integer constant")
+            } else {
+                Ok(left / right)
+            }
+        }
+    }
+}
+
+/// Parse an arithmetic expression used in a `then` assignment.
+/// Returns `Ok(Some(op))` only when an explicit `+`, `-`, `*`, or `/` operator is present
+/// (simple literals and `$arg` references return `Ok(None)` so existing literal/arg handling applies).
+pub fn parse_then_arith(input: &str) -> Result<Option<Operand>, String> {
+    let mut tokens = Tokenizer::new(input);
+    let Some(first) = tokens.next() else {
+        return Ok(None);
+    };
+    let op = with_arith(operand_from(first)?, &mut tokens)?;
+    if let Some(tok) = tokens.peek() {
+        return Err(trailing_token_error(&tok, tokens.pos));
+    }
+    match &op {
+        Operand::Arith { .. }
+        | Operand::BinArith { .. }
+        | Operand::Mul { .. }
+        | Operand::Div { .. } => {
+            if operand_uses_disallowed_then_builtin(&op) {
+                return Err(
+                    "`then` arithmetic cannot reference `state` or `effect_*`".to_string(),
+                );
+            }
+            Ok(Some(op))
+        }
+        _ => Ok(None),
+    }
+}
+
+fn operand_uses_disallowed_then_builtin(op: &Operand) -> bool {
+    match op {
+        Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome => true,
+        Operand::Arith { base, .. } | Operand::Mul { base, .. } | Operand::Div { base, .. } => {
+            operand_uses_disallowed_then_builtin(base)
+        }
+        Operand::BinArith { left, right, .. } => {
+            operand_uses_disallowed_then_builtin(left)
+                || operand_uses_disallowed_then_builtin(right)
+        }
+        Operand::Fact(_) | Operand::Arg(_) | Operand::Literal(_) => false,
+    }
+}
+
+/// Evaluate a parsed `then` arithmetic operand against pre-transition `facts` and `args`.
+pub fn eval_then_arith(
+    op: &Operand,
+    facts: &std::collections::BTreeMap<String, Value>,
+    args: &std::collections::BTreeMap<String, Value>,
+) -> Result<Value, String> {
+    eval_operand(
+        op,
+        &EvalCtx {
+            facts,
+            args,
+            state: "",
+            effect: None,
+        },
+    )
+}
 /// Three-valued guard evaluation for facts known at lowering time.
 ///
 /// Only comparisons between an explicitly assigned fact and a literal are
@@ -445,16 +537,13 @@ fn eval_operand(op: &Operand, ctx: &EvalCtx) -> Result<Value, String> {
             eval_int(right, ctx)?,
         )?),
         Operand::Mul { base, amount } => int_value(
-            eval_int(base, ctx)?
-                .checked_mul(*amount)
-                .ok_or_else(overflow_err)?,
+            checked_i64_binary(ArithOpKind::Mul, eval_int(base, ctx)?, *amount)
+                .map_err(str::to_string)?,
         ),
-        Operand::Div { base, amount } => {
-            if *amount <= 0 {
-                return Err("division requires a positive integer constant".to_string());
-            }
-            int_value(eval_int(base, ctx)? / *amount)
-        }
+        Operand::Div { base, amount } => int_value(
+            checked_i64_binary(ArithOpKind::DivPos, eval_int(base, ctx)?, *amount)
+                .map_err(str::to_string)?,
+        ),
     }
 }
 
@@ -465,16 +554,12 @@ fn eval_int(op: &Operand, ctx: &EvalCtx) -> Result<i64, String> {
 }
 
 fn checked_add_sub(left: i64, add: bool, right: i64) -> Result<i64, String> {
-    if add {
-        left.checked_add(right)
+    let kind = if add {
+        ArithOpKind::Add
     } else {
-        left.checked_sub(right)
-    }
-    .ok_or_else(overflow_err)
-}
-
-fn overflow_err() -> String {
-    "integer arithmetic overflow".to_string()
+        ArithOpKind::Sub
+    };
+    checked_i64_binary(kind, left, right).map_err(str::to_string)
 }
 
 fn int_value(n: i64) -> Result<Value, String> {
@@ -1181,5 +1266,107 @@ mod tests {
         let facts = std::collections::BTreeMap::new();
         let expr = parse("text_in($id,'A-Za-z0-9._-',1,64)").expect("parse");
         assert_eq!(eval_partial(&expr, &facts, &args, Some("idle")), None);
+    }
+}
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    #[kani::proof]
+    fn prove_checked_i64_arith_no_silent_wrap() {
+        let op_sel: u8 = kani::any();
+        kani::assume(op_sel < 4);
+        let left: i64 = kani::any();
+        let right: i64 = kani::any();
+
+        match op_sel {
+            0 => {
+                let res = checked_i64_binary(ArithOpKind::Add, left, right);
+                let wide = (left as i128) + (right as i128);
+                if wide >= i64::MIN as i128 && wide <= i64::MAX as i128 {
+                    assert_eq!(res, Ok(wide as i64));
+                    kani::cover!(left > 0 && right > 0, "valid positive add");
+                } else {
+                    assert!(res.is_err());
+                    kani::cover!(true, "add overflow refused");
+                }
+            }
+            1 => {
+                let res = checked_i64_binary(ArithOpKind::Sub, left, right);
+                let wide = (left as i128) - (right as i128);
+                if wide >= i64::MIN as i128 && wide <= i64::MAX as i128 {
+                    assert_eq!(res, Ok(wide as i64));
+                    kani::cover!(left < 0 && right > 0, "valid sub");
+                } else {
+                    assert!(res.is_err());
+                    kani::cover!(true, "sub overflow refused");
+                }
+            }
+            2 => {
+                let mul_sel: u8 = kani::any();
+                kani::assume(mul_sel < 5);
+                match mul_sel {
+                    0 => assert_eq!(checked_i64_binary(ArithOpKind::Mul, left, 0), Ok(0)),
+                    1 => assert_eq!(checked_i64_binary(ArithOpKind::Mul, left, 1), Ok(left)),
+                    2 => {
+                        let res = checked_i64_binary(ArithOpKind::Mul, left, -1);
+                        if left == i64::MIN {
+                            assert!(res.is_err());
+                            kani::cover!(true, "i64 MIN mul -1 overflow refused");
+                        } else {
+                            assert_eq!(res, Ok(-left));
+                        }
+                    }
+                    3 => {
+                        let res = checked_i64_binary(ArithOpKind::Mul, left, 2);
+                        let wide = (left as i128) * 2;
+                        if wide >= i64::MIN as i128 && wide <= i64::MAX as i128 {
+                            assert_eq!(res, Ok(wide as i64));
+                        } else {
+                            assert!(res.is_err());
+                            kani::cover!(true, "mul by 2 overflow refused");
+                        }
+                    }
+                    _ => {
+                        let res = checked_i64_binary(ArithOpKind::Mul, left, 250);
+                        let wide = (left as i128) * 250;
+                        if wide >= i64::MIN as i128 && wide <= i64::MAX as i128 {
+                            assert_eq!(res, Ok(wide as i64));
+                            kani::cover!(left > 1, "valid mul by 250");
+                        } else {
+                            assert!(res.is_err());
+                            kani::cover!(true, "mul by 250 overflow refused");
+                        }
+                    }
+                }
+            }
+            _ => {
+                let div_sel: u8 = kani::any();
+                kani::assume(div_sel < 5);
+                match div_sel {
+                    0 => {
+                        assert!(checked_i64_binary(ArithOpKind::DivPos, left, 0).is_err());
+                        kani::cover!(true, "div zero refused");
+                    }
+                    1 => {
+                        assert!(checked_i64_binary(ArithOpKind::DivPos, left, -3).is_err());
+                        kani::cover!(true, "div negative refused");
+                    }
+                    2 => assert_eq!(checked_i64_binary(ArithOpKind::DivPos, left, 1), Ok(left)),
+                    3 => {
+                        let res = checked_i64_binary(ArithOpKind::DivPos, left, 2);
+                        assert_eq!(res, Ok(((left as i128) / 2) as i64));
+                        kani::cover!(left < -1, "negative toward-zero div by 2");
+                    }
+                    _ => {
+                        kani::assume((-1024..=1024).contains(&left));
+                        let res = checked_i64_binary(ArithOpKind::DivPos, left, 3);
+                        assert_eq!(res, Ok(((left as i128) / 3) as i64));
+                        kani::cover!(left == -7, "odd toward-zero div -7 / 3 == -2");
+                    }
+                }
+            }
+        }
     }
 }

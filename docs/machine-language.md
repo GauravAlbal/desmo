@@ -57,16 +57,13 @@ non-negative constant (`attempt_count + 1`) or another integer operand
 does not fall through. There is no `%`, chaining, `min`/`max`, floats, or
 rounding modes.
 
-`then` assigns `literal`, `$arg`, or (on a **counter** fact only) `+N`.
-`then` cannot assign a fact to a fact or an expression. The host may compute
-a derived value, pass it as `$arg`, and the guard must check the defining
-relationship (`$remain_after == remaining_qty - $units` then
-`remaining_qty = "$remain_after"`).
+`then` assigns a literal, `$arg`, `+N` (on a **counter** fact only), or a bounded checked `i64` arithmetic expression using the same operand grammar as guards (`remaining_qty = "remaining_qty - $units"`, `total = "$price * 3"`). Multi-key `then` updates evaluate simultaneously against pre-transition facts and args, and any arithmetic overflow refuses with `IK_INVARIANT_FAILED` (`integer arithmetic overflow`).
 
-Then-literal quoting is the characters **inside** the TOML string:
-- String literals require inner double quotes: `then = { status = '"paid"' }` or `then = { status = "\"paid\"" }` stores `paid`; `then = { deposit_id = '""' }` stores an empty string (the way to clear a string fact). Bare `then = { status = "paid" }` is rejected because the TOML deserializer yields `paid` without quotes.
-- Boolean literals are the unquoted TOML strings `"true"` and `"false"`: `then = { approved = "true" }` (not bare TOML `approved = true` and not `'"true"'`).
-- Integer literals are numeric strings: `then = { n = "1" }`.
+Editor autocomplete & validation: [schema/ik.schema.json](../schema/ik.schema.json) (JSON Schema Draft-07) covers both schema 1 and schema 2 `.ik.toml` files.
+
+Then-literal quoting and native TOML values:
+- String literals require inner double quotes inside a TOML string: `then = { status = '"paid"' }` or `then = { status = "\"paid\"" }` stores `paid`; `then = { deposit_id = '""' }` stores an empty string (clearing a string fact). Bare `then = { status = "paid" }` is rejected so typos fail loudly instead of storing unintended strings.
+- Booleans and integers accept either native TOML literals (`then = { approved = true, retries_left = 3 }`) or quoted strings (`then = { approved = "true", retries_left = "3" }`) and hash to the exact same `spec_hash`.
 - Counter increments use `"+N"` on `policy = "counter"` facts only.
 - Command arguments use `"$arg"`, whose declared type must match the target fact type.
 

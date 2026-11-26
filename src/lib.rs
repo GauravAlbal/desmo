@@ -26,9 +26,11 @@ pub mod declarative;
 pub mod diagram;
 pub mod diagnostic;
 pub mod effect;
+pub mod events;
 pub mod evidence_verify;
 pub mod external;
 pub mod graph_export;
+pub mod guard;
 pub mod handoff;
 mod handoff_decision;
 mod handoff_frame;
@@ -52,6 +54,7 @@ pub mod scenario;
 pub mod simulate;
 pub mod smt;
 pub mod store;
+pub mod store_verify;
 
 pub mod prelude {
     pub use crate::canonical::{canonical_json, digest_json, sha256_hex};

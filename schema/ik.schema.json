@@ -1,0 +1,282 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GauravAlbal/desmo/blob/main/schema/ik.schema.json",
+  "title": "Desmo Declarative State Machine (.ik.toml)",
+  "description": "Schema for Desmo schema_version 1 (flat) and schema_version 2 (compound & parallel regions) declarative state machines.",
+  "oneOf": [
+    { "$ref": "#/definitions/FlatMachine" },
+    { "$ref": "#/definitions/RegionMachine" }
+  ],
+  "definitions": {
+    "FactType": {
+      "type": "string",
+      "enum": ["int", "string", "bool"]
+    },
+    "FactPolicy": {
+      "type": "string",
+      "enum": ["replace", "counter", "once", "kernel_only"],
+      "default": "replace",
+      "description": "Counter facts increment via '+N'; kernel_only facts cannot be modified by command `then` clauses."
+    },
+    "FactDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/definitions/FactType" },
+        "policy": { "$ref": "#/definitions/FactPolicy" },
+        "initial": {
+          "description": "Initial fact value at genesis (required for counter facts).",
+          "oneOf": [
+            { "type": "integer" },
+            { "type": "string" },
+            { "type": "boolean" }
+          ]
+        }
+      }
+    },
+    "StateDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "initial": {
+          "type": "boolean",
+          "default": false,
+          "description": "Exactly one non-terminal initial state must be declared per machine (or per region in schema 2)."
+        },
+        "terminal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Terminal states permanently lock the aggregate against further domain commands."
+        }
+      }
+    },
+    "ThenMap": {
+      "type": "object",
+      "description": "Post-commit fact updates evaluated against pre-transition facts and args. Accepts native TOML integers/booleans, string forms ('\"text\"', '+N' for counters, '$arg'), or checked i64 arithmetic expressions ('remaining - $units').",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "integer" },
+          { "type": "boolean" }
+        ]
+      }
+    },
+    "EffectDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Opaque domain effect kind string (e.g. 'stripe.charge')."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Effect identifier literal or '$arg' reference."
+        },
+        "payload_digest": {
+          "type": "string",
+          "description": "Digest literal or '$arg' reference bound at runtime."
+        },
+        "idempotency_key": {
+          "type": "string",
+          "description": "Idempotency key literal or '$arg' reference exposed to external executors."
+        }
+      }
+    },
+    "OutcomeDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["to"],
+      "properties": {
+        "when": {
+          "type": "string",
+          "description": "Guard expression evaluated in order; first match wins, eval error refuses without falling through."
+        },
+        "to": {
+          "type": "string",
+          "description": "Destination state name."
+        },
+        "then": { "$ref": "#/definitions/ThenMap" }
+      }
+    },
+    "CommandDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from"],
+      "properties": {
+        "from": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allowed source state names."
+        },
+        "to": {
+          "type": "string",
+          "description": "Single destination state (mutually exclusive with `outcomes`)."
+        },
+        "when": {
+          "type": "string",
+          "description": "Guard expression for single-destination commands (supports facts, $args, state, effect_status, effect_kind, effect_outcome, exists/not_exists, text_in)."
+        },
+        "outcomes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/OutcomeDef" }
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/FactType" }
+        },
+        "then": { "$ref": "#/definitions/ThenMap" },
+        "effect": { "$ref": "#/definitions/EffectDef" }
+      }
+    },
+    "InvariantDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assert"],
+      "properties": {
+        "when": {
+          "type": "string",
+          "description": "Optional gating predicate over state and facts."
+        },
+        "assert": {
+          "type": "string",
+          "description": "Predicate that must hold after every committed transition (and initially in schema 2)."
+        }
+      }
+    },
+    "ParentDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "children"],
+      "properties": {
+        "name": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "commands": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/CommandDef" }
+        }
+      }
+    },
+    "RegionDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["states"],
+      "properties": {
+        "states": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/StateDef" }
+        },
+        "commands": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/CommandDef" }
+        },
+        "parent": { "$ref": "#/definitions/ParentDef" }
+      }
+    },
+    "JointOutcomeDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["to"],
+      "properties": {
+        "when": { "type": "string" },
+        "to": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "then": { "$ref": "#/definitions/ThenMap" }
+      }
+    },
+    "JointCommandDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from"],
+      "properties": {
+        "from": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "to": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "when": { "type": "string" },
+        "outcomes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/JointOutcomeDef" }
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/FactType" }
+        },
+        "then": { "$ref": "#/definitions/ThenMap" },
+        "effect": { "$ref": "#/definitions/EffectDef" }
+      }
+    },
+    "FlatMachine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "machine_id", "machine_version", "states"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "machine_id": { "type": "string", "minLength": 1 },
+        "machine_version": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "facts": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/FactDef" }
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/StateDef" }
+        },
+        "commands": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/CommandDef" }
+        },
+        "invariants": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/InvariantDef" }
+        }
+      }
+    },
+    "RegionMachine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "machine_id", "machine_version", "regions"],
+      "properties": {
+        "schema_version": { "const": 2 },
+        "machine_id": { "type": "string", "minLength": 1 },
+        "machine_version": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "facts": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/FactDef" }
+        },
+        "regions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/RegionDef" }
+        },
+        "commands": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/JointCommandDef" }
+        },
+        "invariants": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/InvariantDef" }
+        }
+      }
+    }
+  }
+}

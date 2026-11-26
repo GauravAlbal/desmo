@@ -41,3 +41,32 @@ jobs:
       - run: sh scripts/public-verify
         env:
           IK_PYTEST_JOBS: auto
+
+  kani:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: cache-kani
+        with:
+          path: |
+            ~/.kani
+            ~/.cargo/bin/kani
+            ~/.cargo/bin/cargo-kani
+          key: ${{ runner.os }}-kani-0.68.0
+      - name: Install kani-verifier
+        if: steps.cache-kani.outputs.cache-hit != 'true'
+        run: |
+          cargo install --locked kani-verifier --version 0.68.0
+          cargo kani setup
+      - name: Prove kernel & compiler invariants
+        run: |
+          cargo kani --harness prove_command_authority_end_to_end
+          cargo kani --harness prove_outcome_binding_authority_end_to_end
+          cargo kani --harness prove_checked_i64_arith_no_silent_wrap
+          cargo kani --harness prove_ordered_guard_error_never_falls_through
+          cargo kani --harness prove_region_lowering_terminal_and_joint_invariants
