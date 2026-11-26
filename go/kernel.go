@@ -2,9 +2,11 @@ package invariantkernel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -13,6 +15,7 @@ import (
 type Options struct {
 	Binary  string
 	Timeout time.Duration
+	Session bool
 }
 
 // Kernel is a typed adapter over one ik store.
@@ -24,6 +27,9 @@ type Kernel struct {
 	protocolMajor  uint64
 	protocolMinor  uint64
 	nextID         atomic.Uint64
+	useSession     bool
+	sessionsMu     sync.Mutex
+	sessions       map[string]*sessionProc
 }
 
 // Open locates ik and binds a store path. The store file is created only by create, never by a read.
@@ -45,8 +51,39 @@ func Open(store string, opts Options) (*Kernel, error) {
 		runtimeVersion: runtime,
 		protocolMajor:  major,
 		protocolMinor:  minor,
+		useSession:     opts.Session,
+		sessions:       map[string]*sessionProc{},
 	}
 	return k, nil
+}
+
+// Close shuts down any persistent `ik --session` processes opened by this Kernel.
+func (k *Kernel) Close() error {
+	k.sessionsMu.Lock()
+	procs := k.sessions
+	k.sessions = map[string]*sessionProc{}
+	k.sessionsMu.Unlock()
+	var firstErr error
+	for _, proc := range procs {
+		if err := proc.close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
+}
+
+func (k *Kernel) sessionFor(machinePath string) (*sessionProc, error) {
+	k.sessionsMu.Lock()
+	defer k.sessionsMu.Unlock()
+	if existing, ok := k.sessions[machinePath]; ok && !existing.broken {
+		return existing, nil
+	}
+	proc, err := startSession(k.Binary, k.Store, machinePath)
+	if err != nil {
+		return nil, err
+	}
+	k.sessions[machinePath] = proc
+	return proc, nil
 }
 
 // Machine loads identity from `ik identity` so callers never hash a spec.
@@ -153,6 +190,13 @@ func (k *Kernel) call(ctx context.Context, op string, m *Machine, fields map[str
 	if m != nil && m.Identity.MachineID != "" {
 		env["machine"] = m.Identity.wire()
 		machinePath = m.Path
+	}
+	if k.useSession {
+		proc, err := k.sessionFor(machinePath)
+		if err != nil {
+			return nil, err
+		}
+		return proc.invoke(ctx, env)
 	}
 	return invoke(ctx, k.Binary, k.Store, machinePath, env)
 }
@@ -263,6 +307,12 @@ func (a *Aggregate) State() any {
 	return a.rawState
 }
 
+// StateName returns the declarative state name as a string, or "" for non-declarative payloads.
+func (a *Aggregate) StateName() string {
+	s, _ := a.State().(string)
+	return s
+}
+
 // Owner is the identity that owns this aggregate in the store. After a machine version change it can
 // differ from the handle's Machine.Identity on a Show through another version. Route an existing aggregate
 // to the retained definition whose Identity equals Owner (MachineIdentity values are comparable).
@@ -304,8 +354,21 @@ func (a *Aggregate) Command(ctx context.Context, name string, args map[string]an
 	return next, nil
 }
 
-// Record binds an effect outcome. Missing identity fields are taken from the pending intent.
+// Record binds an effect outcome under a fresh operation id. Missing identity fields are taken from the pending intent.
 func (a *Aggregate) Record(ctx context.Context, outcomeDigest string, override map[string]any) (*Aggregate, error) {
+	next, historical, err := a.RecordWithOperation(ctx, "", outcomeDigest, override)
+	if err != nil {
+		return nil, err
+	}
+	if historical != nil {
+		return nil, fmt.Errorf("unexpected historical result for a freshly generated operation id")
+	}
+	return next, nil
+}
+
+// RecordWithOperation binds an effect outcome under an explicit operation id (or generated when empty),
+// returning either the updated Aggregate or a Historical result on exact operation-id replay.
+func (a *Aggregate) RecordWithOperation(ctx context.Context, operationID, outcomeDigest string, override map[string]any) (*Aggregate, *Historical, error) {
 	wire := map[string]any{
 		"aggregate_id":       a.ID,
 		"outcome_digest":     outcomeDigest,
@@ -323,7 +386,9 @@ func (a *Aggregate) Record(ctx context.Context, outcomeDigest string, override m
 	for k, v := range override {
 		wire[k] = v
 	}
-	operationID := NewOperationID()
+	if operationID == "" {
+		operationID = NewOperationID()
+	}
 	result, err := a.machine.kernel.call(ctx, "record", a.machine, map[string]any{
 		"aggregate_id": a.ID,
 		"capability":   a.capability.wire(),
@@ -331,10 +396,59 @@ func (a *Aggregate) Record(ctx context.Context, outcomeDigest string, override m
 		"operation_id": operationID,
 	})
 	if err != nil {
-		return nil, annotateOperation(err, operationID)
+		return nil, nil, annotateOperation(err, operationID)
+	}
+	if historical, _ := result["historical"].(bool); historical {
+		record, _ := result["operation"].(map[string]any)
+		current, _ := result["current"].(map[string]any)
+		return nil, historicalFromRecord(a.ID, record, current["generation"], current["sequence"], result), nil
 	}
 	next, err := aggregateFromResult(a.machine, result)
-	return next, annotateOperation(err, operationID)
+	return next, nil, annotateOperation(err, operationID)
+}
+
+// RecordEffectOutcome is the picky effect completion helper: requires a non-empty outcomeDigest
+// and a pending EffectIntent on this handle before dispatching `record`.
+func (a *Aggregate) RecordEffectOutcome(ctx context.Context, operationID, outcomeDigest string) (*Aggregate, *Historical, error) {
+	if outcomeDigest == "" {
+		return nil, nil, errors.New("outcome digest is required and must be non-empty")
+	}
+	if a.Effect.Status != "pending" || a.Effect.Intent == nil {
+		return nil, nil, errors.New("aggregate has no pending effect intent to record")
+	}
+	return a.RecordWithOperation(ctx, operationID, outcomeDigest, nil)
+}
+
+// Transaction applies an atomic sequence of command steps inside one kernel SQLite transaction.
+// Each step is a command map `{"name": ..., "args": ...}` (or `{"command": ..., "observation": ...}`).
+func (a *Aggregate) Transaction(ctx context.Context, operationID string, steps []map[string]any) (*Aggregate, *Historical, error) {
+	if operationID == "" {
+		operationID = NewOperationID()
+	}
+	wireSteps := make([]map[string]any, 0, len(steps))
+	for _, step := range steps {
+		if _, hasCmd := step["command"]; hasCmd {
+			wireSteps = append(wireSteps, step)
+		} else {
+			wireSteps = append(wireSteps, map[string]any{"command": step})
+		}
+	}
+	result, err := a.machine.kernel.call(ctx, "transaction", a.machine, map[string]any{
+		"aggregate_id": a.ID,
+		"capability":   a.capability.wire(),
+		"commands":     wireSteps,
+		"operation_id": operationID,
+	})
+	if err != nil {
+		return nil, nil, annotateOperation(err, operationID)
+	}
+	if historical, _ := result["historical"].(bool); historical {
+		record, _ := result["operation"].(map[string]any)
+		current, _ := result["current"].(map[string]any)
+		return nil, historicalFromRecord(a.ID, record, current["generation"], current["sequence"], result), nil
+	}
+	next, err := aggregateFromResult(a.machine, result)
+	return next, nil, annotateOperation(err, operationID)
 }
 
 func (a *Aggregate) Show(ctx context.Context) (*Aggregate, error) {

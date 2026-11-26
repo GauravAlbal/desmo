@@ -1,10 +1,10 @@
 {
   "machine": "verification_attempt",
   "steps": [
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.5.1", "request_id": "s0", "op": "create", "aggregate_id": "agg-1"},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.5.1", "request_id": "s1", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.0.result.capability", "command": {"name": "start"}},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.5.1", "request_id": "s2", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.1.result.capability", "command": {"name": "submit", "args": {"artifact_digest": "a1", "baseline_digest": "b1"}}},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.5.1", "request_id": "s3", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.2.result.capability", "command": {"name": "reject"}},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.5.1", "request_id": "s4", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.1.result.capability", "command": {"name": "submit", "args": {"artifact_digest": "a1", "baseline_digest": "b1"}}}
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s0", "op": "create", "aggregate_id": "agg-1"},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s1", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.0.result.capability", "command": {"name": "start"}},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s2", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.1.result.capability", "command": {"name": "submit", "args": {"artifact_digest": "a1", "baseline_digest": "b1"}}},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s3", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.2.result.capability", "command": {"name": "reject"}},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s4", "op": "command", "aggregate_id": "agg-1", "capability": "$steps.1.result.capability", "command": {"name": "submit", "args": {"artifact_digest": "a1", "baseline_digest": "b1"}}}
   ]
 }

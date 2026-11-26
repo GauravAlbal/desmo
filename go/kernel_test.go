@@ -275,11 +275,11 @@ func TestGoMatchesDirectCLI(t *testing.T) {
 	}
 	cliStore := filepath.Join(t.TempDir(), "cli.db")
 	created := runCLI(t, bin, cliStore, va, "create", map[string]any{
-		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.5.1",
+		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.6.0",
 		"request_id": "c", "op": "create", "aggregate_id": "agg-1", "machine": identity,
 	})
 	started := runCLI(t, bin, cliStore, va, "command", map[string]any{
-		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.5.1",
+		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.6.0",
 		"request_id": "s", "op": "command", "aggregate_id": "agg-1", "machine": identity,
 		"capability": created["result"].(map[string]any)["capability"],
 		"command":    map[string]any{"name": "start"},
@@ -327,8 +327,17 @@ func runCLI(t *testing.T, bin, store, machine, op string, req map[string]any) ma
 }
 
 func asUint(v any) uint64 {
-	n, _ := v.(float64)
-	return uint64(n)
+	switch n := v.(type) {
+	case json.Number:
+		if i, err := n.Int64(); err == nil && i >= 0 {
+			return uint64(i)
+		}
+		return 0
+	case float64:
+		return uint64(n)
+	default:
+		return 0
+	}
 }
 
 // TestInvokeNilOmitsMachine is the Bind+Invoke escape hatch: a bound Machine
@@ -366,7 +375,7 @@ func writeCaptureBin(t *testing.T, capture string) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "ik-capture")
 	script := "#!/bin/sh\n" +
-		"if [ \"$1\" = \"--version\" ]; then echo 'ik 0.5.1 protocol 1.0'; exit 0; fi\n" +
+		"if [ \"$1\" = \"--version\" ]; then echo 'ik 0.6.0 protocol 1.0'; exit 0; fi\n" +
 		"cat > '" + capture + "'\n" +
 		"echo '{\"ok\":true,\"result\":{\"recorded\":true}}'\n"
 	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
@@ -462,5 +471,47 @@ func TestTextInIdentifierGuard(t *testing.T) {
 	}
 	if shown.State() != "idle" {
 		t.Fatalf("empty id mutated state to %v", shown.State())
+	}
+}
+
+func TestSessionTransportAndTransaction(t *testing.T) {
+	dir := t.TempDir()
+	k, err := invariantkernel.Open(filepath.Join(dir, "session.db"), invariantkernel.Options{
+		Binary:  ikBin(t),
+		Session: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+	ctx := context.Background()
+	m, err := k.Machine(ctx, filepath.Join(repoRoot(t), "machines", "verification_attempt.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	agg, err := m.Create(ctx, "sess-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if agg.StateName() != "created" {
+		t.Fatalf("expected created, got %q", agg.StateName())
+	}
+	next, hist, err := agg.Transaction(ctx, "tx-1", []map[string]any{
+		{"name": "start", "args": map[string]any{}},
+		{"name": "submit", "args": map[string]any{"artifact_digest": "a1", "baseline_digest": "b1"}},
+	})
+	if err != nil || hist != nil {
+		t.Fatalf("transaction failed: err=%v hist=%v", err, hist)
+	}
+	if next.StateName() != "submitted" || next.Generation != 2 {
+		t.Fatalf("unexpected post-tx state=%q gen=%d", next.StateName(), next.Generation)
+	}
+	// Exact replay of the same operation id returns Historical, never mutating.
+	again, replayHist, err := agg.Transaction(ctx, "tx-1", []map[string]any{
+		{"name": "start", "args": map[string]any{}},
+		{"name": "submit", "args": map[string]any{"artifact_digest": "a1", "baseline_digest": "b1"}},
+	})
+	if err != nil || again != nil || replayHist == nil {
+		t.Fatalf("expected historical replay, got next=%v hist=%v err=%v", again, replayHist, err)
 	}
 }

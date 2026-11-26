@@ -709,6 +709,64 @@ mod real_process_crash {
             false
         });
         let mut store = Store::open_with_crash_hook(Path::new(path), hook).unwrap();
+        let id = OperationId::parse("crash-op").unwrap();
+        if boundary.starts_with("crash.admit.") {
+            let machine: Box<dyn Machine> = Box::new(load_machine("verification_attempt"));
+            let identity = machine.identity().clone();
+            let agg = AggregateId("admit-1".into());
+            let outcome = store.create_aggregate_with_command_op(
+                machine.as_ref(),
+                &agg,
+                &identity,
+                &start(),
+                None,
+                &id,
+            );
+            assert!(outcome.is_ok(), "admit must succeed when no boundary fires: {outcome:?}");
+            std::process::exit(0);
+        }
+        if boundary.starts_with("crash.transaction.") {
+            let machine: Box<dyn Machine> = Box::new(load_machine("verification_attempt"));
+            let identity = machine.identity().clone();
+            let agg = AggregateId("agg-1".into());
+            let req = ik::store::TransactionRequest {
+                aggregate_id: agg.clone(),
+                machine: identity.clone(),
+                capability: cap(&identity, &agg, 0),
+                steps: vec![
+                    ik::protocol::TransactionStep { command: start(), observation: None },
+                    ik::protocol::TransactionStep { command: cancel(), observation: None },
+                ],
+            };
+            let outcome = store.transaction_op(machine.as_ref(), &req, &id);
+            assert!(outcome.is_ok(), "tx must succeed when no boundary fires: {outcome:?}");
+            std::process::exit(0);
+        }
+        if boundary.starts_with("crash.record.") {
+            let machine: Box<dyn Machine> = Box::new(load_machine("effect_probe"));
+            let identity = machine.identity().clone();
+            let agg = AggregateId("eff-1".into());
+            let shown = store.show(&agg).unwrap();
+            let ik::effect::EffectStatus::Pending(intent) = &shown.effect else {
+                panic!("expected pending effect");
+            };
+            let req = ik::store::EffectOutcomeRequest {
+                aggregate_id: agg.clone(),
+                machine: identity,
+                capability: shown.capability.clone(),
+                effect: ik::effect::EffectOutcomeV1 {
+                    effect_id: intent.effect_id.clone(),
+                    aggregate_id: agg,
+                    planned_generation: intent.generation,
+                    payload_digest: intent.payload_digest.clone(),
+                    idempotency_key: intent.idempotency_key.clone(),
+                    outcome_digest: "out-ok".into(),
+                },
+            };
+            let outcome = store.record_effect_op(&req, &id);
+            assert!(outcome.is_ok(), "record must succeed when no boundary fires: {outcome:?}");
+            std::process::exit(0);
+        }
         let machine: Box<dyn Machine> = Box::new(load_machine("verification_attempt"));
         let identity = machine.identity().clone();
         let agg = AggregateId("agg-1".into());
@@ -719,11 +777,7 @@ mod real_process_crash {
             command: start(),
             observation: None,
         };
-        let outcome = store.command_op(
-            machine.as_ref(),
-            &request,
-            &OperationId::parse("crash-op").unwrap(),
-        );
+        let outcome = store.command_op(machine.as_ref(), &request, &id);
         // The armed boundary exits 86 before this point; reaching it means it never fired.
         assert!(
             outcome.is_ok(),
@@ -810,6 +864,63 @@ mod real_process_crash {
             );
             assert_eq!(run.operation_rows, 1, "`{boundary}`: exactly one binding");
             assert!(run.verified, "`{boundary}`: store verifies");
+        }
+    }
+
+    #[test]
+    fn crash_after_operation_on_admit_transaction_and_record_leaves_no_partial_state() {
+        // 1. admit.after_operation
+        {
+            let f = fixture();
+            let path = f.path.clone();
+            let before = f.rows();
+            drop(f.store);
+            let code = run_child_crashing_at(&path, "crash.admit.after_operation");
+            assert_eq!(code, Some(86));
+            assert_eq!(authoritative_rows(&path), before);
+            assert_eq!(operation_count(&path), 0);
+        }
+        // 2. transaction.after_operation
+        {
+            let f = fixture();
+            let path = f.path.clone();
+            let before = f.rows();
+            drop(f.store);
+            let code = run_child_crashing_at(&path, "crash.transaction.after_operation");
+            assert_eq!(code, Some(86));
+            assert_eq!(authoritative_rows(&path), before);
+            assert_eq!(operation_count(&path), 0);
+        }
+        // 3. record.after_operation
+        {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("eff.db");
+            let mut store = Store::create(&path).unwrap();
+            let machine: Box<dyn Machine> = Box::new(load_machine("effect_probe"));
+            let identity = machine.identity().clone();
+            let agg = AggregateId("eff-1".into());
+            let created = store.create_aggregate(machine.as_ref(), &agg, &identity).unwrap();
+            let _ = store
+                .command(
+                    machine.as_ref(),
+                    &CommandRequest {
+                        aggregate_id: agg.clone(),
+                        machine: identity.clone(),
+                        capability: created.capability,
+                        command: json!({
+                            "name": "plan",
+                            "args": { "effect_id": "e1", "payload_digest": "p1", "idempotency_key": "k1" }
+                        }),
+                        observation: None,
+                    },
+                )
+                .unwrap();
+            let before = authoritative_rows(&path);
+            drop(store);
+            let code = run_child_crashing_at(&path, "crash.record.after_operation");
+            assert_eq!(code, Some(86));
+            assert_eq!(authoritative_rows(&path), before);
+            assert_eq!(operation_count(&path), 0);
         }
     }
 }

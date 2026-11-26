@@ -386,6 +386,57 @@ impl CompiledMachine {
         evaluate::select_outcomes(current_state, source_legal, &specs, &ctx)
     }
 
+    pub(crate) fn select_command_outcome_fast(
+        &self,
+        cmd: &CompiledCommand,
+        current_state: &str,
+        facts: &BTreeMap<String, Value>,
+        args: &BTreeMap<String, Value>,
+    ) -> Result<Option<usize>, Diagnostic> {
+        let specs: Vec<GuardSpec<'_>> = cmd
+            .outcomes
+            .iter()
+            .map(|outcome| GuardSpec {
+                when: outcome.when.as_ref(),
+                when_src: outcome.when_src.as_deref(),
+                when_rule: outcome.when_rule.as_str(),
+                target: outcome.to.as_str(),
+            })
+            .collect();
+        let ctx = EvalCtx {
+            facts,
+            args,
+            state: current_state,
+        };
+        evaluate::select_outcome_fast(&specs, &ctx)
+    }
+
+    pub(crate) fn check_invariants_fast(
+        &self,
+        facts: &BTreeMap<String, Value>,
+        dest_state: &str,
+    ) -> Result<(), Diagnostic> {
+        let specs: Vec<InvariantSpec<'_>> = self
+            .invariants
+            .iter()
+            .map(|inv| InvariantSpec {
+                name: inv.name.as_str(),
+                when: inv.when.as_ref(),
+                when_src: inv.when_src.as_deref(),
+                when_rule: inv.when_rule.as_str(),
+                assert: &inv.assert,
+                assert_rule: inv.assert_rule.as_str(),
+            })
+            .collect();
+        let empty = BTreeMap::new();
+        let ctx = EvalCtx {
+            facts,
+            args: &empty,
+            state: dest_state,
+        };
+        evaluate::check_invariants_fast(&specs, &ctx)
+    }
+
     pub(crate) fn check_invariants(
         &self,
         facts: &BTreeMap<String, Value>,
@@ -424,10 +475,7 @@ impl Machine for CompiledMachine {
 
     fn validate_initial(&self) -> Result<(), Diagnostic> {
         let (state, facts) = decode_state(&self.initial_state, &self.fact_types)?;
-        match self.check_invariants(&facts, &state).error {
-            Some(diagnostic) => Err(diagnostic),
-            None => Ok(()),
-        }
+        self.check_invariants_fast(&facts, &state)
     }
 
     fn decide(
@@ -439,27 +487,39 @@ impl Machine for CompiledMachine {
     ) -> Result<Decision, Diagnostic> {
         let prepared = prepare_command(self, state, command)?;
         if !prepared.source_legal {
+            let mut legal_from: Vec<&str> = prepared.cmd.from.iter().map(String::as_str).collect();
+            legal_from.sort_unstable();
+            let legal_here: Vec<&str> = self
+                .commands
+                .iter()
+                .filter(|(_, c)| c.from.contains(&prepared.current_state))
+                .map(|(n, _)| n.as_str())
+                .collect();
+            let here_hint = if legal_here.is_empty() {
+                "none (terminal or no outgoing commands)".to_string()
+            } else {
+                legal_here.join(", ")
+            };
             return Err(Diagnostic::new(
                 DiagnosticCode::IkIllegalState,
                 Some(prepared.name.clone()),
                 format!(
-                    "command `{}` is not legal from state `{}`",
-                    prepared.name, prepared.current_state
+                    "command `{}` is not legal from state `{}` (allowed from: [{}]; legal commands from `{}`: [{}])",
+                    prepared.name,
+                    prepared.current_state,
+                    legal_from.join(", "),
+                    prepared.current_state,
+                    here_hint,
                 ),
             ));
         }
-        let selection = self.select_command_outcomes(
-            &prepared.name,
+        let selected = self.select_command_outcome_fast(
             prepared.cmd,
             &prepared.current_state,
-            true,
             &prepared.current_facts,
             &prepared.args,
-        );
-        if let Some(error) = selection.error {
-            return Err(error);
-        }
-        let Some(index) = selection.selected else {
+        )?;
+        let Some(index) = selected else {
             return Err(Diagnostic::new(
                 DiagnosticCode::IkInvariantFailed,
                 Some(format!("{}.when", prepared.name)),
@@ -481,19 +541,45 @@ impl Machine for CompiledMachine {
     }
 
     fn apply(&self, state: &Value, event: &DomainEvent) -> Result<ApplyOutcome, Diagnostic> {
-        let reduced = self.reduce_event(state, event)?;
+        if event.event_version != 2 {
+            return Err(unknown_event_schema(event));
+        }
+        let Some(cmd) = self.commands.get(&event.event_type) else {
+            return Err(unknown_event_schema(event));
+        };
+        let (current_state, current_facts) = decode_state(state, &self.fact_types)?;
+        let (source, index, args) = decode_event_payload(&event.event_type, cmd, event)?;
+        if source != current_state || !cmd.from.contains(&source) {
+            return Err(Diagnostic::internal(format!(
+                "event `{}` source `{source}` does not match current state `{current_state}`",
+                event.event_type
+            )));
+        }
+        let outcome = &cmd.outcomes[index];
+        let mut new_facts = current_facts;
+        for (fact, value) in &outcome.then {
+            apply_assignment(&event.event_type, fact, value, &args, &mut new_facts)?;
+        }
         #[cfg(feature = "test-support")]
         let skip = crate::law_mutant::is(crate::law_mutant::LawMutant::SkipInvariantValidation);
         #[cfg(not(feature = "test-support"))]
         let skip = false;
-        if let Some(error) = reduced.invariants.error {
-            if !skip {
-                return Err(error);
-            }
+        if !skip {
+            self.check_invariants_fast(&new_facts, &outcome.to)?;
         }
-        let mut result = ApplyOutcome::new(reduced.state).with_terminal(reduced.terminal);
-        if let Some(effect) = reduced.effect {
-            result = result.with_effect(effect);
+        let terminal = self.terminal_states.iter().any(|s| s == &outcome.to);
+        let mut result =
+            ApplyOutcome::new(state_value(&outcome.to, &new_facts)).with_terminal(terminal);
+        if let Some(effect) = cmd.effect.as_ref() {
+            result = result.with_effect(EffectIntentV1 {
+                effect_id: EffectId(resolve_source(&effect.id, &args)),
+                aggregate_id: AggregateId(String::new()),
+                generation: 0,
+                effect_kind: effect.kind.clone(),
+                payload_digest: resolve_source(&effect.payload_digest, &args),
+                idempotency_key: resolve_source(&effect.idempotency_key, &args),
+                payload: None,
+            });
         }
         Ok(result)
     }
@@ -582,10 +668,17 @@ fn prepare_command<'a>(
     let (current_state, current_facts) = decode_state(state, &machine.fact_types)?;
     let (name, args) = decode_command(command)?;
     let Some(cmd) = machine.commands.get(&name) else {
+        let valid: Vec<&str> = machine.commands.keys().map(String::as_str).collect();
+        let hint = crate::declarative::def::did_you_mean(&name, &valid)
+            .map(|s| format!("; did you mean `{s}`?"))
+            .unwrap_or_default();
         return Err(Diagnostic::new(
             DiagnosticCode::IkCommandInvalid,
             Some("command.unknown"),
-            format!("unknown command `{name}`"),
+            format!(
+                "unknown command `{name}`{hint} (valid commands: [{}])",
+                valid.join(", ")
+            ),
         ));
     };
     validate_args(&name, &cmd.args, &args)?;
@@ -694,10 +787,21 @@ fn validate_args(
                     _ => false,
                 };
                 if !ok {
+                    let got = match v {
+                        Value::Null => "null",
+                        Value::Bool(_) => "bool",
+                        Value::Number(n) if n.is_i64() => "int",
+                        Value::Number(_) => "number (non-i64)",
+                        Value::String(_) => "string",
+                        Value::Array(_) => "array",
+                        Value::Object(_) => "object",
+                    };
                     return Err(Diagnostic::new(
                         DiagnosticCode::IkCommandInvalid,
                         Some(format!("{name}.args")),
-                        format!("command `{name}` argument `${arg}` has the wrong type"),
+                        format!(
+                            "command `{name}` argument `${arg}` has the wrong type (expected `{ty}`, got `{got}`)"
+                        ),
                     ));
                 }
             }

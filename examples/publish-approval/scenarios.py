@@ -365,7 +365,7 @@ def trace_bundle(origin: str, events: list[dict[str, str]], reproduction: str) -
     return {
         "schema": "ikaros.trace.v2",
         "product": "Ikaros",
-        "runtime_version": "0.5.1",
+        "runtime_version": "0.6.0",
         "machine_id": "publish_approval",
         "advisory": True,
         "origin": origin,

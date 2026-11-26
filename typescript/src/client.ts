@@ -17,7 +17,7 @@ import { unwrapEnvelope } from "./envelope.js";
 
 export const PROTOCOL_MAJOR = 1;
 export const PROTOCOL_MINOR = 0;
-export const RUNTIME_VERSION = "0.5.1";
+export const RUNTIME_VERSION = "0.6.0";
 export type { Json };
 
 export class MachineIdentity {
@@ -697,18 +697,233 @@ function lookupFrom(aggregateId: string, result: Record<string, Json>): Operatio
   );
 }
 
+const MAX_OUTPUT_BYTES = 1024 * 1024;
+
+class PersistentSession {
+  private readonly child: ReturnType<typeof spawn>;
+  private readonly queue: Array<{
+    requestId: string;
+    op: string;
+    line: string;
+    timeoutMs: number;
+    resolve: (value: unknown) => void;
+    reject: (err: Error) => void;
+  }> = [];
+  private active: {
+    requestId: string;
+    op: string;
+    timer: ReturnType<typeof setTimeout>;
+    resolve: (value: unknown) => void;
+    reject: (err: Error) => void;
+  } | null = null;
+  private stdoutBuf = "";
+  private stderrBuf = "";
+  private broken: string | null = null;
+  private closed = false;
+
+  constructor(binary: string, store: string, machinePath?: string) {
+    const argv = ["--store", store];
+    if (machinePath) {
+      argv.push("--machine", machinePath);
+    }
+    argv.push("--session");
+    this.child = spawn(binary, argv, { stdio: ["pipe", "pipe", "pipe"] });
+    this.setIdleUnref(true);
+
+    this.child.stdout?.on("data", (chunk: Buffer) => {
+      if (this.stdoutBuf.length + chunk.length > MAX_OUTPUT_BYTES) {
+        this.fail(`ik session output exceeded ${MAX_OUTPUT_BYTES} bytes`);
+        return;
+      }
+      this.stdoutBuf += chunk.toString("utf8");
+      let nl = this.stdoutBuf.indexOf("\n");
+      while (nl !== -1) {
+        const line = this.stdoutBuf.slice(0, nl);
+        this.stdoutBuf = this.stdoutBuf.slice(nl + 1);
+        this.onLine(line);
+        nl = this.stdoutBuf.indexOf("\n");
+      }
+    });
+
+    this.child.stderr?.on("data", (chunk: Buffer) => {
+      if (this.stderrBuf.length < MAX_OUTPUT_BYTES) {
+        this.stderrBuf += chunk.toString("utf8").slice(0, MAX_OUTPUT_BYTES - this.stderrBuf.length);
+      }
+    });
+
+    this.child.on("error", (err: NodeJS.ErrnoException) => {
+      const neverStarted = err.code === "ENOENT" || err.code === "EACCES" || err.code === "EPERM";
+      this.fail(
+        neverStarted ? `ik binary not found: ${err.message}` : `ik session error: ${err.message}`,
+        neverStarted,
+      );
+    });
+
+    this.child.on("close", (code) => {
+      if (!this.closed) {
+        const detail = this.stderrBuf.trim();
+        this.fail(detail || `ik session exited unexpectedly (code ${code ?? "null"})`);
+      }
+    });
+
+    this.child.stdin?.on("error", (err: NodeJS.ErrnoException) => {
+      if (!this.closed) {
+        this.fail(`ik session stdin error: ${err.message}`);
+      }
+    });
+  }
+
+  private setIdleUnref(idle: boolean): void {
+    const toggle = (h: unknown) => {
+      const target = h as { ref?: () => void; unref?: () => void } | null | undefined;
+      if (idle) {
+        target?.unref?.();
+      } else {
+        target?.ref?.();
+      }
+    };
+    toggle(this.child);
+    toggle(this.child.stdin);
+    toggle(this.child.stdout);
+    toggle(this.child.stderr);
+  }
+
+  isBroken(): boolean {
+    return this.broken !== null || this.closed;
+  }
+
+  send(requestId: string, op: string, line: string, timeoutMs: number): Promise<unknown> {
+    if (this.broken !== null) {
+      return Promise.reject(new PreDispatchError(`ik session unusable: ${this.broken}`));
+    }
+    const { promise, resolve, reject } = Promise.withResolvers<unknown>();
+    this.queue.push({ requestId, op, line, timeoutMs, resolve, reject });
+    this.pump();
+    return promise;
+  }
+
+  private pump(): void {
+    if (this.active !== null || this.queue.length === 0) {
+      if (this.active === null) {
+        this.setIdleUnref(true);
+      }
+      return;
+    }
+    if (this.broken !== null) {
+      while (this.queue.length > 0) {
+        this.queue.shift()!.reject(new PreDispatchError(`ik session unusable: ${this.broken}`));
+      }
+      return;
+    }
+    const next = this.queue.shift()!;
+    this.setIdleUnref(false);
+    const timer = setTimeout(() => {
+      this.fail(`ik session ${next.op} timed out after ${next.timeoutMs}ms`);
+    }, next.timeoutMs);
+    this.active = {
+      requestId: next.requestId,
+      op: next.op,
+      timer,
+      resolve: next.resolve,
+      reject: next.reject,
+    };
+    this.child.stdin?.write(`${next.line}\n`);
+  }
+
+  private onLine(line: string): void {
+    const cur = this.active;
+    if (!cur) {
+      return;
+    }
+    clearTimeout(cur.timer);
+    this.active = null;
+    try {
+      cur.resolve(parseWire(line));
+    } catch (err) {
+      this.fail(`ik session returned non-JSON for ${cur.op}: ${String(err)}`);
+      cur.reject(new TransportError(`ik session returned non-JSON for ${cur.op}: ${String(err)}`));
+      return;
+    }
+    this.pump();
+  }
+
+  private fail(reason: string, preDispatch = false): void {
+    if (this.broken !== null) {
+      return;
+    }
+    this.broken = reason;
+    const cur = this.active;
+    this.active = null;
+    if (cur) {
+      clearTimeout(cur.timer);
+      cur.reject(preDispatch ? new PreDispatchError(reason) : new TransportError(reason));
+    }
+    while (this.queue.length > 0) {
+      this.queue.shift()!.reject(new PreDispatchError(`ik session unusable: ${reason}`));
+    }
+    this.child.kill("SIGKILL");
+  }
+
+  close(): void {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
+    this.broken = "closed";
+    if (this.active) {
+      clearTimeout(this.active.timer);
+      this.active.reject(new TransportError("ik session closed while request was in flight"));
+      this.active = null;
+    }
+    while (this.queue.length > 0) {
+      this.queue.shift()!.reject(new PreDispatchError("ik session closed"));
+    }
+    try {
+      this.child.stdin?.end();
+    } catch {
+      // ignore
+    }
+    this.child.kill("SIGTERM");
+  }
+}
+
 export class Kernel {
   readonly binary: string;
   readonly store: string;
   readonly timeoutMs: number;
+  readonly useSession: boolean;
   runtimeVersion = RUNTIME_VERSION;
   protocol = { major: PROTOCOL_MAJOR, minor: PROTOCOL_MINOR };
   private nextId = 1;
+  private readonly sessions = new Map<string, PersistentSession>();
 
-  constructor(store: string, options: { binary?: string; timeoutMs?: number } = {}) {
+  constructor(
+    store: string,
+    options: { binary?: string; timeoutMs?: number; session?: boolean } = {},
+  ) {
     this.store = store;
     this.binary = locateBinary(options.binary);
     this.timeoutMs = options.timeoutMs ?? 30_000;
+    this.useSession = options.session ?? true;
+  }
+
+  /** Close any open persistent `ik --session` processes. Safe to call repeatedly. */
+  close(): void {
+    for (const session of this.sessions.values()) {
+      session.close();
+    }
+    this.sessions.clear();
+  }
+
+  private sessionFor(machine?: Machine): PersistentSession {
+    const key = machine?.path ?? "";
+    const existing = this.sessions.get(key);
+    if (existing && !existing.isBroken()) {
+      return existing;
+    }
+    const created = new PersistentSession(this.binary, this.store, machine?.path);
+    this.sessions.set(key, created);
+    return created;
   }
 
   /** A fresh caller operation id. Persist it before dispatch to survive your own crash. */
@@ -782,12 +997,16 @@ export class Kernel {
     if (fields.operation_id !== undefined) {
       env.operation_id = fields.operation_id;
     }
-    const argv = [this.binary, "--store", this.store];
-    if (machine) {
-      argv.push("--machine", machine.path);
-    }
-    argv.push(op);
-    const envelope = await runJson(argv[0], argv.slice(1), this.timeoutMs, stringifyWire(env));
+    const envelope = this.useSession
+      ? await this.sessionFor(machine).send(requestId, op, stringifyWire(env), this.timeoutMs)
+      : await (() => {
+          const argv = [this.binary, "--store", this.store];
+          if (machine) {
+            argv.push("--machine", machine.path);
+          }
+          argv.push(op);
+          return runJson(argv[0], argv.slice(1), this.timeoutMs, stringifyWire(env));
+        })();
     return unwrapEnvelope(envelope, {
       request_id: requestId,
       runtime_version: this.runtimeVersion,
@@ -807,12 +1026,28 @@ function runJson(
   const child = spawn(binary, argv, { stdio: ["pipe", "pipe", "pipe"] });
   const chunks: Buffer[] = [];
   const errChunks: Buffer[] = [];
+  let outBytes = 0;
+  let errBytes = 0;
+  let overflowed = false;
   const timer = setTimeout(() => {
     child.kill("SIGKILL");
     reject(new TransportError(`ik timed out after ${timeoutMs}ms`));
   }, timeoutMs);
-  child.stdout.on("data", (c: Buffer) => chunks.push(c));
-  child.stderr.on("data", (c: Buffer) => errChunks.push(c));
+  child.stdout.on("data", (c: Buffer) => {
+    outBytes += c.length;
+    if (outBytes <= MAX_OUTPUT_BYTES) {
+      chunks.push(c);
+    } else if (!overflowed) {
+      overflowed = true;
+      child.kill("SIGKILL");
+    }
+  });
+  child.stderr.on("data", (c: Buffer) => {
+    if (errBytes < MAX_OUTPUT_BYTES) {
+      errChunks.push(c.subarray(0, MAX_OUTPUT_BYTES - errBytes));
+      errBytes += c.length;
+    }
+  });
   child.on("error", (err: NodeJS.ErrnoException) => {
     clearTimeout(timer);
     const neverStarted = err.code === "ENOENT" || err.code === "EACCES" || err.code === "EPERM";
@@ -824,6 +1059,10 @@ function runJson(
   });
   child.on("close", (code) => {
     clearTimeout(timer);
+    if (overflowed) {
+      reject(new TransportError(`ik stdout exceeded ${MAX_OUTPUT_BYTES} bytes`));
+      return;
+    }
     const stdout = Buffer.concat(chunks).toString("utf8");
     const stderr = Buffer.concat(errChunks).toString("utf8");
     if (code === 2 && !stdout.trim()) {

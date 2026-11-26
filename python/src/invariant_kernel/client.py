@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import difflib
+import threading
 import uuid
+import weakref
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -50,6 +53,16 @@ def _call_context(
     return identity, path, machine.worker_spec
 
 
+def _close_sessions_map(sessions: dict[tuple[Optional[str], Optional[str]], transport.Session]) -> None:
+    items = list(sessions.values())
+    sessions.clear()
+    for open_session in items:
+        try:
+            open_session.close()
+        except Exception:
+            pass
+
+
 class Kernel:
     def __init__(
         self,
@@ -66,13 +79,32 @@ class Kernel:
         self._runtime_version = runtime
         self._protocol = {"major": major, "minor": minor}
         self._next_id = 1
-        # Persistent `ik --session` processes, keyed by declarative machine path (None for reducers).
+        self._id_lock = threading.Lock()
+        # Persistent `ik --session` processes, keyed by (machine_path, reducer_spec_hash)
+        # so two external reducers never collide on the same session slot.
         self._use_session = session
-        self._sessions: dict[Optional[str], transport.Session] = {}
+        self._sessions_lock = threading.Lock()
+        self._sessions: dict[tuple[Optional[str], Optional[str]], transport.Session] = {}
+        self._uncertain_ops: set[str] = set()
+        self._finalizer = weakref.finalize(self, _close_sessions_map, self._sessions)
 
     def close(self) -> None:
         """Close persistent sessions. One-shot kernels have nothing to close."""
-        sessions, self._sessions = self._sessions, {}
+        with self._sessions_lock:
+            sessions, self._sessions = self._sessions, {}
+        for open_session in sessions.values():
+            open_session.close()
+
+    def reset_sessions(self) -> None:
+        """Close and evict broken/open sessions so new operations can proceed cleanly.
+
+        Any operation id that was in flight when a session died remains recorded as uncertain
+        and still refuses resend until reconciled via ``lookup_operation``.
+        """
+        with self._sessions_lock:
+            sessions, self._sessions = self._sessions, {}
+            for open_session in sessions.values():
+                self._uncertain_ops.update(open_session._uncertain)
         for open_session in sessions.values():
             open_session.close()
 
@@ -82,15 +114,22 @@ class Kernel:
     def __exit__(self, *exc: Any) -> None:
         self.close()
 
-    def _session_for(self, path: Optional[Path]) -> "transport.Session":
-        key = None if path is None else str(path)
-        open_session = self._sessions.get(key)
-        if open_session is None:
-            open_session = transport.Session(
-                self.binary, self.store, path, timeout=self.timeout
-            )
-            self._sessions[key] = open_session
-        return open_session
+    def _session_for(
+        self, path: Optional[Path], identity: Optional[MachineIdentity] = None
+    ) -> "transport.Session":
+        key: tuple[Optional[str], Optional[str]] = (
+            (str(path), None)
+            if path is not None
+            else (None, identity.to_wire().get("spec_hash") if identity is not None else None)
+        )
+        with self._sessions_lock:
+            open_session = self._sessions.get(key)
+            if open_session is None:
+                open_session = transport.Session(
+                    self.binary, self.store, path, timeout=self.timeout
+                )
+                self._sessions[key] = open_session
+            return open_session
 
     def machine(self, path: str | Path) -> "Machine":
         return Machine.from_file(self, path)
@@ -197,9 +236,10 @@ class Kernel:
         return f"py-{uuid.uuid4().hex}"
 
     def _request_id(self) -> str:
-        rid = f"py-{self._next_id}"
-        self._next_id += 1
-        return rid
+        with self._id_lock:
+            rid = f"py-{self._next_id}"
+            self._next_id += 1
+            return rid
 
     def _envelope(
         self,
@@ -268,7 +308,14 @@ class Kernel:
         if worker_spec is not None:
             envelope["reducer_worker"] = dict(worker_spec)
         if self._use_session:
-            return self._session_for(path).invoke(envelope, self.timeout)
+            op_id = str(envelope.get("operation_id") or "")
+            if op_id and op_id in self._uncertain_ops and op != "lookup_operation":
+                raise TransportError(
+                    "IK_TRANSPORT",
+                    "an earlier attempt under this operation id was in flight when a session died; "
+                    "reconcile with lookup_operation instead of resending",
+                )
+            return self._session_for(path, identity).invoke(envelope, self.timeout)
         return transport.invoke(
             self.binary, self.store, path, envelope, self.timeout
         )
@@ -287,6 +334,21 @@ class Machine:
         self.path = Path(path) if path is not None else None
         self.identity = identity
         self.worker_spec = dict(worker_spec) if worker_spec is not None else None
+        self._declared_commands: Optional[frozenset[str]] = None
+
+    def declared_commands(self) -> Optional[frozenset[str]]:
+        if self.path is None:
+            return None
+        if self._declared_commands is None:
+            try:
+                schema = transport.run_schema(self.kernel.binary, self.path, self.kernel.timeout)
+                cmds = schema.get("commands") or []
+                self._declared_commands = frozenset(
+                    str(c["name"]) for c in cmds if isinstance(c, Mapping) and "name" in c
+                )
+            except Exception:
+                return None
+        return self._declared_commands
 
 
     @classmethod
@@ -716,6 +778,14 @@ class Aggregate:
     def __getattr__(self, name: str):
         if name.startswith("_"):
             raise AttributeError(name)
+        declared = self._machine.declared_commands()
+        if declared is not None and name not in declared:
+            close = difflib.get_close_matches(name, sorted(declared), n=1)
+            hint = f" (did you mean `{close[0]}`?)" if close else ""
+            raise AttributeError(
+                f"Aggregate has no attribute or declared command `{name}`{hint}; "
+                f"declared commands: {sorted(declared)}"
+            )
 
         def _invoke(**kwargs: Any) -> Aggregate:
             return self.command(name, **kwargs)

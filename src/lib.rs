@@ -21,6 +21,7 @@ pub mod analysis;
 pub mod canonical;
 pub mod census;
 pub mod cli;
+pub mod codegen;
 pub mod declarative;
 pub mod diagram;
 pub mod diagnostic;

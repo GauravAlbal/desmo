@@ -14,7 +14,7 @@ use std::path::Path;
 fn envelope(op: &str, request_id: &str) -> Value {
     json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.5.1",
+        "runtime_version": "0.6.0",
         "request_id": request_id,
         "op": op,
     })

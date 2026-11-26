@@ -1,6 +1,10 @@
 package invariantkernel
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+)
 
 // MachineIdentity is the kernel-authoritative (id, version, spec_hash) triple.
 // SpecHash is carried for the wire; callers should not invent one.
@@ -31,6 +35,12 @@ func identityFromWire(v map[string]any) (MachineIdentity, error) {
 	hash, _ := v["spec_hash"].(string)
 	var version uint64
 	switch n := v["version"].(type) {
+	case json.Number:
+		parsed, err := strconv.ParseUint(n.String(), 10, 64)
+		if err != nil {
+			return MachineIdentity{}, &TransportError{Message: "identity has invalid version"}
+		}
+		version = parsed
 	case float64:
 		version = uint64(n)
 	case int:
@@ -62,6 +72,12 @@ func capabilityFromWire(v map[string]any) (Capability, error) {
 	nonce, _ := v["nonce"].(string)
 	var gen uint64
 	switch n := v["generation"].(type) {
+	case json.Number:
+		parsed, err := strconv.ParseUint(n.String(), 10, 64)
+		if err != nil {
+			return Capability{}, &TransportError{Message: "result has invalid capability.generation"}
+		}
+		gen = parsed
 	case float64:
 		gen = uint64(n)
 	case int:
@@ -167,6 +183,14 @@ func asString(v any) string {
 
 func asUint(v any) uint64 {
 	switch n := v.(type) {
+	case json.Number:
+		if parsed, err := strconv.ParseUint(n.String(), 10, 64); err == nil {
+			return parsed
+		}
+		if f, err := n.Float64(); err == nil && f >= 0 {
+			return uint64(f)
+		}
+		return 0
 	case float64:
 		return uint64(n)
 	case int:

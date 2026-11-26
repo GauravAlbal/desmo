@@ -13,6 +13,7 @@
       "operations": [
         {"id": "doctor", "class": "read", "bin": "desmo", "argv": ["doctor", "--dir", "{project}", "--json"], "touches_store": false},
         {"id": "identity", "class": "read", "bin": "ik", "argv": ["identity", "{machine}"], "touches_store": false},
+        {"id": "diagram", "class": "read", "bin": "ik", "argv": ["diagram", "{machine}"], "touches_store": false},
         {"id": "laws", "class": "read", "bin": "ik", "argv": ["laws", "{machine}"], "touches_store": false},
         {"id": "schema", "class": "read", "bin": "ik", "argv": ["schema", "{machine}"], "touches_store": false},
         {"id": "check-plan", "class": "read", "bin": "ik", "argv": ["check", "{machine}", "--profile", "{profile}", "--plan"], "touches_store": false},
@@ -21,7 +22,6 @@
         {"id": "evidence-verify", "class": "read", "bin": "ik", "argv": ["evidence", "verify", "{evidence}", "--machine", "{machine}", "--json"], "touches_store": false},
         {"id": "report", "class": "read", "bin": "ik", "argv": ["report", "{report_input}", "--json"], "touches_store": false},
         {"id": "show", "class": "read", "bin": "ik", "argv": ["--store", "{store}", "--machine", "{machine}", "show"], "stdin": "show", "touches_store": true},
-        {"id": "replay", "class": "read", "bin": "ik", "argv": ["--store", "{store}", "--machine", "{machine}", "replay"], "stdin": "replay", "touches_store": true},
         {"id": "verify", "class": "read", "bin": "ik", "argv": ["--store", "{store}", "--machine", "{machine}", "verify"], "stdin": "verify", "touches_store": true},
         {"id": "lookup-operation", "class": "read", "bin": "ik", "argv": ["--store", "{store}", "--machine", "{machine}", "lookup_operation"], "stdin": "lookup_operation", "touches_store": true},
         {"id": "graph-export", "class": "scratch", "bin": "ik", "argv": ["graph", "export", "{machine}", "--out", "{graph_out}"], "touches_store": false},

@@ -38,7 +38,7 @@ ik simulate examples/orders/order.ik.toml --out order-simulator.html
 
 Other tools stop at the diagram. When you find a lifecycle you actually want protected for good, switch to *"Enforce this lifecycle with Desmo"* ([skills/desmo/build.md](skills/desmo/build.md), `change.md`, `diagnose.md`, `readout.md`) — the exact `.ik.toml` you just checked and simulated becomes the runtime authority (single binary, zero Rust code to write).
 
-*Other platforms can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.5.1 --bin ik`. Inside an existing Node project with `@desmo/runtime`, you can also install the skill via `npx --no-install desmo skill install --dir .`.*
+*Other platforms can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.6.0 --bin ik`. Inside an existing Node project with `@desmo/runtime`, you can also install the skill via `npx --no-install desmo skill install --dir .`.*
 
 ## What a machine looks like
 
@@ -115,14 +115,14 @@ Desmo kernel  (same .ik.toml checked before deploy and enforced at runtime)
 
 ### TypeScript / Node
 
-Download the `0.5.1` runtime tarball and your platform tarball (`darwin-arm64` or `linux-x64`) from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases/tag/v0.5.1) (no npm registry needed; the platform package bundles `ik`):
+Download the `0.6.0` runtime tarball and your platform tarball (`darwin-arm64` or `linux-x64`) from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases/tag/v0.6.0) (no npm registry needed; the platform package bundles `ik`):
 
 ```bash
 # macOS arm64 (for Linux x86_64, swap darwin-arm64 -> linux-x64)
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.5.1/desmo-runtime-0.5.1.tgz
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.5.1/desmo-darwin-arm64-0.5.1.tgz
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/desmo-runtime-0.6.0.tgz
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/desmo-darwin-arm64-0.6.0.tgz
 npm install --no-audit --no-fund --ignore-scripts \
-  ./desmo-runtime-0.5.1.tgz ./desmo-darwin-arm64-0.5.1.tgz
+  ./desmo-runtime-0.6.0.tgz ./desmo-darwin-arm64-0.6.0.tgz
 
 npx --no-install desmo demo orders        # unpaid refund & cancelled delivery refused
 npx --no-install desmo demo stale-worker  # late worker refused with IK_CAPABILITY_STALE
@@ -132,7 +132,7 @@ npx --no-install desmo doctor --dir .
 ```ts
 import { Kernel, IllegalStateError } from "@desmo/runtime";
 
-const kernel = new Kernel(".state/orders.db");
+const kernel = new Kernel(".state/orders.db"); // persistent `ik --session` enabled by default
 const orders = await kernel.machine("examples/orders/order.ik.toml");
 
 const order = await orders.create("order-1042");
@@ -147,8 +147,8 @@ console.log(paid.namedState(), paid.generation); // paid 1n
 Install `ik` with the one-line installer above, then install the wheel from the release:
 
 ```bash
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.5.1/invariant_kernel-0.5.1-py3-none-any.whl
-pip install --no-index --no-deps invariant_kernel-0.5.1-py3-none-any.whl
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/invariant_kernel-0.6.0-py3-none-any.whl
+pip install --no-index --no-deps invariant_kernel-0.6.0-py3-none-any.whl
 ```
 
 ```python
@@ -169,8 +169,9 @@ print(paid.state, paid.generation)  # paid 1
 ### Go
 
 ```go
-// go get github.com/GauravAlbal/desmo/go@go/v0.5.1
-k, _ := invariantkernel.Open(".state/orders.db", invariantkernel.Options{})
+// go get github.com/GauravAlbal/desmo/go@go/v0.6.0
+k, _ := invariantkernel.Open(".state/orders.db", invariantkernel.Options{Session: true})
+defer k.Close()
 m, _ := k.Machine(ctx, "examples/orders/order.ik.toml")
 order, _ := m.Create(ctx, "order-1042")
 paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
@@ -183,8 +184,8 @@ paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
 - **Bounded compound & parallel regions (schema 2):** author orthogonal regions, guarded child-first parent fallback, and atomic joint commands in `.ik.toml`, lowered to the same flat runtime engine ([docs/region-lowering.md](docs/region-lowering.md)).
 - **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
 - **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
-- **TypeScript contract generation:** `desmo codegen machine.ik.toml --out src/machine.contract.ts` generates typed commands, optional facts, and successor unions directly from `ik schema` ([docs/typescript.md](docs/typescript.md)).
-- **Developer workbench:** `ik check`, `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate`, `ik handoff`, and `ik readout` run against the exact same transition engine.
+- **Unified typed codegen (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale).
+- **Developer workbench:** `ik check` (with `--compact` for agent-friendly JSON), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` run against the exact same transition engine.
 
 ## What's verified vs. what's open
 
@@ -193,12 +194,12 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 | Claim | Status | Boundary |
 |---|---|---|
 | Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; does not stop host code from bypassing `ik`. |
-| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160 Python, 83 TS, 44 Go tests on macOS arm64 & Linux x64. |
+| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160 Python, 83 TS, 45 Go tests on macOS arm64 & Linux x64. |
 | Deleted-wall mutation controls | **15/15 kernel walls killed** | Deleting any of 15 core runtime walls fails tests; client transport layers not yet mutated. |
-| Real process-crash recovery | **32 crash-matrix tests** | Kills child processes (`SIGABRT` / `exit(86)`) across 16 SQLite boundaries; trusts SQLite WAL & OS. |
+| Real process-crash recovery | **35+ crash tests** | Kills child processes (`SIGABRT` / `exit(86)`) across SQLite persistence & `after_operation` boundaries; trusts SQLite WAL & OS. |
 | Multi-worker linearizability | **40 seeds × 3 workers** | Finite schedule check against a sequential reference model; not universal linearizability. |
 | Dual-solver SMT / TLC / Hegel adapters | **Optional adapters** | `Z3 + cvc5` dual-solver feasibility, TLC 2.19 finite graph checks, Hegel sampling. |
-| Kani bounded proofs | **Helper only; entrypoints open** | Historical Kani proof on `validate_capability`; full `execute_command` & `execute_outcome_binding` entrypoint proofs remain **open**. |
+| Kani bounded proofs (`src/runtime/authority.rs`) | **Verified (Kani 0.68 / CBMC 6.11)** | Exhaustive proofs over production payload-opaque `authorize_command` & `authorize_outcome_binding` gates (zero cutpoints, `<1s`, `8/8` cover properties each) + `validate_capability` ASCII nonces; concrete JSON/SHA-256 & SQLite remain outside Kani. |
 
 ## When to use Desmo (and when not to)
 
@@ -210,7 +211,7 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 
 - **Product & repo:** Desmo (`GauravAlbal/desmo`). **Engine & binary:** `invariant-kernel` / `ik`. **Machine files:** `.ik.toml`. **Node:** `@desmo/runtime`. **Python:** `invariant_kernel`. **Go:** `github.com/GauravAlbal/desmo/go`.
 - The name comes from a *desmodromic valve*, driven positively in both directions by cam tracks instead of relying on a spring to close.
-- **Protocol `1.0` · Runtime `0.5.1` · Store schema `4`.** `ik` and your language client must match runtime versions exactly. Existing `ikaros.trace.v2` schema identifiers remain unchanged for bundle compatibility.
+- **Protocol `1.0` · Runtime `0.6.0` · Store schema `4`.** `ik` and your language client must match runtime versions exactly. Existing `ikaros.trace.v2` schema identifiers remain unchanged for bundle compatibility.
 
 ## Documentation
 

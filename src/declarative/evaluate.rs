@@ -243,6 +243,74 @@ pub fn evaluate_invariants(specs: &[InvariantSpec<'_>], ctx: &EvalCtx<'_>) -> In
     }
 }
 
+/// Fast-path outcome selection for runtime `decide()`: avoids allocating explanation vectors.
+pub fn select_outcome_fast(
+    specs: &[GuardSpec<'_>],
+    ctx: &EvalCtx<'_>,
+) -> Result<Option<usize>, Diagnostic> {
+    for (index, spec) in specs.iter().enumerate() {
+        match evaluate_gate(spec.when, ctx) {
+            Gate::Unconditional | Gate::True => return Ok(Some(index)),
+            Gate::False => continue,
+            Gate::Error(reason) => {
+                return Err(Diagnostic::new(
+                    DiagnosticCode::IkInvariantFailed,
+                    Some(spec.when_rule.to_string()),
+                    format!(
+                        "guard `{}` could not be evaluated: {reason}",
+                        spec.when_rule
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Fast-path global invariant check for runtime `apply()`: zero allocation on success.
+pub fn check_invariants_fast(
+    specs: &[InvariantSpec<'_>],
+    ctx: &EvalCtx<'_>,
+) -> Result<(), Diagnostic> {
+    for spec in specs {
+        match evaluate_gate(spec.when, ctx) {
+            Gate::False => continue,
+            Gate::Error(reason) => {
+                return Err(Diagnostic::new(
+                    DiagnosticCode::IkInvariantFailed,
+                    Some(spec.when_rule.to_string()),
+                    format!(
+                        "invariant `{}` when could not be evaluated: {reason}",
+                        spec.name
+                    ),
+                ));
+            }
+            Gate::Unconditional | Gate::True => {}
+        }
+        match expr::eval(spec.assert, ctx) {
+            Ok(true) => continue,
+            Ok(false) => {
+                return Err(Diagnostic::new(
+                    DiagnosticCode::IkInvariantFailed,
+                    Some(spec.name.to_string()),
+                    format!("global invariant `{}` violated", spec.name),
+                ));
+            }
+            Err(reason) => {
+                return Err(Diagnostic::new(
+                    DiagnosticCode::IkInvariantFailed,
+                    Some(spec.assert_rule.to_string()),
+                    format!(
+                        "invariant `{}` assert could not be evaluated: {reason}",
+                        spec.name
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 enum Gate {
     Unconditional,
     True,

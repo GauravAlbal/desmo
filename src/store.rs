@@ -242,11 +242,20 @@ fn map_sqlite(err: rusqlite::Error) -> Diagnostic {
     )
 }
 
-fn configure(conn: &Connection) -> Result<(), Diagnostic> {
+fn configure(conn: &Connection, is_create: bool) -> Result<(), Diagnostic> {
     conn.busy_timeout(Duration::from_millis(5000))
         .map_err(map_sqlite)?;
-    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
+    if is_create {
+        conn.execute_batch(
+            "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-16000;",
+        )
         .map_err(map_sqlite)?;
+    } else {
+        conn.execute_batch(
+            "PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-16000;",
+        )
+        .map_err(map_sqlite)?;
+    }
     Ok(())
 }
 
@@ -297,7 +306,7 @@ impl Store {
             ));
         }
         let mut conn = Connection::open(path).map_err(map_sqlite)?;
-        configure(&conn)?;
+        configure(&conn, true)?;
         let store_id = StoreId(format!("ik-store-{}", Uuid::new_v4()));
         let tx = conn
             .transaction_with_behavior(TransactionBehavior::Immediate)
@@ -347,7 +356,7 @@ impl Store {
             ));
         }
         let mut conn = Connection::open(path).map_err(map_sqlite)?;
-        configure(&conn)?;
+        configure(&conn, false)?;
         let mut schema = meta_value(&conn, "schema_version")?;
         if schema == PREVIOUS_SCHEMA_VERSION.to_string() {
             migrate_previous_schema(&mut conn)?;
@@ -369,12 +378,21 @@ impl Store {
         })
     }
 
-    /// Open an existing store or create a fresh one at `path`.
+    /// Open an existing store or create a fresh one at `path` (race-safe under concurrent opens).
     pub fn open_or_create(path: &Path) -> Result<Store, Diagnostic> {
-        if path.exists() {
-            Store::open(path)
-        } else {
-            Store::create(path)
+        match Store::open(path) {
+            Ok(store) => Ok(store),
+            Err(err) if err.code == DiagnosticCode::IkStoreNotFound => match Store::create(path) {
+                Ok(store) => Ok(store),
+                Err(create_err)
+                    if create_err.code == DiagnosticCode::IkIllegalState
+                        || create_err.message.contains("already exists") =>
+                {
+                    Store::open(path)
+                }
+                Err(create_err) => Err(create_err),
+            },
+            Err(err) => Err(err),
         }
     }
 
@@ -1020,14 +1038,18 @@ impl Store {
         machine: &dyn Machine,
         aggregate_id: Option<&AggregateId>,
     ) -> Result<VerifySummary, Diagnostic> {
-        let ids = aggregate_ids(&self.conn, aggregate_id)?;
+        let tx = self
+            .conn
+            .transaction_with_behavior(TransactionBehavior::Deferred)
+            .map_err(map_sqlite)?;
+        let ids = aggregate_ids(&tx, aggregate_id)?;
         let aggregate_count = ids.len();
         for id in ids {
             let agg = AggregateId(id);
-            let events = load_events(&self.conn, &agg)?;
+            let events = load_events(&tx, &agg)?;
             verify_chain(&events)?;
-            verify_receipts(&self.conn, &events)?;
-            let snapshot = load_snapshot(&self.conn, &agg)?;
+            verify_receipts(&tx, &events)?;
+            let snapshot = load_snapshot(&tx, &agg)?;
             if machine.identity() != &snapshot.machine {
                 return Err(Diagnostic::new(
                     DiagnosticCode::IkMachineMismatch,
@@ -1055,8 +1077,9 @@ impl Store {
         // Receipt rows keyed to an aggregate that does not exist are invisible to
         // the per-aggregate set equality above; reject them as orphan projection
         // rows so every stored receipt belongs to a real journal.
-        verify_no_orphan_receipts(&self.conn)?;
-        verify_operations(&self.conn, aggregate_id)?;
+        verify_no_orphan_receipts(&tx)?;
+        verify_operations(&tx, aggregate_id)?;
+        drop(tx);
         Ok(VerifySummary {
             store_id: self.store_id.clone(),
             aggregates: aggregate_count,
@@ -1975,22 +1998,36 @@ fn insert_genesis(
 
 /// Every operation row must name journal events that exist with the recorded hashes.
 fn verify_operations(conn: &Connection, only: Option<&AggregateId>) -> Result<(), Diagnostic> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT aggregate_id, operation_id FROM operations ORDER BY aggregate_id, operation_id",
-        )
-        .map_err(map_sqlite)?;
-    let keys = stmt
-        .query_map([], |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-        })
-        .map_err(map_sqlite)?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(map_sqlite)?;
+    let keys: Vec<(String, String)> = if let Some(agg) = only {
+        let mut stmt = conn
+            .prepare_cached(
+                "SELECT aggregate_id, operation_id FROM operations WHERE aggregate_id = ?1 ORDER BY operation_id",
+            )
+            .map_err(map_sqlite)?;
+        let rows = stmt
+            .query_map(params![agg.0], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })
+            .map_err(map_sqlite)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(map_sqlite)?;
+        rows
+    } else {
+        let mut stmt = conn
+            .prepare_cached(
+                "SELECT aggregate_id, operation_id FROM operations ORDER BY aggregate_id, operation_id",
+            )
+            .map_err(map_sqlite)?;
+        let rows = stmt
+            .query_map([], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })
+            .map_err(map_sqlite)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(map_sqlite)?;
+        rows
+    };
     for (aggregate, operation) in keys {
-        if only.is_some_and(|id| id.0 != aggregate) {
-            continue;
-        }
         verify_operation_binding(conn, &AggregateId(aggregate), &operation)?;
     }
     Ok(())

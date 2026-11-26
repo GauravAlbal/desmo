@@ -14,6 +14,7 @@ use crate::identity::{AggregateId, Capability, MachineIdentity};
 use crate::machine::{ApplyOutcome, Decision, DomainEvent};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+pub mod authority;
 #[cfg(kani)]
 mod capability_proofs;
 
@@ -295,74 +296,121 @@ fn validate_capability(
     Ok(())
 }
 
-enum Binding {
-    /// Exact duplicate of a recorded outcome (includes the stored receipt).
-    Replay(Box<Receipt>),
-    /// Matches the pending intent: record the outcome.
-    Resolve,
-    /// No pending or recorded effect.
-    Stale,
-    /// Different effect identity (foreign).
-    Foreign,
-    /// Same identity, different binding or outcome.
-    Conflict,
+fn authority_policy() -> authority::AuthorityPolicy {
+    #[cfg(feature = "test-support")]
+    {
+        use crate::law_mutant::{is, LawMutant};
+        authority::AuthorityPolicy {
+            accept_stale_capability: is(LawMutant::AcceptStaleCapability),
+            allow_terminal_mutation: is(LawMutant::AllowTerminalMutation),
+            allow_second_pending_effect: is(LawMutant::AllowSecondPendingEffect),
+            allow_effect_conflict: is(LawMutant::AllowEffectConflict),
+            mutate_on_duplicate: is(LawMutant::MutateOnDuplicate),
+            skip_generation_increment: is(LawMutant::SkipGenerationIncrement),
+        }
+    }
+    #[cfg(not(feature = "test-support"))]
+    {
+        authority::AuthorityPolicy::default()
+    }
 }
 
-fn classify_binding(
+fn authority_snapshot_view(
     snapshot: &AggregateSnapshot,
+    capability: &Capability,
     recorded_receipt: Option<&Receipt>,
+) -> authority::AuthoritySnapshotView {
+    authority::AuthoritySnapshotView {
+        generation: snapshot.generation,
+        sequence: snapshot.sequence,
+        nonce_matches: capability.nonce == snapshot.nonce,
+        terminal: snapshot.terminal,
+        effect_state: match &snapshot.effect {
+            EffectStatus::None => authority::EffectStateKind::None,
+            EffectStatus::Pending(_) => authority::EffectStateKind::Pending,
+            EffectStatus::Recorded(_, _, _) => authority::EffectStateKind::Recorded,
+        },
+        has_recorded_receipt: recorded_receipt.is_some(),
+    }
+}
+
+fn binding_class_of(
+    snapshot: &AggregateSnapshot,
     outcome: &EffectOutcomeV1,
-) -> Result<Binding, Diagnostic> {
+) -> authority::BindingClass {
     match &snapshot.effect {
-        EffectStatus::None => Ok(Binding::Stale),
+        EffectStatus::None => authority::BindingClass::Stale,
         EffectStatus::Pending(intent) => {
             if outcome.binds(intent) {
-                Ok(Binding::Resolve)
+                authority::BindingClass::Resolve
             } else if outcome.is_foreign_to(intent) {
-                Ok(Binding::Foreign)
+                authority::BindingClass::Foreign
             } else {
-                Ok(Binding::Conflict)
+                authority::BindingClass::Conflict
             }
         }
         EffectStatus::Recorded(intent, digest, _) => {
             if outcome.exact_duplicate_of(intent, digest) {
-                let receipt = recorded_receipt
-                    .ok_or_else(|| Diagnostic::internal("recorded effect missing stored receipt"))?
-                    .clone();
-                Ok(Binding::Replay(Box::new(receipt)))
+                authority::BindingClass::ExactDuplicate
             } else if outcome.is_foreign_to(intent) {
-                Ok(Binding::Foreign)
+                authority::BindingClass::Foreign
             } else {
-                Ok(Binding::Conflict)
+                authority::BindingClass::Conflict
             }
         }
     }
 }
 
-fn refuse_binding(binding: Binding) -> Result<Binding, Diagnostic> {
-    match binding {
-        Binding::Replay(r) => Ok(Binding::Replay(r)),
-        Binding::Resolve => Ok(Binding::Resolve),
-        Binding::Stale => Err(Diagnostic::new(
+fn map_authority_error(
+    err: authority::AuthorityError,
+    snapshot: &AggregateSnapshot,
+    capability: &Capability,
+    domain_refusal: Option<Diagnostic>,
+) -> Diagnostic {
+    match err {
+        authority::AuthorityError::CapabilityStale => validate_capability(snapshot, capability)
+            .expect_err("capability generation mismatch produces IkCapabilityStale"),
+        authority::AuthorityError::NonceInvalid => validate_capability(snapshot, capability)
+            .expect_err("capability nonce mismatch produces IkNonceInvalid"),
+        authority::AuthorityError::DomainRefusal => {
+            domain_refusal.unwrap_or_else(|| Diagnostic::internal("missing domain refusal"))
+        }
+        authority::AuthorityError::TerminalMutation => Diagnostic::new(
+            DiagnosticCode::IkIllegalState,
+            Some("terminal"),
+            "terminal states reject ordinary mutation",
+        ),
+        authority::AuthorityError::SecondPendingEffect => Diagnostic::new(
+            DiagnosticCode::IkEffectStale,
+            Some("effect.pending"),
+            "a new effect cannot be planned while one is pending",
+        ),
+        authority::AuthorityError::BothEffectAndOutcome => Diagnostic::internal(
+            "machine event fold produced both an effect intent and an outcome binding",
+        ),
+        authority::AuthorityError::EffectStale => Diagnostic::new(
             DiagnosticCode::IkEffectStale,
             Some("effect.none"),
             "no effect is pending for this aggregate",
-        )),
-        Binding::Foreign => Err(Diagnostic::new(
+        ),
+        authority::AuthorityError::EffectForeign => Diagnostic::new(
             DiagnosticCode::IkEffectMismatch,
             Some("effect.identity"),
             "effect outcome references a foreign effect identity",
-        )),
-        Binding::Conflict => {
-            #[cfg(feature = "test-support")]
-            if crate::law_mutant::is(crate::law_mutant::LawMutant::AllowEffectConflict) {
-                return Ok(Binding::Resolve);
-            }
-            Err(Diagnostic::new(
-                DiagnosticCode::IkEffectOutcomeConflict,
-                Some("effect.binding"),
-                "effect outcome conflicts with the recorded binding or outcome",
-            ))
+        ),
+        authority::AuthorityError::EffectConflict => Diagnostic::new(
+            DiagnosticCode::IkEffectOutcomeConflict,
+            Some("effect.binding"),
+            "effect outcome conflicts with the recorded binding or outcome",
+        ),
+        authority::AuthorityError::MissingRecordedReceipt => {
+            Diagnostic::internal("recorded effect missing stored receipt")
+        }
+        authority::AuthorityError::CounterOverflowSequence => {
+            counter_overflow_diagnostic("sequence", snapshot.sequence)
+        }
+        authority::AuthorityError::CounterOverflowGeneration => {
+            counter_overflow_diagnostic("generation", snapshot.generation)
         }
     }
 }
@@ -381,156 +429,138 @@ pub fn execute_command(
     command: &Value,
     observation: Option<&Value>,
 ) -> Result<Step, Diagnostic> {
-    if machine.requires_capability_preflight() {
-        validate_capability(snapshot, capability)?;
+    let policy = authority_policy();
+    let view = authority_snapshot_view(snapshot, capability, recorded_receipt);
+    let preflight = machine.requires_capability_preflight();
+    if preflight {
+        authority::check_capability(view, capability.generation, policy)
+            .map_err(|err| map_authority_error(err, snapshot, capability, None))?;
     }
-    let decision = decide_command(machine, snapshot, capability, command, observation)?;
+
+    let decision = match machine.decide(&snapshot.state, observation, &snapshot.effect, command) {
+        Ok(decision) => decision,
+        Err(domain_refusal) => {
+            let err = authority::authorize_command(
+                view,
+                capability.generation,
+                preflight,
+                authority::CommandStage::DecideRefusal,
+                policy,
+            )
+            .expect_err("DecideRefusal always returns Err");
+            return Err(map_authority_error(err, snapshot, capability, Some(domain_refusal)));
+        }
+    };
     let (event, note) = match decision {
-        Decision::Noop { note } => return no_op_step(snapshot, capability, note),
+        Decision::Noop { note } => {
+            authority::authorize_command(
+                view,
+                capability.generation,
+                preflight,
+                authority::CommandStage::Noop,
+                policy,
+            )
+            .map_err(|err| map_authority_error(err, snapshot, capability, None))?;
+            return Ok(Step::Noop { note });
+        }
         Decision::Emit { event, note } => (event, note),
     };
-    validate_event_or_capability(snapshot, capability, &event)?;
+    if let Err(domain_refusal) = validate_domain_event(&event) {
+        let err = authority::authorize_command(
+            view,
+            capability.generation,
+            preflight,
+            authority::CommandStage::InvalidEvent,
+            policy,
+        )
+        .expect_err("InvalidEvent always returns Err");
+        return Err(map_authority_error(err, snapshot, capability, Some(domain_refusal)));
+    }
     let ApplyOutcome {
         state,
         terminal,
         effect,
         outcome,
-    } = apply_command(machine, snapshot, capability, &event)?;
-    let outcome = stamp_outcome_or_capability(snapshot, capability, outcome)?;
-
-    if let Some(step) = duplicate_replay_step(snapshot, recorded_receipt, outcome.as_ref())? {
-        return Ok(step);
-    }
-    validate_capability(snapshot, capability)?;
-    // Authority harnesses assume invalid capability. Assert before cutting this
-    // suffix: reaching it fails verification, rather than hiding a mutation path.
-    #[cfg(kani)]
-    {
-        kani::assert(false, "command authority: mutation suffix is unreachable");
-        kani::assume(false);
-    }
-    if snapshot.terminal {
-        #[cfg(feature = "test-support")]
-        let allow = crate::law_mutant::is(crate::law_mutant::LawMutant::AllowTerminalMutation);
-        #[cfg(not(feature = "test-support"))]
-        let allow = false;
-        if !allow {
-            return Err(Diagnostic::new(
-                DiagnosticCode::IkIllegalState,
-                Some("terminal"),
-                "terminal states reject ordinary mutation",
-            ));
+    } = match machine.apply(&snapshot.state, &event) {
+        Ok(applied) => applied,
+        Err(domain_refusal) => {
+            let err = authority::authorize_command(
+                view,
+                capability.generation,
+                preflight,
+                authority::CommandStage::ApplyRefusal,
+                policy,
+            )
+            .expect_err("ApplyRefusal always returns Err");
+            return Err(map_authority_error(err, snapshot, capability, Some(domain_refusal)));
         }
-    }
-    let delta = derive_effect_delta(snapshot, recorded_receipt, effect, outcome)?;
-    let authorized = AuthorizedTransition {
-        event_type: event.event_type,
-        event_version: event.event_version,
-        payload: event.payload,
-        command: command.clone(),
-        observation: observation.cloned(),
-        state,
-        terminal,
-        delta,
-        note,
     };
-    Ok(Step::Commit(Box::new(commit_plan(
-        snapshot,
-        EventKind::DomainCommand,
-        authorized,
-    )?)))
-}
-
-fn decide_command(
-    machine: &dyn crate::machine::Machine,
-    snapshot: &AggregateSnapshot,
-    capability: &Capability,
-    command: &Value,
-    observation: Option<&Value>,
-) -> Result<Decision, Diagnostic> {
-    match machine.decide(&snapshot.state, observation, &snapshot.effect, command) {
-        Ok(decision) => Ok(decision),
-        Err(domain_refusal) => {
-            validate_capability(snapshot, capability)?;
-            Err(domain_refusal)
-        }
-    }
-}
-
-fn no_op_step(
-    snapshot: &AggregateSnapshot,
-    capability: &Capability,
-    note: Option<Value>,
-) -> Result<Step, Diagnostic> {
-    validate_capability(snapshot, capability)?;
-    Ok(Step::Noop { note })
-}
-
-fn validate_event_or_capability(
-    snapshot: &AggregateSnapshot,
-    capability: &Capability,
-    event: &DomainEvent,
-) -> Result<(), Diagnostic> {
-    if let Err(domain_refusal) = validate_domain_event(event) {
-        validate_capability(snapshot, capability)?;
-        return Err(domain_refusal);
-    }
-    Ok(())
-}
-
-fn apply_command(
-    machine: &dyn crate::machine::Machine,
-    snapshot: &AggregateSnapshot,
-    capability: &Capability,
-    event: &DomainEvent,
-) -> Result<ApplyOutcome, Diagnostic> {
-    match machine.apply(&snapshot.state, event) {
-        Ok(applied) => Ok(applied),
-        Err(domain_refusal) => {
-            validate_capability(snapshot, capability)?;
-            Err(domain_refusal)
-        }
-    }
-}
-
-fn stamp_outcome_or_capability(
-    snapshot: &AggregateSnapshot,
-    capability: &Capability,
-    outcome: Option<EffectOutcomeV1>,
-) -> Result<Option<EffectOutcomeV1>, Diagnostic> {
-    match outcome.map(|value| stamp_outcome_aggregate(&value, &snapshot.aggregate_id)) {
-        Some(Ok(outcome)) => Ok(Some(outcome)),
+    let outcome = match outcome.map(|value| stamp_outcome_aggregate(&value, &snapshot.aggregate_id))
+    {
+        Some(Ok(outcome)) => Some(outcome),
         Some(Err(domain_refusal)) => {
-            validate_capability(snapshot, capability)?;
-            Err(domain_refusal)
+            let err = authority::authorize_command(
+                view,
+                capability.generation,
+                preflight,
+                authority::CommandStage::OutcomeStampRefusal,
+                policy,
+            )
+            .expect_err("OutcomeStampRefusal always returns Err");
+            return Err(map_authority_error(err, snapshot, capability, Some(domain_refusal)));
         }
-        None => Ok(None),
-    }
-}
+        None => None,
+    };
 
-/// Exact-duplicate replay guard: an outcome that exactly duplicates a recorded
-/// binding replays the stored receipt before capability/terminal refusal (G-002
-/// precedence exception). Returns `Ok(None)` when no duplicate replay applies.
-fn duplicate_replay_step(
-    snapshot: &AggregateSnapshot,
-    recorded_receipt: Option<&Receipt>,
-    outcome: Option<&EffectOutcomeV1>,
-) -> Result<Option<Step>, Diagnostic> {
-    if let Some(outcome) = outcome {
-        if let EffectStatus::Recorded(intent, digest, _) = &snapshot.effect {
-            if outcome.exact_duplicate_of(intent, digest) {
-                #[cfg(feature = "test-support")]
-                if crate::law_mutant::is(crate::law_mutant::LawMutant::MutateOnDuplicate) {
-                    return Ok(None);
-                }
-                let receipt = recorded_receipt
-                    .ok_or_else(|| Diagnostic::internal("recorded effect missing stored receipt"))?
-                    .clone();
-                return Ok(Some(Step::DuplicateReplay(Box::new(receipt))));
-            }
+    let outcome_class = outcome.as_ref().map(|o| binding_class_of(snapshot, o));
+    let auth_step = authority::authorize_command(
+        view,
+        capability.generation,
+        preflight,
+        authority::CommandStage::Emit {
+            plans_effect: effect.is_some(),
+            outcome: outcome_class,
+        },
+        policy,
+    )
+    .map_err(|err| map_authority_error(err, snapshot, capability, None))?;
+
+    match auth_step {
+        authority::AuthorityStep::DuplicateReplay => {
+            let receipt = recorded_receipt
+                .ok_or_else(|| Diagnostic::internal("recorded effect missing stored receipt"))?
+                .clone();
+            Ok(Step::DuplicateReplay(Box::new(receipt)))
+        }
+        authority::AuthorityStep::Noop => Ok(Step::Noop { note }),
+        authority::AuthorityStep::Commit { .. } => {
+            let delta = if let Some(mut intent) = effect {
+                intent.aggregate_id = snapshot.aggregate_id.clone();
+                intent.generation = checked_increment(snapshot.generation, "generation")?;
+                EffectDelta::Plan { intent }
+            } else if let Some(outcome) = outcome {
+                EffectDelta::Record { outcome }
+            } else {
+                EffectDelta::None
+            };
+            let authorized = AuthorizedTransition {
+                event_type: event.event_type,
+                event_version: event.event_version,
+                payload: event.payload,
+                command: command.clone(),
+                observation: observation.cloned(),
+                state,
+                terminal,
+                delta,
+                note,
+            };
+            Ok(Step::Commit(Box::new(commit_plan(
+                snapshot,
+                EventKind::DomainCommand,
+                authorized,
+            )?)))
         }
     }
-    Ok(None)
 }
 
 fn validate_domain_event(event: &DomainEvent) -> Result<(), Diagnostic> {
@@ -548,45 +578,6 @@ fn validate_domain_event(event: &DomainEvent) -> Result<(), Diagnostic> {
     Ok(())
 }
 
-fn derive_effect_delta(
-    snapshot: &AggregateSnapshot,
-    recorded_receipt: Option<&Receipt>,
-    effect: Option<EffectIntentV1>,
-    outcome: Option<EffectOutcomeV1>,
-) -> Result<EffectDelta, Diagnostic> {
-    if effect.is_some() && outcome.is_some() {
-        return Err(Diagnostic::internal(
-            "machine event fold produced both an effect intent and an outcome binding",
-        ));
-    }
-    if let Some(mut intent) = effect {
-        let already_pending = matches!(snapshot.effect, EffectStatus::Pending(_));
-        #[cfg(feature = "test-support")]
-        let already_pending = already_pending
-            && !crate::law_mutant::is(crate::law_mutant::LawMutant::AllowSecondPendingEffect);
-        if already_pending {
-            return Err(Diagnostic::new(
-                DiagnosticCode::IkEffectStale,
-                Some("effect.pending"),
-                "a new effect cannot be planned while one is pending",
-            ));
-        }
-        intent.aggregate_id = snapshot.aggregate_id.clone();
-        intent.generation = checked_increment(snapshot.generation, "generation")?;
-        return Ok(EffectDelta::Plan { intent });
-    }
-    if let Some(outcome) = outcome {
-        return match refuse_binding(classify_binding(snapshot, recorded_receipt, &outcome)?)? {
-            Binding::Resolve => Ok(EffectDelta::Record { outcome }),
-            Binding::Replay(_) => Err(Diagnostic::internal(
-                "duplicate effect replay escaped the pre-capability path",
-            )),
-            Binding::Stale | Binding::Foreign | Binding::Conflict => unreachable!(),
-        };
-    }
-    Ok(EffectDelta::None)
-}
-
 /// Execute a kernel-level outcome binding (the runtime `record` operation).
 /// Duplicate replay precedes stale-capability and terminal refusal.
 pub fn execute_outcome_binding(
@@ -595,93 +586,60 @@ pub fn execute_outcome_binding(
     capability: &Capability,
     outcome: &EffectOutcomeV1,
 ) -> Result<Step, Diagnostic> {
-    let outcome = stamp_outcome_aggregate(outcome, &snapshot.aggregate_id)?;
-    // G-002 grants one narrow precedence exception: only an exact six-field duplicate
-    // replays before capability currentness. Every nonduplicate still requires current
-    // mutation authority before its binding diagnostic is considered.
-    if let EffectStatus::Recorded(intent, digest, _) = &snapshot.effect {
-        if outcome.exact_duplicate_of(intent, digest) {
-            #[cfg(feature = "test-support")]
-            if crate::law_mutant::is(crate::law_mutant::LawMutant::MutateOnDuplicate) {
-                // fall through to a mutating record
-            } else {
-                let receipt = recorded_receipt
-                    .ok_or_else(|| Diagnostic::internal("recorded effect missing stored receipt"))?
-                    .clone();
-                return Ok(Step::DuplicateReplay(Box::new(receipt)));
-            }
-            #[cfg(not(feature = "test-support"))]
-            {
-                let receipt = recorded_receipt
-                    .ok_or_else(|| Diagnostic::internal("recorded effect missing stored receipt"))?
-                    .clone();
-                return Ok(Step::DuplicateReplay(Box::new(receipt)));
-            }
+    let policy = authority_policy();
+    let view = authority_snapshot_view(snapshot, capability, recorded_receipt);
+    let outcome = match stamp_outcome_aggregate(outcome, &snapshot.aggregate_id) {
+        Ok(stamped) => stamped,
+        Err(domain_refusal) => {
+            let err = authority::authorize_outcome_binding(
+                view,
+                capability.generation,
+                true,
+                authority::BindingClass::Foreign,
+                policy,
+            )
+            .expect_err("foreign stamp always refuses");
+            return Err(map_authority_error(err, snapshot, capability, Some(domain_refusal)));
         }
-    }
-
-    validate_capability(snapshot, capability)?;
-    // Same fail-closed cutpoint as execute_command; duplicate replay is above it.
-    #[cfg(kani)]
-    {
-        kani::assert(false, "outcome authority: mutation suffix is unreachable");
-        kani::assume(false);
-    }
-
-    // Terminal states reject ordinary mutation, but an outstanding pending effect can
-    // always be resolved.
-    if snapshot.terminal && matches!(snapshot.effect, EffectStatus::None) {
-        #[cfg(feature = "test-support")]
-        let allow = crate::law_mutant::is(crate::law_mutant::LawMutant::AllowTerminalMutation);
-        #[cfg(not(feature = "test-support"))]
-        let allow = false;
-        if !allow {
-            return Err(Diagnostic::new(
-                DiagnosticCode::IkIllegalState,
-                Some("terminal"),
-                "terminal states reject ordinary mutation",
-            ));
-        }
-    }
-    let binding = refuse_binding(classify_binding(snapshot, recorded_receipt, &outcome)?)?;
-    let delta = match binding {
-        Binding::Resolve => EffectDelta::Record {
-            outcome: outcome.clone(),
-        },
-        Binding::Replay(receipt) => {
-            #[cfg(feature = "test-support")]
-            if crate::law_mutant::is(crate::law_mutant::LawMutant::MutateOnDuplicate) {
-                EffectDelta::Record {
-                    outcome: outcome.clone(),
-                }
-            } else {
-                return Ok(Step::DuplicateReplay(receipt));
-            }
-            #[cfg(not(feature = "test-support"))]
-            {
-                return Ok(Step::DuplicateReplay(receipt));
-            }
-        }
-        Binding::Stale | Binding::Foreign | Binding::Conflict => unreachable!(),
     };
+    let binding = binding_class_of(snapshot, &outcome);
+    let auth_step = authority::authorize_outcome_binding(
+        view,
+        capability.generation,
+        false,
+        binding,
+        policy,
+    )
+    .map_err(|err| map_authority_error(err, snapshot, capability, None))?;
 
-    Ok(Step::Commit(Box::new(commit_plan(
-        snapshot,
-        EventKind::KernelRecord,
-        AuthorizedTransition {
-            event_type: "kernel.effect_recorded".into(),
-            event_version: 1,
-            payload: serde_json::to_value(&outcome)
-                .expect("effect outcome is always JSON-serializable"),
-            command: serde_json::to_value(&outcome)
-                .expect("effect outcome is always JSON-serializable"),
-            observation: None,
-            state: snapshot.state.clone(),
-            terminal: snapshot.terminal,
-            delta,
-            note: None,
-        },
-    )?)))
+    match auth_step {
+        authority::AuthorityStep::DuplicateReplay => {
+            let receipt = recorded_receipt
+                .ok_or_else(|| Diagnostic::internal("recorded effect missing stored receipt"))?
+                .clone();
+            Ok(Step::DuplicateReplay(Box::new(receipt)))
+        }
+        authority::AuthorityStep::Noop => {
+            Err(Diagnostic::internal("outcome binding cannot produce noop"))
+        }
+        authority::AuthorityStep::Commit { .. } => Ok(Step::Commit(Box::new(commit_plan(
+            snapshot,
+            EventKind::KernelRecord,
+            AuthorizedTransition {
+                event_type: "kernel.effect_recorded".into(),
+                event_version: 1,
+                payload: serde_json::to_value(&outcome)
+                    .expect("effect outcome is always JSON-serializable"),
+                command: serde_json::to_value(&outcome)
+                    .expect("effect outcome is always JSON-serializable"),
+                observation: None,
+                state: snapshot.state.clone(),
+                terminal: snapshot.terminal,
+                delta: EffectDelta::Record { outcome },
+                note: None,
+            },
+        )?))),
+    }
 }
 
 /// Stable refusal for a monotone counter at the `u64` ceiling.

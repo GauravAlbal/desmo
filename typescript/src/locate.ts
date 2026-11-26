@@ -1,7 +1,8 @@
-import { existsSync } from "node:fs";
+import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PreDispatchError } from "./errors.js";
 
 const require = createRequire(import.meta.url);
 
@@ -32,7 +33,7 @@ export function locateBinary(explicit?: string): string {
   if (fromPath) {
     return fromPath;
   }
-  throw new Error(
+  throw new PreDispatchError(
     `ik binary not found for ${key}. Install the matching @desmo/<platform> package, set IK_BINARY, or put ik on PATH. This SDK does not implement the kernel.`,
   );
 }
@@ -41,9 +42,23 @@ export function locateBinary(explicit?: string): string {
 function platformBinary(pkg: string): string | undefined {
   try {
     const bin = join(dirname(require.resolve(`${pkg}/package.json`)), "bin", "ik");
-    return existsSync(bin) ? bin : undefined;
+    return isExecutableFile(bin) ? bin : undefined;
   } catch {
     return undefined;
+  }
+}
+
+function isExecutableFile(candidate: string): boolean {
+  try {
+    if (!statSync(candidate).isFile()) {
+      return false;
+    }
+    if (process.platform !== "win32") {
+      accessSync(candidate, constants.X_OK);
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -51,8 +66,11 @@ function which(name: string): string | undefined {
   const pathEnv = process.env.PATH ?? "";
   const sep = process.platform === "win32" ? ";" : ":";
   for (const dir of pathEnv.split(sep)) {
+    if (!dir) {
+      continue;
+    }
     const candidate = join(dir, name);
-    if (existsSync(candidate)) {
+    if (isExecutableFile(candidate)) {
       return candidate;
     }
   }

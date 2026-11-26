@@ -65,7 +65,7 @@ test("skill install is idempotent and refuses a local edit without force", () =>
     assert.match(first.stdout, new RegExp(`installed ${installed}`));
     assert.match(first.stdout, /next: point the coding agent at /);
     assert.match(first.stdout, new RegExp(`next: desmo doctor --dir ${dir}`));
-    assert.match(first.stdout, /next: open SKILL.md and follow build.md, change.md, or diagnose.md/);
+    assert.match(first.stdout, /next: open SKILL.md and follow audit.md, build.md, change.md, or diagnose.md/);
     for (const name of SKILL_FILES) {
       assert.equal(readFileSync(join(installed, name), "utf8"), readFileSync(join(skillDir, name), "utf8"));
     }
@@ -88,7 +88,7 @@ test("skill install is idempotent and refuses a local edit without force", () =>
     assert.equal(targeted.status, 0, targeted.stderr);
     assert.equal(existsSync(join(target, "desmo", "routing.json")), true);
     const fakeIk = join(dir, "fake-ik");
-    writeFileSync(fakeIk, "#!/bin/sh\nprintf '%s\\n' 'invariant-kernel 0.5.1 protocol 1.0'\n");
+    writeFileSync(fakeIk, "#!/bin/sh\nprintf '%s\\n' 'invariant-kernel 0.6.0 protocol 1.0'\n");
     chmodSync(fakeIk, 0o755);
     const env = { ...process.env, IK_BINARY: fakeIk, IK_BIN: "" };
     const doctor = runCli(["doctor", "--dir", dir, "--json"], dir, env);
@@ -180,7 +180,7 @@ function sameBytes(left: StoreSnap, right: StoreSnap): boolean {
 function envelope(op: string, identity: unknown, extra: Record<string, unknown>): string {
   return JSON.stringify({
     protocol: { major: 1, minor: 0 },
-    runtime_version: "0.5.1",
+    runtime_version: "0.6.0",
     request_id: `r-${op}`,
     op,
     machine: identity,
@@ -237,8 +237,10 @@ test("investigate_only operations do not change a store and scenario uses scratc
       assert.ok(Array.isArray(table.modes[mode].allowed), mode);
     }
     const ops = table.modes.investigate_only.operations ?? [];
+    assert.ok(ops.some((op) => op.id === "diagram"));
     assert.ok(ops.some((op) => op.id === "scenario-run"));
     assert.ok(ops.some((op) => op.stdin === "lookup_operation"));
+    assert.equal(ops.some((op) => op.id === "replay"), false);
     assert.equal(ops.some((op) => op.argv[0] === "analysis" && op.argv[1] === "run"), false);
     const values: Record<string, string> = {
       "{machine}": machine,

@@ -46,17 +46,20 @@ fn pretty_expr(expr: &Expr, args: &BTreeSet<String>, diagram: bool) -> String {
             join(parts, sep, args, diagram)
         }
         Expr::And(parts) => join(parts, " and ", args, diagram),
-        Expr::Cmp(cmp) => format!(
-            "{} {} {}",
-            pretty_operand(&cmp.left, args, diagram),
-            cmp_word(cmp.op),
-            pretty_operand(&cmp.right, args, diagram)
-        ),
+        Expr::Cmp(cmp) => {
+            let ms_ctx = is_ms_operand(&cmp.left) || is_ms_operand(&cmp.right);
+            format!(
+                "{} {} {}",
+                pretty_operand(&cmp.left, args, diagram, ms_ctx),
+                cmp_word(cmp.op),
+                pretty_operand(&cmp.right, args, diagram, ms_ctx)
+            )
+        }
         Expr::Exists(name) => format!("{} is present", fact_word(name, args, diagram)),
         Expr::NotExists(name) => format!("{} is absent", fact_word(name, args, diagram)),
         Expr::TextIn(pred) => format!(
             "{} in {} length {}..{}",
-            pretty_operand(&pred.value, args, diagram),
+            pretty_operand(&pred.value, args, diagram, false),
             pred.set_src,
             pred.min,
             pred.max
@@ -83,7 +86,18 @@ fn cmp_word(op: CmpOp) -> &'static str {
     }
 }
 
-fn pretty_operand(op: &Operand, args: &BTreeSet<String>, diagram: bool) -> String {
+fn is_ms_operand(op: &Operand) -> bool {
+    match op {
+        Operand::Fact(name) | Operand::Arg(name) => name.ends_with("_ms"),
+        Operand::Arith { base, .. } | Operand::Mul { base, .. } | Operand::Div { base, .. } => {
+            is_ms_operand(base)
+        }
+        Operand::BinArith { left, right, .. } => is_ms_operand(left) || is_ms_operand(right),
+        Operand::State | Operand::Literal(_) => false,
+    }
+}
+
+fn pretty_operand(op: &Operand, args: &BTreeSet<String>, diagram: bool, ms_ctx: bool) -> String {
     match op {
         Operand::Fact(name) => fact_word(name, args, diagram),
         Operand::Arg(name) => {
@@ -94,28 +108,27 @@ fn pretty_operand(op: &Operand, args: &BTreeSet<String>, diagram: bool) -> Strin
             }
         }
         Operand::State => "state".into(),
-        Operand::Literal(value) => pretty_literal(value),
+        Operand::Literal(value) => pretty_literal(value, ms_ctx),
         Operand::Arith { base, add, amount } => {
             let sign = if *add { "+" } else { "-" };
-            format!(
-                "{} {sign} {}",
-                pretty_operand(base, args, diagram),
-                pretty_ms(*amount)
-            )
+            let use_ms = ms_ctx || is_ms_operand(base);
+            let amt = if use_ms { pretty_ms(*amount) } else { amount.to_string() };
+            format!("{} {sign} {amt}", pretty_operand(base, args, diagram, use_ms))
         }
         Operand::BinArith { left, add, right } => {
             let sign = if *add { "+" } else { "-" };
+            let use_ms = ms_ctx || is_ms_operand(left) || is_ms_operand(right);
             format!(
                 "{} {sign} {}",
-                pretty_operand(left, args, diagram),
-                pretty_operand(right, args, diagram)
+                pretty_operand(left, args, diagram, use_ms),
+                pretty_operand(right, args, diagram, use_ms)
             )
         }
         Operand::Mul { base, amount } => {
-            format!("{} * {}", pretty_operand(base, args, diagram), pretty_ms(*amount))
+            format!("{} * {}", pretty_operand(base, args, diagram, ms_ctx), amount)
         }
         Operand::Div { base, amount } => {
-            format!("{} / {}", pretty_operand(base, args, diagram), pretty_ms(*amount))
+            format!("{} / {}", pretty_operand(base, args, diagram, ms_ctx), amount)
         }
     }
 }
@@ -136,9 +149,13 @@ fn short_name(name: &str) -> String {
     trimmed.strip_prefix("region_").unwrap_or(trimmed).to_string()
 }
 
-fn pretty_literal(value: &Value) -> String {
+fn pretty_literal(value: &Value, ms_ctx: bool) -> String {
     if let Some(n) = value.as_i64() {
-        pretty_ms(n)
+        if ms_ctx {
+            pretty_ms(n)
+        } else {
+            n.to_string()
+        }
     } else if let Some(s) = value.as_str() {
         s.to_string()
     } else if let Some(b) = value.as_bool() {

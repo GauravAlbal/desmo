@@ -186,7 +186,7 @@ func TestRegionParallelRefusalPreservesAuthorityThenJointCommitsAndReplays(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(strings.Fields(string(version)), []string{"invariant-kernel", "0.5.1", "protocol", "1.0"}) {
+	if !reflect.DeepEqual(strings.Fields(string(version)), []string{"invariant-kernel", "0.6.0", "protocol", "1.0"}) {
 		t.Fatalf("runtime release contract mismatch: %s", version)
 	}
 	k, err := invariantkernel.Open(filepath.Join(t.TempDir(), "parallel.db"), invariantkernel.Options{Binary: bin})
@@ -260,7 +260,7 @@ func TestRegionParallelRefusalPreservesAuthorityThenJointCommitsAndReplays(t *te
 		t.Fatal(err)
 	}
 	rows := replayed["aggregates"].([]any)
-	if len(rows) != 1 || !reflect.DeepEqual(rows[0].(map[string]any)["state"], expected) || rows[0].(map[string]any)["generation"] != float64(1) {
+	if len(rows) != 1 || !reflect.DeepEqual(rows[0].(map[string]any)["state"], expected) || asUint(rows[0].(map[string]any)["generation"]) != 1 {
 		t.Fatalf("joint replay mismatch: %v", replayed)
 	}
 	again, err := machine.Replay(ctx, "playback")

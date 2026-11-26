@@ -14,7 +14,7 @@ use serde_json::Value;
 
 pub const PROTOCOL_MAJOR: u64 = 1;
 pub const PROTOCOL_MINOR: u64 = 0;
-pub const RUNTIME_VERSION: &str = "0.5.1";
+pub const RUNTIME_VERSION: &str = "0.6.0";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProtocolVersion {
