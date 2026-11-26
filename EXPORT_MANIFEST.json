@@ -1,6 +1,6 @@
 {
   "schema": "ikaros.public-export-manifest.v1",
-  "origin_commit": "0c05fc39b28be1d849b2b48bd52d4f3c2ccc2634",
+  "origin_commit": "dd896a7439120dd31511f62cbd46c9cfc55722f7",
   "allowlist_sha256": "3deccac27e56e6ce58962bdab6fcbb3ebc0cedd808135fd7061ace54a72b1726",
   "files": {
     ".github/workflows/ci.yml": "088c77b5d554c0d213725b9cb4ce0161da8fea0e4138bdf6e4a0153b1cc8f7cc",
@@ -12,7 +12,7 @@
     "DIAGNOSTICS": "4cda7a1475553fe49956ac889ed8224eb125ff5c1e8bebc9fb61407485301fc9",
     "LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
     "LICENSE-MIT": "da402b36f7b4110e858a847c3325fc8cc3332a26bfd961bbf1432a90f75c2fd6",
-    "README.md": "624758e4f89a96dbc4a7b76c6e8dc24f371fe4d1dae4310fc0791c0470c0f638",
+    "README.md": "1a50963130f602044c58a9df9ffd9e09947b9a9796a086e178e3c3c0ac5b59c4",
     "SECURITY.md": "9cb66dce91120df4ad0d7269f92f9d9c66862a48dc24e23d1773f4fdbf47bf52",
     "SOURCE_VERSION_POLICY": "ede5abc0d985fb530c696156b1df5ffd1845e555cef626a251a3690a5e30696f",
     "adapters/p/README.md": "a63cec903540f0998b22240821ecfc38c830a7d52522495ef62da8d3d3e0a73f",
@@ -95,7 +95,9 @@
     "docs/alpha-contract.md": "96e11ae2d7e706f8046848320dfaa9c2d53c99293a09c06f0c50f56670d05ab0",
     "docs/alpha-readiness.md": "8bc8602e065206c4dc56b142dccac01a6931484be4f289fc947b8629d170ae4d",
     "docs/analysis-adapters.md": "684ba27183abafdea84ee0223c05ae4428507eb25bc104d50d363d9a4d442fb6",
+    "docs/assets/hero.png": "22389208d6b4fc48a8d4fefaa6472c58b702c411a2266335b9cd4b5ebcbb6859",
     "docs/assets/order-simulator.png": "20d9773ce3e319fc6aceaf0877ff61b5edcc78f68c2418455f09f533cb9c6457",
+    "docs/assets/rail-diagram.png": "76228b148e57e37f79ff04ed16d3f96c9e8448a4a923e1c5cda5263dfbff9ea5",
     "docs/assurance.md": "c3a744fa762617ff4366edb21a53fcfe6a024283a3d057ef7fa1b04044ff4236",
     "docs/brownfield-migration.md": "cbc263d8c607d5203a723dc852175fd30dd692278f236a46292afb59d6c47ffc",
     "docs/change-evidence.md": "687deb480b3eaeab60362b4cc102c2d4eeee81b71c04c3b8239ec9e5203581c7",

@@ -1,65 +1,66 @@
-# Desmo
+<div align="center">
+  <img src="docs/assets/hero.png" alt="Desmo — Find hidden state bugs in 60s. Make illegal states impossible at runtime." width="100%" />
+</div>
 
-**Find hidden state bugs in 60s. Make illegal states impossible at runtime.**
+<p align="center">
+  <strong>Find hidden state bugs in 60s. Make illegal states impossible at runtime.</strong><br/>
+  Single zero-dependency Rust + SQLite binary (<code>ik</code>) for TypeScript, Python, and Go.
+</p>
 
-> Your coding agent shipped one feature. Every test passed. Production didn't.
+<p align="center">
+  <a href="https://github.com/GauravAlbal/desmo/actions/workflows/ci.yml"><img src="https://github.com/GauravAlbal/desmo/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/GauravAlbal/desmo/releases/tag/v0.7.0"><img src="https://img.shields.io/github/v/release/GauravAlbal/desmo?style=flat-square&color=f97316" alt="Release v0.7.0" /></a>
+  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue?style=flat-square" alt="License" /></a>
+  <img src="https://img.shields.io/badge/platforms-macOS%20arm64%20%C2%B7%20Linux%20x86__64-black?style=flat-square" alt="Platforms" />
+</p>
 
-Run `SELECT DISTINCT status FROM orders;` on almost any app that has been shipped fast — or edited by coding agents — and you'll find `PAID`, `NULL`, unpaid carts refunded, cancelled orders delivered by a late worker, or a rogue status nobody remembers adding. Every PR passed its unit tests; the global lifecycle rules silently broke because nothing enforced them at runtime.
+<p align="center">
+  <a href="#try-it-in-60-seconds">60s Audit</a> &bull;
+  <a href="#how-it-works">How It Works</a> &bull;
+  <a href="#use-it-in-typescript-python-or-go">SDKs</a> &bull;
+  <a href="#assurance--explicit-non-goals">Assurance &amp; Non-Goals</a> &bull;
+  <a href="#documentation">Docs</a>
+</p>
 
-Desmo gives you two clear tracks in one zero-dependency binary (`ik`):
+---
 
-1. **Track 1 — Audit any existing repo in 60 seconds (read-only, zero infrastructure changes):** works even on multi-replica Postgres apps. Scan your codebase with Claude Code, Codex, or Cursor (`npx skills add GauravAlbal/desmo`), draw the live route map (`ik diagram`), falsify invariants without a manual corpus (`ik check --auto-seed --summary`), and open an offline interactive HTML simulator (`ik simulate`).
-2. **Track 2 — Enforce critical lifecycles at runtime (no rewrite, zero Rust to write):** built for **AI coding-agent harnesses, background job/workflow orchestrators, approval gates, CLI/local-first daemons, and single-node SQLite services** — plus brownfield services that project committed events read-only into Postgres via `kernel.events()` + `ik guard`. Define rules once in `.ik.toml`; `ik` (a single Rust + SQLite binary) enforces commands, guards, and version-checked capability handles so stale workers and late webhooks cannot overwrite newer state.
+## Try it in 60 seconds
 
-## Why Desmo vs. Postgres triggers or XState?
-
-- **vs. Postgres `CHECK` + `WHERE version = $1`:** SQL constraints catch single-row bad states inside one DB, but they do not give your developers or coding agents a shared pre-deploy invariant falsifier (`ik check --auto-seed`), interactive HTML simulator (`ik simulate`), typed TS/Python/Go command wrappers (`ik codegen`), crash-safe external effect intents (`runEffect` / `run_effect` / `RunEffect`), or CI anti-bypass enforcement (`ik guard`) — and agent/orchestrator harnesses often want zero external Postgres/Temporal ops.
-- **vs. XState / in-memory workflow libs:** XState validates transitions in host memory inside one process; Desmo commits atomic event-sourced SQLite transactions across processes, fences stale workers with generation-bound capability tokens `(generation, rotation digest)`, verifies entire stores read-only (`ik store verify`), and guards against coding-agent bypasses.
-- **Explicit topology boundary today:** Desmo runtime stores are single-node local SQLite databases (for multi-container stateless web servers, either point one dedicated single-writer service at the store and project read-only, or wait for the planned single-writer `ik serve` socket/HTTP daemon).
-
-## Try it on your repo in 60 seconds (read-only)
-
-Start read-only on your own codebase before adopting anything:
+**1. Install `ik` and run the live runtime demos** (zero Node, Python, or Go required):
 
 ```bash
-# 1. Install the `ik` CLI (macOS arm64 / Linux x86_64, SHA256SUMS-verified)
 curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh
-
-# 2. Run the live runtime demos right away (zero Node/Python/Go required)
 ik demo
+```
 
-# 3. Install the coding-agent skill (Claude Code, Codex, Cursor, or `skills` CLI)
+```text
+  refund(cart)       -> refused (IK_ILLEGAL_STATE) · stays cart
+  deliver(cancelled) -> refused (IK_ILLEGAL_STATE) · stays cancelled
+  pay->deliver->send_back->refund -> committed (refunded, gen 4)
+  refund(refunded)   -> refused (IK_ILLEGAL_STATE) · terminal lock holds
+  Worker A starts (gen 1), Worker B cancels (gen 2, cancelled)
+  Late Worker A submit(gen 1) -> refused (IK_CAPABILITY_STALE) · canonical state stays cancelled (gen 2)
+```
+
+**2. Audit your existing repo read-only** with Claude Code, Codex, or Cursor:
+
+```bash
 npx skills add GauravAlbal/desmo
 ```
 
-Or scaffold a runnable typed project directly in TypeScript, Python, or Go:
-
-```bash
-ik init order --lang ts   # or --lang py | --lang go
-ik check desmo-order/order.ik.toml --auto-seed --summary
-ik doctor --dir desmo-order
-```
-
-Then ask your coding agent:
-
 > *"Find the implicit state machines in my app and check for state bugs."*
 
-The skill stays strictly read-only ([skills/desmo/audit.md](skills/desmo/audit.md)): it maps every writer to your `status` columns or flag clusters, extracts a scratch `.ik.toml`, runs `ik diagram` + `ik check`, and emits a self-contained offline HTML simulator:
-
-```bash
-ik diagram examples/orders/order.ik.toml
-ik simulate examples/orders/order.ik.toml --out order-simulator.html
-```
+It stays strictly read-only ([`skills/desmo/audit.md`](skills/desmo/audit.md)): maps every writer to `status` columns or boolean flags, extracts a scratch `.ik.toml`, runs `ik diagram` + `ik check --auto-seed --summary`, and opens an offline interactive HTML simulator (`ik simulate`).
 
 ![Desmo interactive HTML simulator generated by ik simulate](docs/assets/order-simulator.png)
 
-Other tools stop at the diagram. When you find a lifecycle you actually want protected for good, switch to *"Enforce this lifecycle with Desmo"* ([skills/desmo/build.md](skills/desmo/build.md), `change.md`, `diagnose.md`, `readout.md`) — the exact `.ik.toml` you just checked and simulated becomes the runtime authority (single binary, zero Rust code to write).
+## How it works
 
-*Other platforms can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.7.0 --bin ik`. Inside an existing Node project with `@desmo/runtime`, you can also install the skill via `npx --no-install desmo skill install --dir .`.*
+<div align="center">
+  <img src="docs/assets/rail-diagram.png" alt="Declared state machines enforced at runtime" width="100%" />
+</div>
 
-## What a machine looks like
-
-Define states, facts, commands, guards, effects, and invariants in one file ([examples/orders/order.ik.toml](examples/orders/order.ik.toml)):
+Define states, facts, commands, guards, effects, and invariants once in `.ik.toml` — the exact same file you check before deploy (`ik check`) and simulate (`ik simulate`) is enforced at runtime by `ik` + local SQLite ([`examples/orders/order.ik.toml`](examples/orders/order.ik.toml)):
 
 ```toml
 schema_version = 1
@@ -100,93 +101,55 @@ from = ["returned"]
 to = "refunded"
 ```
 
-Inspect it directly from the terminal (`ik diagram examples/orders/order.ik.toml`):
-
-```text
-6 states, 5 commands · 2 ends · every state reaches an end (structural) · shortest finish: 1 step · all rules declared
-     ● [ cart ]                  ◀── YOU ARE HERE (1 step to end)
-                                 ↗ pay → [ paid ]
-         │
-         │  cancel
-         ▼
- ┌──▶✔ [ cancelled ]  END
- │ also reachable:
- │   ✔ [ refunded ]  END
- │   ○ [ paid ]
- └───────                        ↗ cancel → [ cancelled ]
-                                 ↗ deliver → [ delivered ]
- ┌──▶○ [ returned ]
- │   ○ [ delivered ]
- └───────                        ↗ send_back → [ returned ]
+```bash
+ik diagram examples/orders/order.ik.toml
+ik check examples/orders/order.ik.toml --auto-seed --summary
+ik simulate examples/orders/order.ik.toml --open
 ```
 
-```text
-host (TypeScript / Python / Go)
-        ↓ typed client (commands + versioned handles, never destination states)
-ik      (single binary · canonical JSON · local SQLite)
-        ↓
-Desmo kernel  (same .ik.toml checked before deploy and enforced at runtime)
-```
+## Highlights
 
-## 30-second runtime examples
+- **What you check is what runs:** `ik check` and runtime commits execute the same declarative AST and evaluator, catching `policy = "once"`, invariant violations (`IK_INVARIANT_FAILED`), and structural dead ends before deploy.
+- **Stale-worker & race fencing:** Every read/commit returns a versioned handle `(generation, nonce)` so late workers and stale webhooks refuse cleanly (`IK_CAPABILITY_STALE`) before a row mutates.
+- **Crash-safe external effects:** Command guards inspect `effect_status`, `effect_kind`, and `effect_outcome`; `runEffect` / `run_effect` / `RunEffect` orchestrate plan → side effect with bound `idempotency_key` → outcome recording.
+- **Zero-boilerplate SDKs & codegen:** Scaffold projects with `ik init order --lang ts|py|go` or emit typed wrappers with `ik codegen --lang ts|py|go`, plus [`schema/ik.schema.json`](schema/ik.schema.json) for editor validation.
+- **Brownfield & ops ready:** Query materialized aggregates via indexed `ik list` / `machine.list(...)`, stream ordered events via `kernel.events()`, block direct DB writes in CI via `ik guard`, and verify stores read-only via `ik store verify`.
+- **Measured single-binary SQLite throughput:** `WAL + PRAGMA synchronous=FULL` default delivers **3,495 commits/s** (`p50=0.23ms`, `p99=1.13ms`) on Apple Silicon; indexed `ik list` at 5k aggregates runs in **`p50=5.27ms`** ([`scripts/bench.py`](scripts/bench.py)).
 
-### TypeScript / Node
+## Use it in TypeScript, Python, or Go
 
-Download the `0.7.0` runtime tarball and your platform tarball (`darwin-arm64` or `linux-x64`) from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases/tag/v0.7.0) (no npm registry needed; the platform package bundles `ik`):
+Scaffold a runnable typed project in one command:
 
 ```bash
-# macOS arm64 (for Linux x86_64, swap darwin-arm64 -> linux-x64)
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-runtime-0.7.0.tgz
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-darwin-arm64-0.7.0.tgz
-npm install --no-audit --no-fund --ignore-scripts \
-  ./desmo-runtime-0.7.0.tgz ./desmo-darwin-arm64-0.7.0.tgz
-
-npx --no-install desmo demo orders        # unpaid refund & cancelled delivery refused
-npx --no-install desmo demo stale-worker  # late worker refused with IK_CAPABILITY_STALE
-npx --no-install desmo doctor --dir .
+ik init order --lang ts   # or --lang py | --lang go
 ```
 
+**TypeScript / Node**
+
 ```ts
-import { Kernel, IllegalStateError } from "@desmo/runtime";
+import { Kernel } from "@desmo/runtime";
 
 const kernel = new Kernel(".state/orders.db"); // persistent `ik --session` enabled by default
 const orders = await kernel.machine("examples/orders/order.ik.toml");
-
 const order = await orders.create("order-1042");
 await order.command("refund"); // throws IllegalStateError (IK_ILLEGAL_STATE) — stays in cart
-
 const paid = await order.command("pay", { payment_ref: "ch_1042" });
-console.log(paid.namedState(), paid.generation); // paid 1n
 ```
 
-### Python
-
-Install `ik` with the one-line installer above, then install the wheel directly from the GitHub Release:
-
-```bash
-pip install https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/invariant_kernel-0.7.0-py3-none-any.whl
-```
+**Python**
 
 ```python
-from invariant_kernel import Kernel, IllegalStateError
+from invariant_kernel import Kernel
 
 with Kernel(store=".state/orders.db", session=True) as kernel:
     orders = kernel.machine("examples/orders/order.ik.toml")
     order = orders.create("order-1042")
-
-    try:
-        order.refund()
-    except IllegalStateError as err:
-        print(err.code)  # IK_ILLEGAL_STATE — canonical state stays "cart"
-
-    paid = order.pay(payment_ref="ch_1042")
-    print(paid.state, paid.generation)  # paid 1
+    order.pay(payment_ref="ch_1042") # illegal commands raise IllegalStateError
 ```
 
-### Go
+**Go**
 
 ```go
-// go get github.com/GauravAlbal/desmo/go@go/v0.7.0
 k, _ := invariantkernel.Open(".state/orders.db", invariantkernel.Options{Session: true})
 defer k.Close()
 m, _ := k.Machine(ctx, "examples/orders/order.ik.toml")
@@ -194,71 +157,58 @@ order, _ := m.Create(ctx, "order-1042")
 paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
 ```
 
-## Core capabilities
+<details>
+<summary>Manual SDK installation (v0.7.0)</summary>
 
-- **Generation-bound capabilities:** every read/commit returns a versioned handle `(generation, nonce)`. A copied or stale handle attempting to mutate after a later commit is refused before a row mutates (`IK_CAPABILITY_STALE`).
-- **Idempotent operation attribution:** callers attach an `operation_id` (or let the SDK generate one). On a dropped reply or timeout, `lookup_operation` distinguishes `committed_exact`, `conflict`, and `not_recorded` without silently retrying on a stale handle.
-- **Bounded compound & parallel regions (schema 2):** author orthogonal regions, guarded child-first parent fallback, and atomic joint commands in `.ik.toml`, lowered to the same flat runtime engine ([docs/region-lowering.md](docs/region-lowering.md)).
-- **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
-- **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
-- **Unified typed codegen & schema authoring (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale); [`schema/ik.schema.json`](schema/ik.schema.json) gives editors inline validation and autocompletion for schema 1 & 2 files, alongside native TOML bool/int literals and simultaneous checked `i64` arithmetic in `then`.
-- **Brownfield projections, indexed queries, anti-bypass CI guard & offline store audit:** query materialized state/effect status read-only via `ik list` / `machine.list(...)` (`TS` / `Py` / `Go`, backed by composite SQLite indexes), stream ordered changes via `kernel.events()` (`ik events`), derive CI anti-bypass rules directly from any machine via `ik guard init --machine <file.ik.toml> --table <table>` + `ik guard check` ([docs/brownfield-migration.md](docs/brownfield-migration.md)), and audit entire multi-machine SQLite stores read-only (`PRAGMA quick_check(1)`, hash chains, projections, and optional semantic replay) with `ik store verify`.
-- **Effect-outcome guards & safe effect runners:** command guards can inspect `effect_status`, `effect_kind`, and `effect_outcome` (`when = "effect_status == 'recorded' && effect_outcome == 'succeeded'"`) so the kernel enforces outcome routing directly; TypeScript `runEffect`, Python `run_effect`, and Go `RunEffect` orchestrate plan → external execution with bound `idempotency_key` → outcome recording without blind duplicate execution.
-- **Developer workbench:** `ik demo`, `ik init --lang ts|py|go`, `ik doctor`, `ik check` (with `--auto-seed`, `--summary`, `--compact`, zero-corpus structural lints, and automatic invariant-violation falsification), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` (`ik --help` shows everyday commands; `ik --help-all` lists specialist adapters).
+- **TypeScript / Node** (macOS arm64; swap `darwin-arm64` → `linux-x64` for Linux x86_64):
+  ```bash
+  curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-runtime-0.7.0.tgz
+  curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-darwin-arm64-0.7.0.tgz
+  npm install --no-audit --no-fund --ignore-scripts ./desmo-runtime-0.7.0.tgz ./desmo-darwin-arm64-0.7.0.tgz
+  ```
+- **Python** (requires `ik` installed):
+  ```bash
+  pip install https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/invariant_kernel-0.7.0-py3-none-any.whl
+  ```
+- **Go**:
+  ```bash
+  go get github.com/GauravAlbal/desmo/go@go/v0.7.0
+  ```
+- **Build `ik` from source**: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.7.0 --bin ik`
 
-## What's verified vs. what's open
+</details>
 
-Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact boundary (full evidence and reproduction commands in [docs/assurance.md](docs/assurance.md)):
+## Assurance & explicit non-goals
 
-| Claim | Status | Boundary |
+Desmo does **not** claim to be "formally verified" end-to-end. Full evidence and reproduction commands live in [`docs/assurance.md`](docs/assurance.md):
+
+| Layer | Verified in CI | Explicit boundary |
 |---|---|---|
-| Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; `ik guard` adds a configurable case-insensitive, multi-line CI check against direct status-table writes, not full-program static proof. |
-| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160+ Python, 84+ TS, 45+ Go tests on macOS arm64 & Linux x64. |
-| Deleted-wall mutation controls | **15/15 kernel + 6/6 SDK walls killed** | Deleting any of 15 core runtime walls or any of 6 TS/Python/Go transport walls fails tests in CI. |
-| Real process-crash recovery | **35+ crash tests** | Kills child processes (`SIGABRT` / `exit(86)`) across SQLite persistence & `after_operation` boundaries; trusts SQLite WAL & OS. |
-| Multi-worker linearizability | **40 seeds × 3 workers** | Finite schedule check against a sequential reference model; not universal linearizability. |
-| Dual-solver SMT / TLC / Hegel adapters | **Optional adapters** | `Z3 + cvc5` dual-solver feasibility, TLC 2.19 finite graph checks, Hegel sampling. |
-| Kani bounded proofs (CI-gated `kani` job) | **Verified in CI (Kani 0.68 / CBMC 6.11)** | 5 CI-gated Kani harnesses covering production authority gates, checked `i64` add/sub/div and bounded mul, ordered-guard non-fallthrough, and region terminal/joint lowering; concrete JSON/SHA-256 & SQLite remain outside Kani. |
-| SQLite durability & fencing boundary | **WAL + `synchronous=FULL` default** | Default `PRAGMA synchronous=FULL` syncs WAL transactions (`IK_SQLITE_SYNCHRONOUS=normal` opt-in). `(generation, nonce)` is a deterministic staleness-fencing token, not a secret against untrusted callers. |
-| Local throughput & latency (`scripts/bench.py`) | **Measured (release `ik --session`, Apple Silicon macOS)** | `WAL + FULL`: **3,495 commits/s** (`p50=0.232ms`, `p99=1.132ms`); indexed `ik list` at 5,000 aggregates (`limit=50`): **`p50=5.27ms`** (includes CLI subprocess spawn). Reproduce: `cargo build --release --bin ik && python3 scripts/bench.py`. |
+| Shared semantics & test suites | 700+ Rust, 160+ Py, 84+ TS, 45+ Go tests (`scripts/public-verify`) | Same `.ik.toml` AST/evaluator; finite test corpus, not universal proof. |
+| Deleted-wall mutation suites | **15/15 kernel + 6/6 SDK walls killed** | Deleting constitutional runtime or TS/Py/Go transport guards fails CI. |
+| Crash recovery & concurrency | **35+ `SIGABRT`/`exit(86)` tests + 40×3 linearizability** | Finite schedule sampling; trusts SQLite WAL & local OS. |
+| Bounded formal & SMT/TLC | **5 CI Kani 0.68 harnesses** + optional Z3/cvc5 & TLC 2.19 | Concrete JSON/SHA-256 serialization & SQLite remain outside Kani. |
+| SQLite durability & perf | **3,495 commits/s** (`WAL + synchronous=FULL`), `ik list` `p50=5.27ms` | Measured on Apple Silicon macOS (`scripts/bench.py`). |
 
-## What Desmo intentionally does NOT do
+### What Desmo intentionally does NOT do
 
-Before adopting Desmo, know the explicit boundaries it is designed around:
-
-1. **No unbounded inductive proofs or guarded deadlock-freedom proofs:** `ik check` runs bounded corpus exploration and optional SMT obligation unreachability (`--deep` / Z3+cvc5), not k-induction or unbounded liveness proofs. Any unexplored invariant violation is still evaluated by the runtime on every commit and refuses loudly (`IK_INVARIANT_FAILED`) instead of persisting illegal state.
-2. **No cross-aggregate atomic invariants or distributed consensus:** Each transaction enforces invariants on a single `aggregate_id` in local SQLite. Cross-aggregate invariants (such as balance conservation across two accounts) and multi-node consensus protocols (Raft/Paxos) are out of scope.
-3. **No multi-replica shared SQLite or network daemon (`ik serve`) in `0.7.0`:** Runtime stores are single-node local SQLite files. Stateless multi-container web apps should use Track 1 (read-only audit), route lifecycle writes through one single-writer service, or wait for the planned `ik serve` daemon.
-4. **No cryptographic caller authentication on capability tokens:** `(generation, nonce)` is a deterministic optimistic-concurrency staleness fence across cooperative workers, not an unforgeable secret against untrusted callers.
-5. **No automatic historical-state schema migrator:** Aggregates pin `(machine_id, version, spec_hash)` strictly. Evolve lifecycles by deploying a new machine version for new aggregates while existing aggregates drain on their original spec.
-6. **No whole-program static anti-bypass proof:** `ik guard` scans configured source paths for status-table write patterns in CI rather than proving full-program dataflow isolation.
-7. **No exactly-once external side effects:** External effects (payments, emails, webhooks) are **at-least-once** with kernel-bound `idempotency_key` attribution (`runEffect` / `run_effect` / `RunEffect`); downstream sinks must honor the idempotency key.
-8. **No OS sandbox for external Python reducers:** `kernel.reducer` is a cooperative deterministic-reducer contract, not an isolation boundary for untrusted code.
-9. **No npm or PyPI registry packages in `0.7.0`:** Node tarballs (`@desmo/runtime`, `@desmo/darwin-arm64`, `@desmo/linux-x64`) and the Python wheel ship directly on GitHub Releases with `SHA256SUMS`; Go installs directly from Git (`go get github.com/GauravAlbal/desmo/go@go/v0.7.0`).
-
-## When to use Desmo
-
-- **Use it for:** canonical lifecycles with illegal transitions, approval gates, retries/exhaustion, external effects with idempotency keys, generation-bound authority, and crash-recoverable local SQLite state.
-- **Avoid it for:** stateless CRUD, routing, pure calculations, or workloads blocked by the non-goals above.
-
-## Naming & compatibility
-
-- **Product & repo:** Desmo (`GauravAlbal/desmo`). **Engine & binary:** `invariant-kernel` / `ik`. **Machine files:** `.ik.toml`. **Node:** `@desmo/runtime`. **Python:** `invariant_kernel`. **Go:** `github.com/GauravAlbal/desmo/go`.
-- The name comes from a *desmodromic valve*, driven positively in both directions by cam tracks instead of relying on a spring to close.
-- **Protocol `1.0` · Runtime `0.7.0` · Store schema `4`.** `ik` and your language client must match runtime versions exactly. Existing `ikaros.trace.v2` schema identifiers remain unchanged for bundle compatibility.
+1. **No unbounded inductive proofs or guarded deadlock-freedom proofs:** `ik check` runs bounded corpus exploration + optional SMT unreachability, not k-induction or unbounded liveness proofs; unexplored invariant violations refuse at runtime with `IK_INVARIANT_FAILED`.
+2. **No cross-aggregate atomic invariants or distributed consensus:** Each transaction enforces invariants on one `aggregate_id` in local SQLite (no cross-account conservation or Raft/Paxos consensus).
+3. **No multi-replica shared SQLite or `ik serve` network daemon in `0.7.0`:** Stores are single-node local SQLite; use Track 1 audit or single-writer projection (`kernel.events()`) for multi-container web apps.
+4. **No cryptographic caller authentication on capability tokens:** `(generation, nonce)` is deterministic optimistic-concurrency staleness fencing, not a secret against untrusted callers.
+5. **No automatic historical-state schema migrator:** Aggregates pin `(machine_id, version, spec_hash)` strictly; deploy new versions for new aggregates while older ones drain.
+6. **No whole-program static anti-bypass proof:** `ik guard` scans configured source paths for status-table writes rather than proving full-program dataflow isolation.
+7. **No exactly-once external side effects:** External effects are at-least-once with kernel-bound `idempotency_key` attribution; downstream sinks must honor the key.
+8. **No OS sandbox for external Python reducers:** `kernel.reducer` is a cooperative deterministic-reducer contract, not an isolation sandbox.
+9. **No npm or PyPI registry packages in `0.7.0`:** Node tarballs and Python wheels ship directly on GitHub Releases with `SHA256SUMS`; Go installs via `go/v0.7.0`.
 
 ## Documentation
 
-- [Assurance & verification boundaries](docs/assurance.md)
-- [Order lifecycle example](examples/orders/README.md) · [Publish-approval example](examples/publish-approval/README.md) · [Job retrofit example](docs/examples/retrofit-job/README.md)
-- [Machine language (`.ik.toml`)](docs/machine-language.md) · [Region lowering (schema 2)](docs/region-lowering.md)
-- [TypeScript](docs/typescript.md) · [Python](docs/python.md) · [Go](docs/go.md)
-- [Greenfield guide](docs/greenfield.md) · [Brownfield migration](docs/brownfield-migration.md) · [Patterns](docs/patterns.md)
-- [Agent guide](docs/agent.md) · [Coding-agent skill](skills/desmo/SKILL.md)
-- [`ik check`](docs/ik-check.md) · [Scenarios](docs/scenarios.md) · [Workbench report](docs/workbench-report.md) · [Diagnostics](docs/diagnostics.md)
-- [Machine evolution](docs/machine-evolution.md) · [Client recovery](docs/client-recovery.md) · [Operation identity](docs/operation-identity.md)
-- [Upgrading & pins](docs/upgrading.md) · [Release compatibility](docs/release-compatibility.md) · [Security](SECURITY.md)
+- **Core:** [Assurance & verification](docs/assurance.md) · [Machine language (`.ik.toml`)](docs/machine-language.md) · [Region lowering (schema 2)](docs/region-lowering.md) · [`ik check`](docs/ik-check.md) · [Diagnostics](docs/diagnostics.md)
+- **SDKs & examples:** [TypeScript](docs/typescript.md) · [Python](docs/python.md) · [Go](docs/go.md) · [Orders](examples/orders/README.md) · [Publish approval](examples/publish-approval/README.md) · [Job retrofit](docs/examples/retrofit-job/README.md)
+- **Architecture & ops:** [Greenfield](docs/greenfield.md) · [Brownfield](docs/brownfield-migration.md) · [Patterns](docs/patterns.md) · [Evolution](docs/machine-evolution.md) · [Recovery](docs/client-recovery.md) · [Operation identity](docs/operation-identity.md) · [Scenarios](docs/scenarios.md) · [Workbench](docs/workbench-report.md)
+- **Agents & releases:** [Agent guide](docs/agent.md) · [Coding-agent skill](skills/desmo/SKILL.md) · [Upgrading](docs/upgrading.md) · [Compatibility](docs/release-compatibility.md) · [Security](SECURITY.md)
 
-## License
+---
 
-Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
+**Protocol `1.0` · Runtime `0.7.0` · Store schema `4`** (`ikaros.trace.v2` wire compatibility preserved). Named after the *desmodromic valve*, driven positively in both directions by cam tracks. Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
