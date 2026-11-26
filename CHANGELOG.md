@@ -9,6 +9,31 @@ always a SemVer major. See [docs/release-compatibility.md](docs/release-compatib
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-25
+
+### Added
+
+- **Unified multi-language typed codegen (`ik codegen`):** `ik codegen <machine.ik.toml> --lang ts|py|go [--out <file>] [--check] [--import-from ...] [--package ...]` generates typed `Machine` and `Aggregate` wrappers directly from the compiled schema for TypeScript, Python, and Go.
+- **Persistent `--session` transport in TypeScript and Go SDKs:** `new Kernel(store)` in TypeScript (`session: true` default, idle `.unref()`, `kernel.close()`) and `invariantkernel.NewKernel(..., Options{Session: ...})` in Go (`kernel.Close()`) reuse a persistent `ik --session` process across calls instead of spawning a subprocess per command.
+- **Go SDK parity:** Added `StateName() string`, `RecordWithOperation` (handling `historical: true` replays), `RecordEffectOutcome`, and `Transaction`, and switched JSON decoding to `dec.UseNumber()` to eliminate silent `>2^53` `float64` precision loss.
+- **Full interactive `ik simulate`:** Embeds initial facts, guards, `then` updates, invariants, effects, and schema-2 regions; adds dynamic SVG node widths, inline command argument inputs, live guard/invariant preview, pending-effect lock with `Record Succeeded`/`Record Failed`, live facts table, `--open`, and **Export `scenario.json`**.
+- **Agent-friendly `ik check` flags:** Added `--compact` (~90% smaller JSON for coding agents) and `--region-product-bound <N>` for bounded schema-2 region analysis.
+- **Verified production Kani proofs:** Factored payload-opaque authority gates (`src/runtime/authority.rs`) directly into `execute_command` and `execute_outcome_binding` with zero `#[cfg(kani)]` cutpoints; `prove_command_authority_end_to_end` and `prove_outcome_binding_authority_end_to_end` verify 0/125 failed checks and 8/8 cover properties each under Kani 0.68.0 / CBMC 6.11.0.
+- **Crash-matrix coverage:** Added `crash_after_operation_on_admit_transaction_and_record_leaves_no_partial_state` covering `admit`, `transaction`, and `record_effect_outcome` fault injection.
+
+### Changed
+
+- **Performance & SQLite throughput:** Moved external-reducer descendant reaping onto a coalescing background thread outside the SQLite `BEGIN IMMEDIATE` write lock; skipped redundant process-tree kills on clean Python reducer exits; enabled `PRAGMA synchronous=NORMAL`, `temp_store=MEMORY`, `cache_size=-16000`; added zero-allocation declarative guard/invariant evaluation and fast canonical JSON/SHA-256 hashing; eliminated up to 21x redundant compiles/explores in `ik check --prior` and redundant double-loads in `ik schema`, `ik laws`, and `ik simulate`.
+- **Picky, explicit diagnostics & SDKs:** Added Levenshtein `did_you_mean` suggestions and expected/actual argument types to parse and runtime errors (`IK_ILLEGAL_STATE`, `IK_COMMAND_INVALID`, lexer errors); Python `Aggregate.__getattr__` now raises `AttributeError` with a close-match hint on undeclared commands; `ik diagram --evidence` fails loudly on missing or invalid JSON; `ik diagram` renders schema-2 region subgraphs and scopes `pretty_ms` to `*_ms` operands.
+- **Agent skill polish (`skills/desmo/`):** Removed Desmo-internal paths, added Go support, removed mutating `replay` from `investigate_only` routing, embedded a `.ik.toml` syntax cheat-sheet in `audit.md`, and deduplicated repeated instructions across skill files.
+
+### Fixed
+
+- Fixed `Store::open_or_create` TOCTOU race and wrapped `Store::verify` in a `BEGIN DEFERRED` snapshot with indexed per-aggregate operation queries.
+- Fixed Python multi-reducer persistent session key collision (`(path, spec_hash)`), added thread-safe session locking and `weakref.finalize` cleanup, and fixed `reset_sessions()` to preserve `_uncertain_ops`.
+- Fixed TypeScript `locate.ts` `which()` executable check (`PreDispatchError`) and Go `locateBinary` (`Unsent: true`) / `parseVersion` error propagation.
+- Fixed clean `BrokenPipe` exit in `ik --session`, off-by-one region product bound check (`product > PRODUCT_BOUND`), and `#[serde(default)]` on schema-1 `Definition.facts`.
+
 ## [0.5.1] - 2026-11-24
 
 ### Added
