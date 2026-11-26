@@ -345,3 +345,64 @@ fn skipping_genesis_validation_is_killed_for_create_with_command() {
     );
     assert_ne!(authoritative_rows(&path), before);
 }
+
+#[test]
+fn ik_check_refuses_schema1_machine_with_invalid_initial_invariant() {
+    let toml = r#"
+schema_version = 1
+machine_id = "bad_initial_check"
+machine_version = 1
+
+[facts]
+x = { type = "int", policy = "replace", initial = 9 }
+
+[states]
+s = { initial = true }
+t = { terminal = true }
+
+[commands.go]
+from = ["s"]
+to = "t"
+then = { x = "1" }
+
+[invariants.x_limit]
+assert = "x <= 3"
+"#;
+    let parsed = ik::declarative::parse_definition(toml).expect("valid syntax");
+    let mut corpus = ik::declarative::explore::CaseCorpus::new();
+    corpus.insert("go", "default", std::collections::BTreeMap::new());
+    let checked = ik::declarative::check_machine(
+        &parsed,
+        None,
+        &corpus,
+        &[],
+        ik::declarative::explore::Bounds {
+            max_nodes: 64,
+            max_depth: 8,
+        },
+    )
+    .expect("check_machine runs");
+    assert_eq!(checked.verdict, "REFUSED", "{}", checked.text);
+    assert_eq!(checked.judgment.status, "witnessed_violation");
+    assert!(
+        checked
+            .judgment
+            .reasons
+            .iter()
+            .any(|r| r.contains("initial state violates invariant")),
+        "{:?}",
+        checked.judgment.reasons
+    );
+
+    let dir = tempfile::tempdir().unwrap();
+    let machine_path = dir.path().join("bad.ik.toml");
+    std::fs::write(&machine_path, toml).unwrap();
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_ik"))
+        .args(["check", machine_path.to_str().unwrap(), "--auto-seed", "--compact"])
+        .output()
+        .expect("spawn ik check");
+    assert_eq!(out.status.code(), Some(1), "CLI ik check must refuse invalid initial state");
+    let payload: Value = serde_json::from_slice(&out.stdout).expect("valid json");
+    assert_eq!(payload["verdict"], "REFUSED");
+    assert_eq!(payload["status"], "witnessed_violation");
+}

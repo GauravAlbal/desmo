@@ -835,3 +835,41 @@ outcomes = [
   { to = "done" },
 ]
 "#;
+
+#[test]
+fn smt_lowering_rejects_once_policy_and_encode_rejects_mixed_eq_ne() {
+    let once_toml = r#"
+schema_version = 1
+machine_id = "smt_once"
+machine_version = 1
+[facts]
+k = { type = "string", policy = "once" }
+[states]
+a = { initial = true }
+b = { terminal = true }
+[commands.set_k]
+from = ["a"]
+to = "b"
+args = { k = "string" }
+then = { k = "$k" }
+"#;
+    let def = ik::declarative::parse_definition(once_toml).expect("parse once def");
+    let err = ik::smt::lower_definition(&def)
+        .expect_err("SMT lowering must reject policy = once as unsupported");
+    assert!(err.reason.contains("once"), "{err:?}");
+
+    let names = ik::smt::Names {
+        facts: std::collections::BTreeMap::from([("n".to_string(), ik::smt::Sort::Int)]),
+        args: std::collections::BTreeMap::new(),
+        strings: ik::smt::StringPart::new(["5".to_string()]),
+        states: vec!["a".to_string()],
+    };
+    for expr_src in ["n == '5'", "n != '5'"] {
+        let expr = ik::declarative::expr::parse(expr_src).expect("parse mixed cmp");
+        let term = ik::smt::encode_expr(&expr, &names).expect("encode mixed cmp");
+        assert!(
+            term.error.contains("true"),
+            "mixed sort `{expr_src}` must set SMT error flag: {term:?}"
+        );
+    }
+}

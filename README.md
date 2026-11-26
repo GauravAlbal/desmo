@@ -226,7 +226,7 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 
 **Use it for:** canonical lifecycles with illegal transitions, approval gates, retries/exhaustion, external effects with idempotency keys, generation-bound authority, and crash-recoverable local SQLite state.
 
-**Do not use it for:** stateless CRUD, routing, business calculations, multi-replica shared SQLite, read-only serverless filesystems, or distributed consensus.
+**Do not use it for:** stateless CRUD, routing, business calculations, cross-aggregate atomic invariants, multi-replica shared SQLite, read-only serverless filesystems, or distributed consensus.
 
 ## Naming & compatibility
 

@@ -257,6 +257,11 @@ fn then_op(
     value: &str,
     facts: &BTreeMap<String, FactDef>,
 ) -> Result<ThenOp, Unsupported> {
+    if facts.get(fact).map(|f| f.policy.as_str()) == Some("once") {
+        return Err(Unsupported::new(format!(
+            "`policy = \"once\"` assignment on `{fact}` is outside the exact SMT fragment"
+        )));
+    }
     if facts.get(fact).map(|f| f.policy.as_str()) == Some("counter") {
         let n = value
             .strip_prefix('+')
