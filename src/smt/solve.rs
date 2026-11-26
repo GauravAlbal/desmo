@@ -946,6 +946,7 @@ pub fn kernel_eval(expr: &Expr, pinned: &Pinned) -> GuardValue {
         facts: &facts,
         args: &pinned.args,
         state: &pinned.state,
+        effect: None,
     };
     match expr::eval(expr, &ctx) {
         Ok(true) => GuardValue::True,

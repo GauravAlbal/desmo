@@ -564,6 +564,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   let nonce = "n0-a1f4";
   let savedHandle = null;
   let pendingEffect = null;
+  let recordedEffect = null;
   let lastRefusal = null;
   let pendingBranch = null;
   let events = [];
@@ -676,7 +677,13 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
         if (!tk) throw new Error("operand");
         if (tk.t === "int" || tk.t === "str" || tk.t === "bool") return tk.v;
         if (tk.t === "$") return args[tk.v];
-        if (tk.t === "id") return tk.v === "state" ? stateName : factState[tk.v];
+        if (tk.t === "id") {
+          if (tk.v === "state") return stateName;
+          if (tk.v === "effect_status") return pendingEffect ? "pending" : (recordedEffect ? "recorded" : "none");
+          if (tk.v === "effect_kind") return pendingEffect ? pendingEffect.kind : (recordedEffect ? recordedEffect.kind : undefined);
+          if (tk.v === "effect_outcome") return recordedEffect ? recordedEffect.outcome : undefined;
+          return factState[tk.v];
+        }
         throw new Error("primary");
       }
       const res = parseOr();
@@ -1285,6 +1292,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     if (!pendingEffect) return;
     const eff = pendingEffect;
     pendingEffect = null;
+    recordedEffect = { kind: eff.kind, outcome };
     generation += 1;
     nonce = nextNonce(generation);
     events.unshift({
@@ -1354,6 +1362,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     nonce = nextNonce(0);
     savedHandle = null;
     pendingEffect = null;
+    recordedEffect = null;
     lastRefusal = null;
     pendingBranch = null;
     events = [];

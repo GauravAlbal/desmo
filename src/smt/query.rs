@@ -326,7 +326,11 @@ fn note_operand(
             note_operand(left, facts, args, fact_sorts, arg_sorts);
             note_operand(right, facts, args, fact_sorts, arg_sorts);
         }
-        Operand::State | Operand::Literal(_) => {}
+        Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome
+        | Operand::Literal(_) => {}
     }
 }
 

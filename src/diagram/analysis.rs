@@ -752,6 +752,9 @@ fn names_in(op: &Operand) -> Vec<String> {
     match op {
         Operand::Fact(name) | Operand::Arg(name) => vec![name.clone()],
         Operand::State => vec!["state".into()],
+        Operand::EffectStatus => vec!["effect_status".into()],
+        Operand::EffectKind => vec!["effect_kind".into()],
+        Operand::EffectOutcome => vec!["effect_outcome".into()],
         Operand::Literal(_) => Vec::new(),
         Operand::Arith { base, .. } | Operand::Mul { base, .. } | Operand::Div { base, .. } => {
             names_in(base)

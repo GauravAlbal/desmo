@@ -19,8 +19,19 @@ Start read-only on your own codebase before adopting anything:
 # 1. Install the `ik` CLI (macOS arm64 / Linux x86_64, SHA256SUMS-verified)
 curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh
 
-# 2. Install the coding-agent skill (Claude Code, Codex, Cursor, or `skills` CLI)
+# 2. Run the live runtime demos right away (zero Node/Python/Go required)
+ik demo
+
+# 3. Install the coding-agent skill (Claude Code, Codex, Cursor, or `skills` CLI)
 npx skills add GauravAlbal/desmo
+```
+
+Or scaffold a runnable typed project directly in TypeScript, Python, or Go:
+
+```bash
+ik init order --lang ts   # or --lang py | --lang go
+ik check desmo-order/order.ik.toml --summary
+ik doctor --dir desmo-order
 ```
 
 Then ask your coding agent:
@@ -144,11 +155,10 @@ console.log(paid.namedState(), paid.generation); // paid 1n
 
 ### Python
 
-Install `ik` with the one-line installer above, then install the wheel from the release:
+Install `ik` with the one-line installer above, then install the wheel directly from the GitHub Release:
 
 ```bash
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/invariant_kernel-0.6.0-py3-none-any.whl
-pip install --no-index --no-deps invariant_kernel-0.6.0-py3-none-any.whl
+pip install https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/invariant_kernel-0.6.0-py3-none-any.whl
 ```
 
 ```python
@@ -185,7 +195,8 @@ paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
 - **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
 - **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
 - **Unified typed codegen (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale).
-- **Developer workbench:** `ik check` (with `--compact` for agent-friendly JSON), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` run against the exact same transition engine.
+- **Effect-outcome guards & safe effect runners:** command guards can inspect `effect_status`, `effect_kind`, and `effect_outcome` (`when = "effect_status == 'recorded' && effect_outcome == 'succeeded'"`) so the kernel enforces outcome routing directly; TypeScript `runEffect`, Python `run_effect`, and Go `RunEffect` orchestrate plan → external execution with bound `idempotency_key` → outcome recording without blind duplicate execution.
+- **Developer workbench:** `ik demo`, `ik init --lang ts|py|go`, `ik doctor`, `ik check` (with `--auto-seed`, `--summary`, `--compact`, zero-corpus structural lints, and automatic invariant-violation falsification), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` run against the exact same transition engine.
 
 ## What's verified vs. what's open
 

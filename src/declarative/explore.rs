@@ -400,13 +400,22 @@ fn walk(
     mut invariant_refusals: Option<&mut BTreeMap<String, InvariantRefusalWitness>>,
     build_graph: bool,
 ) -> (Exploration, Option<RuntimeGraph>) {
+    let uses_effect_guards = machine_uses_effect_guards(def);
+    let effect_outcomes = if uses_effect_guards {
+        harvest_effect_outcomes(def)
+    } else {
+        Vec::new()
+    };
+
     let mut queue = VecDeque::new();
     let mut seen = std::collections::HashSet::<[u8; 32]>::new();
     let initial = machine.initial_state();
-    let initial_key = crate::canonical::sha256_value_raw(&initial);
+    let initial_effect = EffectStatus::None;
+    let initial_key = node_seen_key(&initial, &initial_effect, uses_effect_guards);
     seen.insert(initial_key);
     queue.push_back(Node {
         state: initial.clone(),
+        effect: initial_effect,
         path: Vec::new(),
         depth: 0,
     });
@@ -444,6 +453,36 @@ fn walk(
         if let Some(gb) = traced.as_mut() {
             gb.mark_expanded(&node.state);
         }
+        if uses_effect_guards {
+            if let EffectStatus::Pending(intent) = &node.effect {
+                for digest in &effect_outcomes {
+                    let recorded_effect =
+                        EffectStatus::Recorded(intent.clone(), digest.clone(), None);
+                    let key = node_seen_key(&node.state, &recorded_effect, true);
+                    if !seen.insert(key) {
+                        continue;
+                    }
+                    if node.depth + 1 >= bounds.max_depth {
+                        complete = false;
+                        incomplete_reason = Some("max_depth".to_string());
+                        continue;
+                    }
+                    let mut path = node.path.clone();
+                    path.push(WitnessStep {
+                        command: format!("record_effect:{digest}"),
+                        case: None,
+                        outcome_index: None,
+                    });
+                    queue.push_back(Node {
+                        state: node.state.clone(),
+                        effect: recorded_effect,
+                        path,
+                        depth: node.depth + 1,
+                    });
+                }
+                continue;
+            }
+        }
         let cur_state_name = node.state.get("state").and_then(Value::as_str);
         for candidate in &all_candidates {
             if !build_graph {
@@ -456,11 +495,12 @@ fn walk(
                     }
                 }
             }
-            match classify(machine, &node.state, &candidate.command) {
+            match classify(machine, &node.state, &node.effect, &candidate.command) {
                 Step::Commit {
                     next,
                     terminal,
                     outcome_index,
+                    planned_effect,
                 } => {
                     edges += 1;
                     if let Some(gb) = traced.as_mut() {
@@ -495,7 +535,15 @@ fn walk(
                         &path,
                         terminal,
                     );
-                    let key = crate::canonical::sha256_value_raw(&next);
+                    let next_effect = if uses_effect_guards {
+                        match planned_effect {
+                            Some(intent) => EffectStatus::Pending(intent),
+                            None => node.effect.clone(),
+                        }
+                    } else {
+                        EffectStatus::None
+                    };
+                    let key = node_seen_key(&next, &next_effect, uses_effect_guards);
                     if !seen.insert(key) {
                         continue;
                     }
@@ -512,6 +560,7 @@ fn walk(
                     }
                     queue.push_back(Node {
                         state: next,
+                        effect: next_effect,
                         path,
                         depth: node.depth + 1,
                     });
@@ -624,8 +673,80 @@ fn record_invariant_refusal(
 
 struct Node {
     state: Value,
+    effect: EffectStatus,
     path: Vec<WitnessStep>,
     depth: usize,
+}
+
+fn machine_uses_effect_guards(def: &Definition) -> bool {
+    for cmd in def.commands.values() {
+        if let Some(w) = &cmd.when {
+            if super::expr::parse(w).is_ok_and(|e| super::expr::uses_effect_operands(&e)) {
+                return true;
+            }
+        }
+        if let Some(outcomes) = &cmd.outcomes {
+            for o in outcomes {
+                if let Some(w) = &o.when {
+                    if super::expr::parse(w).is_ok_and(|e| super::expr::uses_effect_operands(&e)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
+fn harvest_effect_outcomes(def: &Definition) -> Vec<String> {
+    let mut set = BTreeSet::new();
+    for cmd in def.commands.values() {
+        for w in cmd
+            .when
+            .iter()
+            .chain(cmd.outcomes.iter().flatten().filter_map(|o| o.when.as_ref()))
+        {
+            if let Ok(ast) = super::expr::parse(w) {
+                collect_effect_outcome_literals(&ast, &mut set);
+            }
+        }
+    }
+    if set.is_empty() {
+        set.insert("succeeded".to_string());
+        set.insert("failed".to_string());
+    }
+    set.into_iter().collect()
+}
+
+fn collect_effect_outcome_literals(ast: &super::expr::Expr, out: &mut BTreeSet<String>) {
+    use super::expr::{Expr, Operand};
+    match ast {
+        Expr::Or(parts) | Expr::And(parts) => {
+            for p in parts {
+                collect_effect_outcome_literals(p, out);
+            }
+        }
+        Expr::Cmp(cmp) => match (&cmp.left, &cmp.right) {
+            (Operand::EffectOutcome, Operand::Literal(Value::String(s)))
+            | (Operand::Literal(Value::String(s)), Operand::EffectOutcome) => {
+                out.insert(s.clone());
+            }
+            _ => {}
+        },
+        _ => {}
+    }
+}
+
+fn node_seen_key(state: &Value, effect: &EffectStatus, track_effect: bool) -> [u8; 32] {
+    if !track_effect {
+        return crate::canonical::sha256_value_raw(state);
+    }
+    let eff = match effect {
+        EffectStatus::None => json!({"s": "none"}),
+        EffectStatus::Pending(i) => json!({"s": "pending", "k": i.effect_kind}),
+        EffectStatus::Recorded(i, o, _) => json!({"s": "recorded", "k": i.effect_kind, "o": o}),
+    };
+    crate::canonical::sha256_value_raw(&json!([state, eff]))
 }
 
 struct Candidate {
@@ -669,6 +790,7 @@ enum Step {
         next: Value,
         terminal: bool,
         outcome_index: usize,
+        planned_effect: Option<crate::effect::EffectIntentV1>,
     },
     Noop,
     Refuse {
@@ -677,8 +799,13 @@ enum Step {
     },
 }
 
-fn classify(machine: &dyn Machine, state: &Value, command: &Value) -> Step {
-    let decision = match machine.decide(state, None, &EffectStatus::None, command) {
+fn classify(
+    machine: &dyn Machine,
+    state: &Value,
+    effect: &EffectStatus,
+    command: &Value,
+) -> Step {
+    let decision = match machine.decide(state, None, effect, command) {
         Ok(decision) => decision,
         Err(diagnostic) => {
             return Step::Refuse {
@@ -700,6 +827,7 @@ fn classify(machine: &dyn Machine, state: &Value, command: &Value) -> Step {
             next: applied.state,
             terminal: applied.terminal,
             outcome_index,
+            planned_effect: applied.effect,
         },
         Err(diagnostic) => Step::Refuse {
             diagnostic,

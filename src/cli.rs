@@ -29,114 +29,154 @@ pub fn entry() -> i32 {
 }
 
 struct Subcommand {
+    group: &'static str,
     name: &'static str,
     usage: &'static str,
     run: fn(&[String]) -> i32,
 }
 
-/// Dispatch table. `ik --help` lists these names from the same rows.
+/// Dispatch table. `ik --help` lists these names in this exact order, grouped by `group`.
 const SUBCOMMANDS: &[Subcommand] = &[
     Subcommand {
-        name: "operations",
-        usage: "       ik operations <store.sqlite> --aggregate <id> [--limit <n>] [--json]",
-        run: crate::operations::run,
+        group: "Quickstart",
+        name: "demo",
+        usage: "       ik demo [orders|stale-worker] [--json]",
+        run: crate::quickstart::run_demo,
     },
     Subcommand {
-        name: "census",
-        usage: "       ik census <store.sqlite> [--json]",
-        run: crate::census::run,
+        group: "Quickstart",
+        name: "init",
+        usage: "       ik init [order|job] --lang ts|py|go [--out <dir>] [--force]",
+        run: crate::quickstart::run_init,
     },
     Subcommand {
-        name: "check",
-        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]",
-        run: run_check,
+        group: "Quickstart",
+        name: "doctor",
+        usage: "       ik doctor [--dir <path>] [--json]",
+        run: crate::quickstart::run_doctor,
     },
     Subcommand {
-        name: "identity",
-        usage: "       ik identity <machine.ik.toml>",
-        run: run_identity,
-    },
-    Subcommand {
-        name: "laws",
-        usage: "       ik laws <machine.ik.toml>",
-        run: run_laws,
-    },
-    Subcommand {
-        name: "schema",
-        usage: "       ik schema <machine.ik.toml>",
-        run: run_schema,
-    },
-    Subcommand {
-        name: "corpus",
-        usage: "       ik corpus init <machine.ik.toml> --out <cases.json>",
-        run: run_corpus,
-    },
-    Subcommand {
-        name: "scenario",
-        usage: "       ik scenario run <machine.ik.toml> <scenario.json> --out <dir> | reproduce <bundle-dir> --out <dir>",
-        run: crate::scenario::run,
-    },
-    Subcommand {
-        name: "report",
-        usage: "       ik report <path>... [--json] [--html <file>]",
-        run: crate::report::run,
-    },
-    Subcommand {
-        name: "handoff",
-        usage: "       ik handoff <behavior.json> --evidence <path>... [--kind delivery|change|recovery] [--store <store.sqlite>] [--json]",
-        run: crate::handoff::run,
-    },
-    Subcommand {
-        name: "readout",
-        usage: "       ik readout <summary.md> --handoff <handoff.txt> [--stamp] [--json]",
-        run: crate::readout::run,
-    },
-    Subcommand {
-        name: "regression",
-        usage: "       ik regression promote <bundle-dir> --name <name> --reason <reason> [--into <dir>] | run <dir>",
-        run: crate::regression::run,
-    },
-    Subcommand {
-        name: "profile",
-        usage: "       ik profile diff <old.toml> <new.toml> [--json]",
-        run: run_profile,
-    },
-    Subcommand {
-        name: "evidence",
-        usage: "       ik evidence verify <evidence.json> --machine <m.ik.toml> [--profile <p.toml>] [--corpus <c.json>] [--runtime-binary <path>] [--json]",
-        run: run_evidence,
-    },
-    Subcommand {
-        name: "graph",
-        usage: "       ik graph export <machine.ik.toml> [--corpus cases.json] [--max-nodes N] [--max-depth D] --out graph.json",
-        run: crate::graph_export::run,
-    },
-    Subcommand {
+        group: "Model & Verify",
         name: "diagram",
         usage: "       ik diagram <machine.ik.toml> [--prior <old.ik.toml>] [--evidence <path>]... [--kind delivery|change|recovery] [--format markdown|text|mermaid|table|json] [--focus <state>] [--level 0|1|2] [--ascii] [--operation <id>]",
         run: crate::diagram::run,
     },
     Subcommand {
+        group: "Model & Verify",
         name: "simulate",
         usage: "       ik simulate <machine.ik.toml> [--out <file.html>] [--open]",
         run: crate::simulate::run,
     },
     Subcommand {
+        group: "Model & Verify",
+        name: "check",
+        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]",
+        run: run_check,
+    },
+    Subcommand {
+        group: "Model & Verify",
         name: "codegen",
         usage: "       ik codegen <machine.ik.toml> --lang ts|py|go [--out <file>] [--check] [--import-from <specifier>] [--package <name>]",
         run: crate::codegen::run,
     },
     Subcommand {
+        group: "Model & Verify",
+        name: "laws",
+        usage: "       ik laws <machine.ik.toml>",
+        run: run_laws,
+    },
+    Subcommand {
+        group: "Model & Verify",
+        name: "corpus",
+        usage: "       ik corpus init <machine.ik.toml> --out <cases.json> [--smart]",
+        run: run_corpus,
+    },
+    Subcommand {
+        group: "Model & Verify",
+        name: "scenario",
+        usage: "       ik scenario run <machine.ik.toml> <scenario.json> --out <dir> | reproduce <bundle-dir> --out <dir>",
+        run: crate::scenario::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "identity",
+        usage: "       ik identity <machine.ik.toml>",
+        run: run_identity,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "schema",
+        usage: "       ik schema <machine.ik.toml>",
+        run: run_schema,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "operations",
+        usage: "       ik operations <store.sqlite> --aggregate <id> [--limit <n>] [--json]",
+        run: crate::operations::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "census",
+        usage: "       ik census <store.sqlite> [--json]",
+        run: crate::census::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "report",
+        usage: "       ik report <path>... [--json] [--html <file>]",
+        run: crate::report::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "handoff",
+        usage: "       ik handoff <behavior.json> --evidence <path>... [--kind delivery|change|recovery] [--store <store.sqlite>] [--json]",
+        run: crate::handoff::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
+        name: "readout",
+        usage: "       ik readout <summary.md> --handoff <handoff.txt> [--stamp] [--json]",
+        run: crate::readout::run,
+    },
+    Subcommand {
+        group: "Advanced & Adapters",
+        name: "regression",
+        usage: "       ik regression promote <bundle-dir> --name <name> --reason <reason> [--into <dir>] | run <dir>",
+        run: crate::regression::run,
+    },
+    Subcommand {
+        group: "Advanced & Adapters",
+        name: "profile",
+        usage: "       ik profile diff <old.toml> <new.toml> [--json]",
+        run: run_profile,
+    },
+    Subcommand {
+        group: "Advanced & Adapters",
+        name: "evidence",
+        usage: "       ik evidence verify <evidence.json> --machine <m.ik.toml> [--profile <p.toml>] [--corpus <c.json>] [--runtime-binary <path>] [--json]",
+        run: run_evidence,
+    },
+    Subcommand {
+        group: "Advanced & Adapters",
+        name: "graph",
+        usage: "       ik graph export <machine.ik.toml> [--corpus cases.json] [--max-nodes N] [--max-depth D] --out graph.json",
+        run: crate::graph_export::run,
+    },
+    Subcommand {
+        group: "Advanced & Adapters",
         name: "analysis",
         usage: "       ik analysis describe|run|validate-result|conformance ...",
         run: crate::analysis::run_cli,
     },
     Subcommand {
+        group: "Advanced & Adapters",
         name: "smt",
         usage: "       ik smt --machine <def.toml> [--target <obligation_id>]",
         run: crate::smt::run_smt_cli,
     },
     Subcommand {
+        group: "Advanced & Adapters",
         name: "feasibility-backend",
         usage: "       ik feasibility-backend --machine <def.toml> [--engine in-house|smt]",
         run: crate::smt::run_feasibility_backend,
@@ -150,9 +190,13 @@ pub fn dispatched_subcommand_names() -> impl Iterator<Item = &'static str> {
 
 fn write_usage(mut emit: impl FnMut(&str)) {
     emit("Desmo (ik) — find hidden state bugs and enforce state machines at runtime");
-    emit("");
-    emit("Commands:");
+    let mut current_group = "";
     for command in SUBCOMMANDS {
+        if command.group != current_group {
+            emit("");
+            emit(&format!("{}:", command.group));
+            current_group = command.group;
+        }
         emit(command.usage);
     }
     emit("");
@@ -1181,6 +1225,7 @@ fn run_laws_inner(args: &[String]) -> Result<i32, String> {
                 .keys()
                 .map(|name| json!({ "name": name, "enforcement": "runtime" }))
                 .collect();
+            let lints = crate::declarative::structural_lints(def, &compiled);
             println!(
                 "{}",
                 canonical_json(&json!({
@@ -1191,6 +1236,7 @@ fn run_laws_inner(args: &[String]) -> Result<i32, String> {
                     "laws": laws,
                     "commands": commands,
                     "unguarded_arguments": crate::declarative::gaps::unguarded_arguments(def),
+                    "structural_lints": lints,
                 }))
             );
             Ok(0)
@@ -1203,7 +1249,7 @@ fn run_check(args: &[String]) -> i32 {
         Ok(code) => code,
         Err(msg) => {
             eprintln!("ik check: {msg}");
-            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
+            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
             2
         }
     }
@@ -1215,7 +1261,9 @@ struct CheckFlags {
     corpus: Option<PathBuf>,
     baseline: Option<PathBuf>,
     profile: Option<PathBuf>,
+    auto_seed: bool,
     release: bool,
+    summary: bool,
     json: bool,
     compact: bool,
     plan: bool,
@@ -1232,14 +1280,15 @@ fn path_value(args: &[String], i: usize, flag: &str) -> Result<PathBuf, String> 
 fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
     let mut path: Option<PathBuf> = None;
     let mut values: BTreeMap<&str, PathBuf> = BTreeMap::new();
-    let (mut release, mut json, mut compact, mut plan) = (false, false, false, false);
+    let (mut auto_seed, mut release, mut summary, mut json, mut compact, mut plan) =
+        (false, false, false, false, false, false);
     let mut region_product_bound: Option<usize> = None;
     let mut template: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "-h" | "--help" => {
-                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--baseline <json>] [--release] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
+                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
                 return Ok(None);
             }
             flag @ ("--prior" | "--corpus" | "--baseline" | "--profile") => {
@@ -1263,7 +1312,9 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
                 }
                 region_product_bound = Some(parsed);
             }
+            "--auto-seed" => auto_seed = true,
             "--release" => release = true,
+            "--summary" => summary = true,
             "--json" => json = true,
             "--compact" => {
                 compact = true;
@@ -1287,13 +1338,24 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
         (None, Some(path)) => path,
         (None, None) => return Err("machine definition path is required".into()),
     };
+    if auto_seed && release {
+        return Err(
+            "--auto-seed cannot be combined with --release; supply an explicit --corpus for release checks"
+                .into(),
+        );
+    }
+    if auto_seed && values.contains_key("--corpus") {
+        return Err("--auto-seed and --corpus are mutually exclusive".into());
+    }
     Ok(Some(CheckFlags {
         path,
         prior: values.remove("--prior"),
         corpus: values.remove("--corpus"),
         baseline: values.remove("--baseline"),
         profile: values.remove("--profile"),
+        auto_seed,
         release,
+        summary,
         json,
         compact,
         plan,
@@ -1340,7 +1402,14 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
     };
     let source = load_source_file_with_limits(&flags.path, region_limits)?;
     let new = &source.definition;
-    let corpus = load_corpus(&flags.path, flags.corpus.as_deref(), new)?;
+    let compiled = crate::declarative::compile::compile(new.clone()).map_err(|e| e.join("; "))?;
+    let lints = crate::declarative::structural_lints(new, &compiled);
+    let corpus_present = corpus_file_present(&flags.path, flags.corpus.as_deref());
+    let corpus = if flags.auto_seed {
+        crate::declarative::auto_seed_corpus(new)
+    } else {
+        load_corpus(&flags.path, flags.corpus.as_deref(), new)?
+    };
     let profile = load_check_profile(flags.profile.as_deref(), new)?;
     if flags.plan {
         return emit_check_plan(profile.as_ref(), new, &corpus, flags.json);
@@ -1358,13 +1427,55 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
             max_nodes: crate::declarative::profile::DEFAULT_MAX_NODES,
             max_depth: crate::declarative::profile::DEFAULT_MAX_DEPTH,
         });
-    let result = crate::declarative::region::check_source(
+    let mut result = crate::declarative::region::check_source(
         &source,
         old.as_ref(),
         &corpus,
         &baseline,
         bounds,
     )?;
+    // When no explicit corpus was supplied, run a fast bounded auto-seeded falsifier
+    // strictly to catch real runtime invariant violations early. Never upgrades REFUSED to ACCEPT.
+    let mut falsified_by_autoseed = false;
+    if !flags.auto_seed && !corpus_present && result.invariant_refusals.is_empty() && !new.invariants.is_empty() {
+        let seed_corpus = crate::declarative::auto_seed_corpus(new);
+        let falsify_bounds = crate::declarative::Bounds {
+            max_nodes: 256.min(bounds.max_nodes),
+            max_depth: 12.min(bounds.max_depth),
+        };
+        let (_, found) = crate::declarative::explore::explore_with_invariant_witnesses(
+            &compiled,
+            &seed_corpus,
+            falsify_bounds,
+        );
+        if !found.is_empty() {
+            falsified_by_autoseed = true;
+            result.verdict = "REFUSED".to_string();
+            result.flat.verdict = "REFUSED".to_string();
+            result.flat.judgment.verdict = "refused".to_string();
+            result.flat.judgment.status = "witnessed_violation".to_string();
+            for witness in &found {
+                let rule = witness.diagnostic.rule.as_deref().unwrap_or("unknown");
+                result.flat.judgment.reasons.push(format!(
+                    "auto-seeded falsifier found model transition violating invariant {rule}; runtime blocked the proposal"
+                ));
+                let steps: Vec<String> = witness
+                    .steps
+                    .iter()
+                    .map(|s| match &s.case {
+                        Some(c) => format!("{}[{c}]", s.command),
+                        None => s.command.clone(),
+                    })
+                    .collect();
+                result.text.push_str(&format!(
+                    "\nINVARIANT-REFUSAL WITNESS (auto-seeded bounded falsifier)\n  {} rule={rule}\n  steps: {}\n",
+                    witness.diagnostic.code.as_str(),
+                    steps.join(" -> ")
+                ));
+            }
+            result.invariant_refusals = found;
+        }
+    }
     let mut envelope = profile
         .as_ref()
         .map(|item| crate::declarative::profile::evaluate(item, new, &corpus, &result.exploration));
@@ -1375,12 +1486,23 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
         &result,
         &corpus,
     )?;
-    let hint = corpus_hint(
-        &flags.path,
-        flags.corpus.as_deref(),
-        result.verdict == "REFUSED",
-    );
-    emit_check(&flags, &result, envelope.as_ref(), hint.as_deref())?;
+    let hint = if flags.auto_seed {
+        None
+    } else {
+        corpus_hint(
+            &flags.path,
+            flags.corpus.as_deref(),
+            result.verdict == "REFUSED",
+        )
+    };
+    emit_check(
+        &flags,
+        &result,
+        &lints,
+        falsified_by_autoseed,
+        envelope.as_ref(),
+        hint.as_deref(),
+    )?;
     let release_pass = result.flat.release.release.verdict == "release_pass";
     let accepted = result.verdict == "ACCEPT" && (!flags.release || release_pass);
     let goals_ok = envelope
@@ -1468,6 +1590,8 @@ fn attach_check_extras(
 fn emit_check(
     flags: &CheckFlags,
     result: &crate::declarative::region::RegionCheckResult,
+    lints: &[crate::declarative::StructuralLint],
+    falsified_by_autoseed: bool,
     envelope: Option<&crate::declarative::profile::ProfileEnvelope>,
     hint: Option<&str>,
 ) -> Result<(), String> {
@@ -1475,6 +1599,7 @@ fn emit_check(
         let mut value = json!({
             "verdict": result.verdict,
             "status": result.flat.judgment.status,
+            "assurance_mode": if flags.auto_seed { "auto_seeded_bounded" } else { "corpus_bounded" },
             "release_verdict": result.flat.release.release.verdict,
             "machine_id": result.flat.report.machine_id,
             "spec_hash": result.flat.report.spec_hash,
@@ -1487,6 +1612,7 @@ fn emit_check(
                 "uncovered_ids": result.flat.report.obligations.uncovered_ids,
             },
             "reasons": result.flat.judgment.reasons,
+            "structural_lints": lints,
             "invariant_witnesses": crate::declarative::region::invariant_witness_json(&result.invariant_refusals),
         });
         attach_check_extras(&mut value, envelope, hint)?;
@@ -1499,6 +1625,19 @@ fn emit_check(
             "report": result.flat.report,
             "invariant_witnesses": crate::declarative::region::invariant_witness_json(&result.invariant_refusals),
         });
+        if flags.auto_seed {
+            if let Some(object) = value.as_object_mut() {
+                object.insert("assurance_mode".into(), json!("auto_seeded_bounded"));
+            }
+        }
+        if !lints.is_empty() {
+            if let Some(object) = value.as_object_mut() {
+                object.insert(
+                    "structural_lints".into(),
+                    serde_json::to_value(lints).map_err(|err| err.to_string())?,
+                );
+            }
+        }
         attach_check_extras(&mut value, envelope, hint)?;
         if let Some(definition) = &result.flat.definition {
             if let Some(object) = value.as_object_mut() {
@@ -1509,13 +1648,70 @@ fn emit_check(
             }
         }
         println!("{}", canonical_json(&value));
+    } else if flags.summary {
+        let cov = &result.exploration.coverage;
+        let mode = if flags.auto_seed {
+            "auto_seeded_bounded (advisory; supply --corpus for --release)"
+        } else {
+            "corpus_bounded (not exhaustive proof)"
+        };
+        println!(
+            "{}  {} · states {}/{} · commands {}/{} · outcomes {}/{} · terminals {}/{}",
+            result.verdict,
+            result.flat.report.machine_id,
+            cov.executably_reached_states.len(),
+            cov.declared_states.len(),
+            cov.executed_commands.len(),
+            cov.declared_commands.len(),
+            cov.executed_outcomes.len(),
+            cov.declared_outcomes.len(),
+            cov.reached_terminal_states.len(),
+            cov.terminal_states.len(),
+        );
+        println!("mode: {mode}");
+        if !lints.is_empty() {
+            print!("{}", crate::declarative::render_lints(lints));
+        }
+        if !result.invariant_refusals.is_empty() {
+            println!("invariant violations witnessed ({}):", result.invariant_refusals.len());
+            for w in &result.invariant_refusals {
+                let rule = w.diagnostic.rule.as_deref().unwrap_or("unknown");
+                let steps: Vec<String> = w
+                    .steps
+                    .iter()
+                    .map(|s| match &s.case {
+                        Some(c) => format!("{}[{c}]", s.command),
+                        None => s.command.clone(),
+                    })
+                    .collect();
+                println!("  - {rule}: {}", steps.join(" -> "));
+            }
+        }
+        if result.verdict != "ACCEPT" && !result.flat.judgment.reasons.is_empty() {
+            for r in &result.flat.judgment.reasons {
+                println!("reason: {r}");
+            }
+        }
+        if let Some(hint) = hint {
+            println!("next: {hint}");
+            println!("   or: ik check {} --auto-seed --summary", flags.path.display());
+        }
     } else {
+        if flags.auto_seed {
+            println!("AUTO-SEEDED (advisory bounded check — supply --corpus for --release)\n");
+        }
         print!("{}", result.text);
+        if !lints.is_empty() {
+            print!("{}", crate::declarative::render_lints(lints));
+        }
         if let Some(envelope) = envelope {
             print!("{}", crate::declarative::profile::render_profile(envelope));
         }
         if let Some(hint) = hint {
             println!("NEXT COMMAND\n  {hint}");
+            if !falsified_by_autoseed {
+                println!("  (or try an instant advisory check: ik check {} --auto-seed --summary)", flags.path.display());
+            }
         }
     }
     Ok(())
@@ -1526,7 +1722,7 @@ fn run_corpus(args: &[String]) -> i32 {
         Ok(code) => code,
         Err(msg) => {
             eprintln!("ik corpus: {msg}");
-            eprintln!("usage: ik corpus init <machine.ik.toml> --out <cases.json>");
+            eprintln!("usage: ik corpus init <machine.ik.toml> --out <cases.json> [--smart]");
             2
         }
     }
@@ -1534,7 +1730,7 @@ fn run_corpus(args: &[String]) -> i32 {
 
 fn run_corpus_inner(args: &[String]) -> Result<i32, String> {
     if args.iter().any(|arg| arg == "-h" || arg == "--help") {
-        println!("usage: ik corpus init <machine.ik.toml> --out <cases.json>");
+        println!("usage: ik corpus init <machine.ik.toml> --out <cases.json> [--smart]");
         return Ok(0);
     }
     if args.first().map(String::as_str) != Some("init") {
@@ -1542,6 +1738,7 @@ fn run_corpus_inner(args: &[String]) -> Result<i32, String> {
     }
     let mut machine = None;
     let mut out = None;
+    let mut smart = false;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -1549,6 +1746,7 @@ fn run_corpus_inner(args: &[String]) -> Result<i32, String> {
                 i += 1;
                 out = Some(path_value(args, i, "--out")?);
             }
+            "--smart" => smart = true,
             flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
             name if machine.is_none() => machine = Some(PathBuf::from(name)),
             other => return Err(format!("unexpected argument `{other}`")),
@@ -1558,7 +1756,11 @@ fn run_corpus_inner(args: &[String]) -> Result<i32, String> {
     let machine = machine.ok_or("machine definition path is required")?;
     let out = out.ok_or("--out requires a path")?;
     let source = load_source_file(&machine)?;
-    let body = crate::declarative::starter_corpus(&source.definition);
+    let body = if smart {
+        crate::declarative::smart_starter_corpus(&source.definition)
+    } else {
+        crate::declarative::starter_corpus(&source.definition)
+    };
     let text = serde_json::to_string_pretty(&body).map_err(|err| err.to_string())?;
     std::fs::write(&out, format!("{text}\n"))
         .map_err(|err| format!("write {}: {err}", out.display()))?;

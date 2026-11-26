@@ -44,6 +44,7 @@ pub mod metamorphic;
 pub mod operation;
 pub mod operations;
 pub mod protocol;
+pub mod quickstart;
 pub mod regression;
 pub mod report;
 pub mod runtime;

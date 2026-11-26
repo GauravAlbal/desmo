@@ -22,8 +22,16 @@ text_in     := 'text_in' '(' value ',' STRING ',' INT ',' INT ')'
 cmp         := operand ( '==' | '!=' | '<' | '<=' | '>' | '>=' ) operand
 operand     := value ( ('+' | '-') (INT | value) | '*' POSINT | '/' POSINT )?
 value       := '$' IDENT | IDENT | STRING | INT | 'true' | 'false' | 'state'
+             | 'effect_status' | 'effect_kind' | 'effect_outcome'
 POSINT      := INT greater than 0
 ```
+
+Command guards (not `[invariants]`) may also read three reserved runtime effect operands:
+- `effect_status`: `"none"`, `"pending"`, or `"recorded"`.
+- `effect_kind`: the planned or recorded effect kind string (evaluation error when `effect_status == "none"`).
+- `effect_outcome`: the recorded `outcome_digest` string (evaluation error unless `effect_status == "recorded"`).
+
+Using these in a follow-up command (`when = "effect_status == 'recorded' && effect_outcome == 'succeeded'"`) ensures the kernel itself refuses completion unless a matching effect outcome was recorded. `effect_status`, `effect_kind`, and `effect_outcome` are reserved identifiers and cannot name facts or arguments; SMT leaves effect-guarded obligations `Unknown`.
 
 String literals in guards use `'paid'` or `"paid"`. `exists(fact)` and
 `not_exists(fact)` test presence. `text_in(VALUE, SET, MIN, MAX)` is a

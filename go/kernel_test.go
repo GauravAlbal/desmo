@@ -515,3 +515,57 @@ func TestSessionTransportAndTransaction(t *testing.T) {
 		t.Fatalf("expected historical replay, got next=%v hist=%v err=%v", again, replayHist, err)
 	}
 }
+
+func TestRunEffectHelper(t *testing.T) {
+	dir := t.TempDir()
+	k, err := invariantkernel.Open(filepath.Join(dir, "fx.db"), invariantkernel.Options{
+		Binary:  ikBin(t),
+		Session: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+	ctx := context.Background()
+	m, err := k.Machine(ctx, filepath.Join(repoRoot(t), "machines", "effect_probe.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	agg, err := m.Create(ctx, "fx-go-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var seenKey string
+	res, err := agg.RunEffect(
+		ctx,
+		"plan",
+		map[string]any{"effect_id": "e1", "payload_digest": "p1", "idempotency_key": "k1"},
+		func(_ context.Context, intent invariantkernel.EffectIntent) (string, error) {
+			seenKey = intent.IdempotencyKey
+			return "succeeded", nil
+		},
+		"plan-go-1",
+		"rec-go-1",
+	)
+	if err != nil {
+		t.Fatalf("RunEffect failed: %v", err)
+	}
+	if seenKey != "k1" || res.Recorded == nil || res.Recorded.Effect.Status != "recorded" || res.Recorded.Effect.OutcomeDigest != "succeeded" {
+		t.Fatalf("unexpected RunEffect result: key=%q res=%+v", seenKey, res)
+	}
+	// Duplicate planOpID must refuse rather than re-running executor.
+	ran := false
+	if _, err := agg.RunEffect(
+		ctx,
+		"plan",
+		map[string]any{"effect_id": "e1", "payload_digest": "p1", "idempotency_key": "k1"},
+		func(_ context.Context, _ invariantkernel.EffectIntent) (string, error) {
+			ran = true
+			return "succeeded", nil
+		},
+		"plan-go-1",
+		"rec-go-2",
+	); err == nil || ran {
+		t.Fatalf("expected duplicate plan refusal without running executor, got err=%v ran=%v", err, ran)
+	}
+}

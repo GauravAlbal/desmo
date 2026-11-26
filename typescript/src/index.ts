@@ -14,7 +14,7 @@ export {
   RUNTIME_VERSION,
   classify,
 } from "./client.js";
-export type { FailureClass } from "./client.js";
+export type { EffectRunResult, FailureClass } from "./client.js";
 export type { Json, OperationBody } from "./client.js";
 export {
   CommandInvalidError,

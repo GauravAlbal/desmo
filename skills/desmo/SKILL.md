@@ -16,7 +16,7 @@ You engineer the lifecycle. The human supplies behavior and reserved permission.
 
 ## Commands & resolution
 
-`ik` is the single kernel binary (`check`, `diagram`, `simulate`, `identity`, `laws`, `schema`, `scenario`, `report`, `handoff`, `corpus`, `analysis`, `regression`, plus `--store`/`--session` runtime modes). Resolve it before assuming it is missing:
+`ik` is the single kernel binary (`demo`, `init`, `doctor`, `diagram`, `simulate`, `check`, `codegen`, `laws`, `corpus`, `scenario`, `identity`, `schema`, `operations`, `census`, `report`, `handoff`, `readout`, plus `--store`/`--session` runtime modes). Resolve it before assuming it is missing:
 - **Global install (all languages):** `ik` on `PATH` (or `$HOME/.local/bin/ik`, or `IK_BINARY`).
 - **Node/TypeScript:** `node_modules/@desmo/<platform>/bin/ik` (e.g. `darwin-arm64`, `linux-x64`); `desmo` runs as `npx --no-install desmo ...` or `node node_modules/@desmo/runtime/dist/cli.js ...`.
 - **Python / Go:** `ik` on `PATH` or `IK_BINARY`.
@@ -24,8 +24,8 @@ You engineer the lifecycle. The human supplies behavior and reserved permission.
 ## Discover
 
 1. **Environment read (no store created):**
-   - Node: `npx --no-install desmo doctor --dir .` (`unavailable` means an optional tool is missing, not a failed native path).
-   - Python / Go: run `ik --version`, list `*.ik.toml`, and check `.ik/checks.toml`, `scenarios/`, and `.agents/skills/desmo/`.
+   - Any language: `ik doctor --dir . --json` (validates all `*.ik.toml` files, runs static structural lints, and checks SDK version pins).
+   - Node projects may additionally run `npx --no-install desmo doctor --dir .`.
 2. `ik identity <machine.ik.toml>` prints `machine_id`, version, and `spec_hash` (never hash the spec yourself).
 3. `ik laws <machine.ik.toml>` is an advisory inventory; `not_examined` means no verifier looked, not a pass.
 4. `ik schema <machine.ik.toml>` is structural metadata for generators (does not evaluate guards).

@@ -73,7 +73,12 @@ fn operand_constants(operand: &Operand, out: &mut Vec<Point>) {
             operand_constants(left, out);
             operand_constants(right, out);
         }
-        Operand::Fact(_) | Operand::Arg(_) | Operand::State => {}
+        Operand::Fact(_)
+        | Operand::Arg(_)
+        | Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome => {}
     }
 }
 

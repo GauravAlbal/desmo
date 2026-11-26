@@ -1559,6 +1559,7 @@ fn invariants_hold(def: &Definition, state: &Value) -> Result<(), String> {
         facts: &facts,
         args: &args,
         state: &name,
+        effect: None,
     };
     for (inv_name, inv) in &def.invariants {
         if !gate_open(&inv.when, &ctx)? {

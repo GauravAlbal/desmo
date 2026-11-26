@@ -20,6 +20,7 @@ pub mod explore;
 pub mod gaps;
 pub mod expr;
 mod feasibility;
+pub mod lint;
 pub mod local;
 pub mod mutation;
 pub mod plan;
@@ -28,6 +29,7 @@ pub mod region;
 pub mod release;
 pub mod report;
 pub mod schema;
+pub mod seed;
 mod text_in;
 pub mod points;
 pub mod witness;
@@ -54,7 +56,9 @@ pub use evidence::{
 };
 pub use explain::{explain, Explanation};
 pub use explore::{explore, Bounds, CaseCorpus, Exploration};
+pub use lint::{render_lints, structural_lints, StructuralLint};
 pub use local::{change_local_guards, LocalAdequacy, LocalNeighbor};
+pub use seed::{auto_seed_corpus, smart_starter_corpus, AUTO_SEED_NOTE};
 pub use mutation::{
     curated_stale_capability_killed, mutation_report, run_guard_boundary_mutant, MutationReport,
     MutationResult,

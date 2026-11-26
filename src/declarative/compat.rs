@@ -245,7 +245,12 @@ fn operand_facts(operand: &Operand) -> BTreeSet<String> {
         Operand::BinArith { left, right, .. } => {
             operand_facts(left).into_iter().chain(operand_facts(right)).collect()
         }
-        Operand::Arg(_) | Operand::State | Operand::Literal(_) => BTreeSet::new(),
+        Operand::Arg(_)
+        | Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome
+        | Operand::Literal(_) => BTreeSet::new(),
     }
 }
 
