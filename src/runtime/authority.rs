@@ -183,11 +183,17 @@ pub fn authorize_command(
     if plans_effect && outcome.is_some() {
         return Err(AuthorityError::BothEffectAndOutcome);
     }
-    if plans_effect
-        && snapshot.effect_state == EffectStateKind::Pending
-        && !policy.allow_second_pending_effect
-    {
-        return Err(AuthorityError::SecondPendingEffect);
+    if plans_effect {
+        if snapshot.effect_state == EffectStateKind::Pending
+            && !policy.allow_second_pending_effect
+        {
+            return Err(AuthorityError::SecondPendingEffect);
+        }
+        // Effect intent stamping advances generation before commit_plan advances sequence.
+        snapshot
+            .generation
+            .checked_add(1)
+            .ok_or(AuthorityError::CounterOverflowGeneration)?;
     }
     if let Some(class) = outcome {
         match class {
