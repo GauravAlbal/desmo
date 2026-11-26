@@ -159,7 +159,12 @@ fn collect_operand_strings(op: &Operand, out: &mut BTreeSet<String>) {
             collect_operand_strings(left, out);
             collect_operand_strings(right, out);
         }
-        Operand::Fact(_) | Operand::Arg(_) | Operand::State => {}
+        Operand::Fact(_)
+        | Operand::Arg(_)
+        | Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome => {}
     }
 }
 
@@ -282,6 +287,9 @@ fn encode_operand(op: &Operand, names: &Names) -> Result<Term, Unsupported> {
         Operand::Fact(name) => Ok(fact_term(name, names)),
         Operand::Arg(name) => Ok(arg_term(name, names)),
         Operand::State => Ok(state_term(names)),
+        Operand::EffectStatus | Operand::EffectKind | Operand::EffectOutcome => Err(
+            Unsupported::new("effect operands are outside the exact SMT fragment"),
+        ),
         Operand::Literal(v) => literal_term(v, names),
         Operand::Arith { base, add, amount } => encode_arith(base, *add, *amount, names),
         Operand::BinArith { left, add, right } => encode_bin_arith(left, *add, right, names),

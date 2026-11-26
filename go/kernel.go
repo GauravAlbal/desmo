@@ -407,6 +407,59 @@ func (a *Aggregate) RecordWithOperation(ctx context.Context, operationID, outcom
 	return next, nil, annotateOperation(err, operationID)
 }
 
+// EffectRunResult holds the durable planned handle, recorded outcome handle (or historical
+// replay), bound EffectIntent, and recorded outcome digest returned by Aggregate.RunEffect.
+type EffectRunResult struct {
+	Planned       *Aggregate
+	Recorded      *Aggregate
+	Historical    *Historical
+	Intent        EffectIntent
+	OutcomeDigest string
+}
+
+// RunEffect plans an external effect via commandName, invokes executor(ctx, intent) once
+// with the kernel-bound EffectIntent (including IdempotencyKey), and records the returned
+// outcome digest. Picky and explicit: refuses if planning replays as Historical (avoiding
+// accidental duplicate side effects) or commits without a pending effect intent.
+func (a *Aggregate) RunEffect(
+	ctx context.Context,
+	commandName string,
+	args map[string]any,
+	executor func(context.Context, EffectIntent) (string, error),
+	planOpID string,
+	recordOpID string,
+) (*EffectRunResult, error) {
+	if executor == nil {
+		return nil, errors.New("executor callback is required")
+	}
+	planned, hist, err := a.CommandWithOperation(ctx, planOpID, commandName, args)
+	if err != nil {
+		return nil, err
+	}
+	if hist != nil {
+		return nil, fmt.Errorf("planning command %q replayed as historical operation %s; inspect Show() and reconcile before re-running external side effects", commandName, hist.OperationID)
+	}
+	if planned.Effect.Status != "pending" || planned.Effect.Intent == nil {
+		return nil, fmt.Errorf("command %q committed without planning a pending effect intent", commandName)
+	}
+	intent := *planned.Effect.Intent
+	outcomeDigest, err := executor(ctx, intent)
+	if err != nil {
+		return nil, err
+	}
+	recorded, recHist, err := planned.RecordEffectOutcome(ctx, recordOpID, outcomeDigest)
+	if err != nil {
+		return nil, err
+	}
+	return &EffectRunResult{
+		Planned:       planned,
+		Recorded:      recorded,
+		Historical:    recHist,
+		Intent:        intent,
+		OutcomeDigest: outcomeDigest,
+	}, nil
+}
+
 // RecordEffectOutcome is the picky effect completion helper: requires a non-empty outcomeDigest
 // and a pending EffectIntent on this handle before dispatching `record`.
 func (a *Aggregate) RecordEffectOutcome(ctx context.Context, operationID, outcomeDigest string) (*Aggregate, *Historical, error) {

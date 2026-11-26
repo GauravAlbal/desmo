@@ -381,6 +381,7 @@ impl CompiledMachine {
             facts,
             args,
             state: current_state,
+            effect: None,
         };
         let _ = name;
         evaluate::select_outcomes(current_state, source_legal, &specs, &ctx)
@@ -392,6 +393,7 @@ impl CompiledMachine {
         current_state: &str,
         facts: &BTreeMap<String, Value>,
         args: &BTreeMap<String, Value>,
+        effect: Option<&crate::effect::EffectStatus>,
     ) -> Result<Option<usize>, Diagnostic> {
         let specs: Vec<GuardSpec<'_>> = cmd
             .outcomes
@@ -407,6 +409,7 @@ impl CompiledMachine {
             facts,
             args,
             state: current_state,
+            effect,
         };
         evaluate::select_outcome_fast(&specs, &ctx)
     }
@@ -433,6 +436,7 @@ impl CompiledMachine {
             facts,
             args: &empty,
             state: dest_state,
+            effect: None,
         };
         evaluate::check_invariants_fast(&specs, &ctx)
     }
@@ -459,6 +463,7 @@ impl CompiledMachine {
             facts,
             args: &empty,
             state: dest_state,
+            effect: None,
         };
         evaluate::evaluate_invariants(&specs, &ctx)
     }
@@ -482,7 +487,7 @@ impl Machine for CompiledMachine {
         &self,
         state: &Value,
         _observation: Option<&Value>,
-        _effect: &crate::effect::EffectStatus,
+        effect: &crate::effect::EffectStatus,
         command: &Value,
     ) -> Result<Decision, Diagnostic> {
         let prepared = prepare_command(self, state, command)?;
@@ -518,6 +523,7 @@ impl Machine for CompiledMachine {
             &prepared.current_state,
             &prepared.current_facts,
             &prepared.args,
+            Some(effect),
         )?;
         let Some(index) = selected else {
             return Err(Diagnostic::new(

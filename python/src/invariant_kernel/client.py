@@ -6,6 +6,7 @@ import difflib
 import threading
 import uuid
 import weakref
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -513,6 +514,17 @@ def _transaction_wire(
     return wire
 
 
+@dataclass(frozen=True)
+class EffectRunResult:
+    """Result of ``Aggregate.run_effect``: planned handle, recorded result, intent, and digest."""
+
+    planned: "Aggregate"
+    recorded: "Aggregate | HistoricalResult"
+    intent: EffectIntent
+    outcome_digest: str
+    result: Any = None
+
+
 def _settle(machine: "Machine", result: Mapping[str, Any]) -> "Aggregate | HistoricalResult":
     """A mutation answer is a new handle, or history when it was an exact repeat."""
     if result.get("historical") is True:
@@ -674,6 +686,59 @@ class Aggregate:
             effect=_outcome_wire(pending, outcome_digest),
         )
         return _settle(self._machine, result)
+
+    def run_effect(
+        self,
+        command_name: str,
+        args: Optional[Mapping[str, Any]] = None,
+        *,
+        executor: Any,
+        plan_operation_id: Optional[str] = None,
+        record_operation_id: Optional[str] = None,
+    ) -> EffectRunResult:
+        """Plan an external effect, invoke ``executor(intent)``, and record the outcome digest.
+
+        ``executor`` receives the kernel-bound ``EffectIntent`` (with ``idempotency_key``)
+        and must return either a non-empty ``outcome_digest`` string or a
+        ``(outcome_digest, result)`` pair. Refuses if planning replays as
+        ``HistoricalResult`` or commits without a pending intent. Never retries transport
+        failures silently.
+        """
+        planned = self.execute(
+            {"name": command_name, "args": dict(args or {})},
+            operation_id=plan_operation_id,
+        )
+        if isinstance(planned, HistoricalResult):
+            err = EffectCompletionError(
+                f"planning command `{command_name}` replayed as HistoricalResult; "
+                "inspect show() and reconcile before re-running external side effects"
+            )
+            err.operation_id = plan_operation_id
+            raise err
+        intent = planned.pending_intent
+        if intent is None:
+            err = EffectCompletionError(
+                f"command `{command_name}` committed without planning a pending effect intent"
+            )
+            err.operation_id = plan_operation_id
+            raise err
+        executed = executor(intent)
+        if isinstance(executed, tuple) and len(executed) == 2:
+            outcome_digest, extra_result = executed
+        else:
+            outcome_digest, extra_result = executed, None
+        recorded = planned.record_effect_outcome(
+            outcome_digest,
+            intent=intent,
+            operation_id=record_operation_id,
+        )
+        return EffectRunResult(
+            planned=planned,
+            recorded=recorded,
+            intent=intent,
+            outcome_digest=outcome_digest,
+            result=extra_result,
+        )
 
     def execute(
         self,

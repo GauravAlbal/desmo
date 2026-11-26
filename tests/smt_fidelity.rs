@@ -345,6 +345,7 @@ fn ordered_outcome_earlier_error_refuses() {
         facts: &n_unset,
         args: &args,
         state: "idle",
+        effect: None,
     };
     let erroring = parse("n == 1");
     let specs = [

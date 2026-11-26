@@ -25,6 +25,77 @@ impl CharSet {
             CharSet::Ascii { bits } => ascii_member(*bits, c),
         }
     }
+
+    /// Deterministic printable character inside this set for auto-seeded cases.
+    pub fn sample_valid_char(&self) -> char {
+        match self {
+            CharSet::AnyUnicode => 'a',
+            CharSet::Ascii { bits } => {
+                // Prefer readable alphanumerics before punctuation/control chars.
+                for c in ('a'..='z').chain('A'..='Z').chain('0'..='9') {
+                    if ascii_member(*bits, c) {
+                        return c;
+                    }
+                }
+                for code in 32u8..=126 {
+                    let c = code as char;
+                    if ascii_member(*bits, c) {
+                        return c;
+                    }
+                }
+                for code in 0u8..=127 {
+                    let c = code as char;
+                    if ascii_member(*bits, c) {
+                        return c;
+                    }
+                }
+                'a'
+            }
+        }
+    }
+
+    /// Deterministic second valid character distinct from `sample_valid_char`, if available.
+    pub fn sample_alt_valid_char(&self) -> Option<char> {
+        let first = self.sample_valid_char();
+        match self {
+            CharSet::AnyUnicode => Some(if first == 'b' { 'c' } else { 'b' }),
+            CharSet::Ascii { bits } => {
+                for c in ('a'..='z').chain('A'..='Z').chain('0'..='9') {
+                    if c != first && ascii_member(*bits, c) {
+                        return Some(c);
+                    }
+                }
+                for code in 32u8..=126 {
+                    let c = code as char;
+                    if c != first && ascii_member(*bits, c) {
+                        return Some(c);
+                    }
+                }
+                None
+            }
+        }
+    }
+
+    /// Deterministic printable ASCII character outside this set, if any exists.
+    pub fn sample_invalid_char(&self) -> Option<char> {
+        match self {
+            CharSet::AnyUnicode => None,
+            CharSet::Ascii { bits } => {
+                for c in ['!', ' ', '@', '#', '$', '?', '~', 'a', '0'] {
+                    if !ascii_member(*bits, c) {
+                        return Some(c);
+                    }
+                }
+                for code in 32u8..=126 {
+                    let c = code as char;
+                    if !ascii_member(*bits, c) {
+                        return Some(c);
+                    }
+                }
+                None
+            }
+        }
+    }
 }
 
 fn ascii_member(bits: [u64; 2], c: char) -> bool {

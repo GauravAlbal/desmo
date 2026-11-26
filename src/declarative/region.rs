@@ -2070,6 +2070,7 @@ fn validate_initial(definition: &Definition) -> Result<(), StaticErrors> {
         facts: &facts,
         args: &args,
         state: initial.0,
+        effect: None,
     };
     if let Some(error) = evaluate_invariants(&specs, &context).error {
         return Err(refuse(format!(

@@ -559,6 +559,7 @@ fn enforce_kernel_laws(laws: &[CompiledKernelLaw], state: &Value) -> Result<(), 
         facts: &facts,
         args: &args,
         state: label,
+        effect: None,
     };
     let specs: Vec<crate::declarative::evaluate::InvariantSpec<'_>> = laws
         .iter()

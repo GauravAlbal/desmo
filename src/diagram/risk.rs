@@ -326,7 +326,12 @@ fn walk_op(op: &Operand, out: &mut BTreeSet<String>) {
             walk_op(left, out);
             walk_op(right, out);
         }
-        Operand::Arg(_) | Operand::State | Operand::Literal(_) => {}
+        Operand::Arg(_)
+        | Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome
+        | Operand::Literal(_) => {}
     }
 }
 

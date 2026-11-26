@@ -3,11 +3,14 @@
 Developer analysis. Not a lifecycle operation.
 
 ```bash
-ik check machine.ik.toml [--prior old.toml] [--corpus cases.json] [--baseline validation/verification_baseline.json]
+ik check machine.ik.toml [--prior old.toml] [--corpus cases.json] [--auto-seed] [--summary] [--compact] [--baseline validation/verification_baseline.json]
 ```
 
-Prints a repair packet and a `VERDICT` of `ACCEPT` or `REFUSED`.
+Prints a repair packet and a `VERDICT` of `ACCEPT` or `REFUSED` (or a concise 5-line developer summary with `--summary`, or agent-friendly JSON with `--compact`).
 Exit 0 on accept, 1 on refuse, 2 on transport/usage failure.
+
+- **Zero-corpus static structural lints:** every `ik check` and `ik laws` run checks for unreachable states, reachable non-terminal sinks (dead ends), duplicate-guard shadowed outcomes, and initial-state invariant violations without requiring a corpus.
+- **Guard-guided `--auto-seed` & automatic invariant falsifier:** `--auto-seed` synthesizes concrete boundary cases from guards, `text_in` predicates, and fact-equality links as an explicit `auto_seeded_bounded` advisory check (`--auto-seed` is refused with `--release`; use `ik corpus init --smart` to save and pin an editable corpus). Even without `--corpus` or `--auto-seed`, `ik check` runs a fast bounded auto-seeded falsifier on machines with `[invariants]` to surface concrete runtime invariant-violation witnesses early.
 
 `--json` `judgment.verdict` is `accept` or `refused` (the same two
 outcomes as the text `VERDICT`, in lowercase). `judgment.status` is the

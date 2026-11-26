@@ -73,6 +73,7 @@ fn evaluate(expr: &Expr, example: &Example) -> Result<bool, String> {
         facts: &example.facts,
         args: &example.args,
         state: &example.state,
+        effect: None,
     };
     expr::eval(expr, &ctx)
 }

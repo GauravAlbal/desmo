@@ -9,7 +9,16 @@ use std::collections::BTreeMap;
 pub const SCHEMA_VERSION: u64 = 1;
 
 /// Reserved words that cannot name facts or arguments.
-pub const RESERVED: &[&str] = &["state", "exists", "not_exists", "true", "false"];
+pub const RESERVED: &[&str] = &[
+    "state",
+    "effect_status",
+    "effect_kind",
+    "effect_outcome",
+    "exists",
+    "not_exists",
+    "true",
+    "false",
+];
 
 /// Provenance from region lowering. Omitted from spec-hash serialization.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -601,6 +610,11 @@ fn check_invariant_fact_refs(
     when_prefix: &str,
     errors: &mut Vec<String>,
 ) {
+    if crate::declarative::expr::uses_effect_operands(expr) {
+        errors.push(format!(
+            "invariant `{inv_name}` {when_prefix}cannot reference `effect_status`, `effect_kind`, or `effect_outcome` (effect guards belong on commands)"
+        ));
+    }
     let mut facts = Vec::new();
     collect_fact_refs(expr, &mut facts);
     for f in facts {
@@ -722,7 +736,10 @@ fn operand_ty(
     match op {
         Operand::Fact(name) => fact_operand_ty(name, def, issues),
         Operand::Arg(name) => arg_operand_ty(name, cmd, issues),
-        Operand::State => Some(Ty::Str),
+        Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome => Some(Ty::Str),
         Operand::Literal(v) => literal_operand_ty(v),
         Operand::Arith { base, .. } => arith_operand_ty(base, def, cmd, issues),
         Operand::BinArith { left, right, .. } => {

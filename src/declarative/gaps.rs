@@ -78,7 +78,12 @@ fn operand_facts(operand: &Operand, out: &mut BTreeSet<String>) {
             operand_facts(left, out);
             operand_facts(right, out);
         }
-        Operand::Arg(_) | Operand::State | Operand::Literal(_) => {}
+        Operand::Arg(_)
+        | Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome
+        | Operand::Literal(_) => {}
     }
 }
 

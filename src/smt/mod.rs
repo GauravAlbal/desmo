@@ -105,7 +105,10 @@ fn cmp_unsupported(
 
 fn operand_sort(op: &Operand, names: &Names) -> Option<Sort> {
     match op {
-        Operand::State => Some(Sort::Str),
+        Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome => Some(Sort::Str),
         Operand::Literal(v) => literal_sort(v),
         Operand::Fact(name) => names.facts.get(name).copied(),
         Operand::Arg(name) => names.args.get(name).copied(),

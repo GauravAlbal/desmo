@@ -250,3 +250,50 @@ test("the helper does not call the fake service and does not retry a lost transp
   const { readFileSync } = await import("node:fs");
   assert.deepEqual(readFileSync(log, "utf8").trim().split("\n"), ["dispatched"]);
 });
+
+test("runEffect plans, executes with bound idempotency key, and records outcome", async () => {
+  const kernel = freshKernel();
+  try {
+    const machine = await kernel.machine(machinePath);
+    const created = await machine.create("fx-run-1");
+    const seenKeys: string[] = [];
+    const res = await created.runEffect(
+      "plan",
+      { effect_id: "e-run-1", payload_digest: "p-run-1", idempotency_key: "k-run-1" },
+      async (intent: EffectIntent) => {
+        seenKeys.push(intent.idempotencyKey);
+        return { outcomeDigest: "succeeded", result: { charge: "ok" } };
+      },
+    );
+    assert.deepEqual(seenKeys, ["k-run-1"]);
+    assert.equal(res.outcomeDigest, "succeeded");
+    assert.deepEqual(res.result, { charge: "ok" });
+    assert.ok(res.recorded instanceof Aggregate);
+    assert.equal(res.recorded.effect.status, "recorded");
+    assert.equal(res.recorded.effect.outcomeDigest, "succeeded");
+
+    // Replaying the same planOperationId must refuse rather than re-running the external side effect.
+    const c2 = await machine.create("fx-run-2");
+    await c2.execute(
+      { name: "plan", args: { effect_id: "e-run-2", payload_digest: "p-run-2", idempotency_key: "k-run-2" } },
+      { operationId: "plan-dup-op" },
+    );
+    let ran = false;
+    await assert.rejects(
+      () =>
+        c2.runEffect(
+          "plan",
+          { effect_id: "e-run-2", payload_digest: "p-run-2", idempotency_key: "k-run-2" },
+          async () => {
+            ran = true;
+            return "succeeded";
+          },
+          { planOperationId: "plan-dup-op" },
+        ),
+      (err: unknown) => err instanceof EffectCompletionError,
+    );
+    assert.equal(ran, false);
+  } finally {
+    kernel.close();
+  }
+});

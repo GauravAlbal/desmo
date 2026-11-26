@@ -226,6 +226,9 @@ fn render_operand(op: &Operand) -> String {
         Operand::Fact(name) => name.clone(),
         Operand::Arg(name) => format!("${name}"),
         Operand::State => "state".to_string(),
+        Operand::EffectStatus => "effect_status".to_string(),
+        Operand::EffectKind => "effect_kind".to_string(),
+        Operand::EffectOutcome => "effect_outcome".to_string(),
         Operand::Literal(value) => render_literal(value),
         Operand::Arith { base, add, amount } => {
             let sign = if *add { "+" } else { "-" };

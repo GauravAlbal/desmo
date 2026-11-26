@@ -93,7 +93,11 @@ fn is_ms_operand(op: &Operand) -> bool {
             is_ms_operand(base)
         }
         Operand::BinArith { left, right, .. } => is_ms_operand(left) || is_ms_operand(right),
-        Operand::State | Operand::Literal(_) => false,
+        Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome
+        | Operand::Literal(_) => false,
     }
 }
 
@@ -108,6 +112,9 @@ fn pretty_operand(op: &Operand, args: &BTreeSet<String>, diagram: bool, ms_ctx: 
             }
         }
         Operand::State => "state".into(),
+        Operand::EffectStatus => "effect_status".into(),
+        Operand::EffectKind => "effect_kind".into(),
+        Operand::EffectOutcome => "effect_outcome".into(),
         Operand::Literal(value) => pretty_literal(value, ms_ctx),
         Operand::Arith { base, add, amount } => {
             let sign = if *add { "+" } else { "-" };

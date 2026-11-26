@@ -64,6 +64,12 @@ pub enum Operand {
     Fact(String),
     Arg(String),
     State,
+    /// Current runtime effect status: `"none"`, `"pending"`, or `"recorded"`.
+    EffectStatus,
+    /// Pending or recorded effect kind string (eval error when no effect exists).
+    EffectKind,
+    /// Recorded effect outcome digest string (eval error unless an effect outcome is recorded).
+    EffectOutcome,
     Literal(Value),
     /// Existing encoding: one operand ± a non-negative integer constant.
     Arith {
@@ -89,11 +95,37 @@ pub enum Operand {
     },
 }
 
-/// Evaluation context: facts (current values), command args, current state name.
+/// Evaluation context: facts (current values), command args, current state name,
+/// and optional runtime effect status (present during command guard evaluation).
 pub struct EvalCtx<'a> {
     pub facts: &'a std::collections::BTreeMap<String, Value>,
     pub args: &'a std::collections::BTreeMap<String, Value>,
     pub state: &'a str,
+    pub effect: Option<&'a crate::effect::EffectStatus>,
+}
+
+/// Whether `expr` references any runtime effect operand (`effect_status`, `effect_kind`,
+/// `effect_outcome`).
+pub fn uses_effect_operands(expr: &Expr) -> bool {
+    match expr {
+        Expr::Or(parts) | Expr::And(parts) => parts.iter().any(uses_effect_operands),
+        Expr::Cmp(cmp) => operand_uses_effect(&cmp.left) || operand_uses_effect(&cmp.right),
+        Expr::TextIn(pred) => operand_uses_effect(&pred.value),
+        Expr::Exists(_) | Expr::NotExists(_) => false,
+    }
+}
+
+fn operand_uses_effect(op: &Operand) -> bool {
+    match op {
+        Operand::EffectStatus | Operand::EffectKind | Operand::EffectOutcome => true,
+        Operand::Arith { base, .. } | Operand::Mul { base, .. } | Operand::Div { base, .. } => {
+            operand_uses_effect(base)
+        }
+        Operand::BinArith { left, right, .. } => {
+            operand_uses_effect(left) || operand_uses_effect(right)
+        }
+        Operand::Fact(_) | Operand::Arg(_) | Operand::State | Operand::Literal(_) => false,
+    }
 }
 
 const GUARD_FORMS: &str = "comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`), `exists`/`not_exists`, `text_in(VALUE, SET, MIN, MAX)`, integer `+`/`-` (constant or operand), and `*`/`/` by a positive integer constant";
@@ -375,6 +407,34 @@ fn eval_operand(op: &Operand, ctx: &EvalCtx) -> Result<Value, String> {
             .cloned()
             .ok_or_else(|| format!("unknown argument `${name}`")),
         Operand::State => Ok(Value::String(ctx.state.to_string())),
+        Operand::EffectStatus => {
+            let status = match ctx.effect {
+                Some(crate::effect::EffectStatus::Pending(_)) => "pending",
+                Some(crate::effect::EffectStatus::Recorded(_, _, _)) => "recorded",
+                Some(crate::effect::EffectStatus::None) | None => "none",
+            };
+            Ok(Value::String(status.to_string()))
+        }
+        Operand::EffectKind => match ctx.effect {
+            Some(crate::effect::EffectStatus::Pending(intent))
+            | Some(crate::effect::EffectStatus::Recorded(intent, _, _)) => {
+                Ok(Value::String(intent.effect_kind.clone()))
+            }
+            Some(crate::effect::EffectStatus::None) | None => {
+                Err("effect_kind is unset (no effect is pending or recorded)".to_string())
+            }
+        },
+        Operand::EffectOutcome => match ctx.effect {
+            Some(crate::effect::EffectStatus::Recorded(_, outcome_digest, _)) => {
+                Ok(Value::String(outcome_digest.clone()))
+            }
+            Some(crate::effect::EffectStatus::Pending(_)) => Err(
+                "effect_outcome is unset (pending effect has not been recorded yet)".to_string(),
+            ),
+            Some(crate::effect::EffectStatus::None) | None => {
+                Err("effect_outcome is unset (no effect outcome has been recorded)".to_string())
+            }
+        },
         Operand::Literal(v) => Ok(v.clone()),
         Operand::Arith { base, add, amount } => {
             int_value(checked_add_sub(eval_int(base, ctx)?, *add, *amount)?)
@@ -507,6 +567,9 @@ fn format_operand(op: &Operand) -> String {
         Operand::Fact(name) => name.clone(),
         Operand::Arg(name) => format!("${name}"),
         Operand::State => "state".to_string(),
+        Operand::EffectStatus => "effect_status".to_string(),
+        Operand::EffectKind => "effect_kind".to_string(),
+        Operand::EffectOutcome => "effect_outcome".to_string(),
         Operand::Literal(value) => format_literal(value),
         Operand::Arith { base, add, amount } => {
             let sign = if *add { "+" } else { "-" };
@@ -893,6 +956,9 @@ fn cmp_op_from_str(op: &str) -> Result<CmpOp, String> {
 fn operand_from(tok: Tok) -> Result<Operand, String> {
     match tok {
         Tok::Ident(name) if name == "state" => Ok(Operand::State),
+        Tok::Ident(name) if name == "effect_status" => Ok(Operand::EffectStatus),
+        Tok::Ident(name) if name == "effect_kind" => Ok(Operand::EffectKind),
+        Tok::Ident(name) if name == "effect_outcome" => Ok(Operand::EffectOutcome),
         Tok::Ident(name) => Ok(Operand::Fact(name)),
         Tok::Dollar(name) => Ok(Operand::Arg(name)),
         Tok::Str(s) => Ok(Operand::Literal(Value::String(s))),

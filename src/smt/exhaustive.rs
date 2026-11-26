@@ -489,7 +489,12 @@ fn walk_operand_ints(op: &Operand, out: &mut BTreeSet<i64>) {
             walk_operand_ints(left, out);
             walk_operand_ints(right, out);
         }
-        Operand::Fact(_) | Operand::Arg(_) | Operand::State => {}
+        Operand::Fact(_)
+        | Operand::Arg(_)
+        | Operand::State
+        | Operand::EffectStatus
+        | Operand::EffectKind
+        | Operand::EffectOutcome => {}
     }
 }
 

@@ -281,3 +281,48 @@ def test_python_recipe_runs_against_ik_and_a_fake_service(ik_bin: Path, tmp_path
     assert shown.effect.intent is not None
     assert shown.effect.intent.generation == 1
     assert shown.effect.intent.effect_id == "publish-1"
+
+
+def test_run_effect_helper_plans_executes_and_refuses_duplicate_plan(ik_bin: Path, store: Path) -> None:
+    kernel = Kernel(store, binary=str(ik_bin))
+    probe = kernel.machine(EFFECT)
+    created = probe.create("fx-run-1")
+    seen_keys: list[str] = []
+
+    def execute(intent):
+        seen_keys.append(intent.idempotency_key)
+        return ("succeeded", {"charge": "ok"})
+
+    res = created.run_effect(
+        "plan",
+        {"effect_id": "e-run-1", "payload_digest": "p-run-1", "idempotency_key": "k-run-1"},
+        executor=execute,
+    )
+    assert seen_keys == ["k-run-1"]
+    assert res.outcome_digest == "succeeded"
+    assert res.result == {"charge": "ok"}
+    assert isinstance(res.recorded, Aggregate)
+    assert res.recorded.effect.status == "recorded"
+    assert res.recorded.effect.outcome_digest == "succeeded"
+
+    # Replaying the same plan_operation_id must refuse instead of re-running executor.
+    c2 = probe.create("fx-run-2")
+    c2.execute(
+        {"name": "plan", "args": {"effect_id": "e-run-2", "payload_digest": "p-run-2", "idempotency_key": "k-run-2"}},
+        operation_id="dup-plan-op",
+    )
+    ran = False
+
+    def should_not_run(_intent):
+        nonlocal ran
+        ran = True
+        return "succeeded"
+
+    with pytest.raises(EffectCompletionError):
+        c2.run_effect(
+            "plan",
+            {"effect_id": "e-run-2", "payload_digest": "p-run-2", "idempotency_key": "k-run-2"},
+            executor=should_not_run,
+            plan_operation_id="dup-plan-op",
+        )
+    assert ran is False

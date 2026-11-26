@@ -87,6 +87,7 @@ fn eval_id(id: &str) -> Result<bool, String> {
             facts: &facts,
             args: &args,
             state: "idle",
+            effect: None,
         },
     )
 }
@@ -128,6 +129,7 @@ fn star_set_counts_scalars_not_bytes() {
                 facts: &facts,
                 args: &args,
                 state: "idle",
+                effect: None,
             },
         )
         .expect("eval")
@@ -177,6 +179,7 @@ fn unset_or_non_string_is_eval_error() {
             facts: &facts,
             args: &args,
             state: "idle",
+            effect: None,
         },
     )
     .expect_err("unset");
@@ -189,6 +192,7 @@ fn unset_or_non_string_is_eval_error() {
             facts: &ints,
             args: &args,
             state: "idle",
+            effect: None,
         },
     )
     .expect_err("int");
@@ -490,6 +494,7 @@ fn hegel_eval_path_matches_runtime() {
             facts: &facts,
             args: &args,
             state: "idle",
+            effect: None,
         };
         let hegel = expr::eval(&expr, &ctx).expect("hegel eval");
         assert_eq!(hegel, want, "{id}");

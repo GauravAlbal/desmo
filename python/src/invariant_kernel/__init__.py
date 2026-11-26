@@ -1,6 +1,6 @@
 """Typed Python adapter over the authoritative `ik` binary."""
 
-from .client import Aggregate, Kernel, Machine, RawKernelClient
+from .client import Aggregate, EffectRunResult, Kernel, Machine, RawKernelClient
 from .invocation import Invocation
 from .errors import (
     FAILURE_CLASSES,
@@ -55,6 +55,7 @@ __all__ = [
     "EffectCompletionError",
     "EffectConflictError",
     "EffectIntent",
+    "EffectRunResult",
     "EffectError",
     "EffectMismatchError",
     "EffectStaleError",

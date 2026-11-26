@@ -349,6 +349,14 @@ function outcomeWire(intent: EffectIntent, outcomeDigest: string): Record<string
   };
 }
 
+export interface EffectRunResult<T = undefined> {
+  planned: Aggregate;
+  recorded: Aggregate | HistoricalResult;
+  intent: EffectIntent;
+  outcomeDigest: string;
+  result?: T;
+}
+
 export class Aggregate {
   constructor(
     readonly machine: Machine,
@@ -508,6 +516,51 @@ export class Aggregate {
     return this.dispatch("record", options.operationId, {
       effect: outcomeWire(pending, outcomeDigest),
     });
+  }
+
+  /**
+   * Plan an external effect, execute `executor(intent)` once with the kernel-bound
+   * `EffectIntent` (including `idempotency_key`), and record the returned outcome digest.
+   *
+   * Picky and explicit: refuses if the planning command replays as `HistoricalResult`
+   * (so callers do not blindly re-run side effects on duplicate plans) or does not plan
+   * an effect. Never silently retries transport failures.
+   */
+  async runEffect<T = undefined>(
+    commandName: string,
+    args: Record<string, Json>,
+    executor: (
+      intent: EffectIntent,
+    ) => Promise<string | { outcomeDigest: string; result?: T }> | string | { outcomeDigest: string; result?: T },
+    options: { planOperationId?: string; recordOperationId?: string } = {},
+  ): Promise<EffectRunResult<T>> {
+    const planned = await this.execute(
+      { name: commandName, args },
+      { operationId: options.planOperationId },
+    );
+    if (planned instanceof HistoricalResult) {
+      const err = new EffectCompletionError(
+        `planning command \`${commandName}\` replayed as HistoricalResult; inspect show() and reconcile before re-running external side effects`,
+      );
+      err.operationId = options.planOperationId;
+      throw err;
+    }
+    if (planned.effect.status !== "pending" || !planned.effect.intent) {
+      const err = new EffectCompletionError(
+        `command \`${commandName}\` committed without planning a pending effect intent`,
+      );
+      err.operationId = options.planOperationId;
+      throw err;
+    }
+    const intent = planned.effect.intent;
+    const executed = await executor(intent);
+    const outcomeDigest = typeof executed === "string" ? executed : executed.outcomeDigest;
+    const result = typeof executed === "string" ? undefined : executed.result;
+    const recorded = await planned.recordEffectOutcome(outcomeDigest, {
+      operationId: options.recordOperationId,
+      intent,
+    });
+    return { planned, recorded, intent, outcomeDigest, result };
   }
 
   private async dispatch(
