@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build this-host Desmo artifacts. Does not publish.
-# Usage: scripts/release [v0.6.0]. Requires a clean committed source tree.
+# Usage: scripts/release [v0.7.0]. Requires a clean committed source tree.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 TAG=${1:-}

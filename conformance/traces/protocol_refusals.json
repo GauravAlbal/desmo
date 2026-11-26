@@ -2,9 +2,9 @@
   "machine": "verification_attempt",
   "steps": [
     {"raw": "this is not json"},
-    {"protocol": {"major": 2, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s1", "op": "create", "aggregate_id": "agg-1"},
+    {"protocol": {"major": 2, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s1", "op": "create", "aggregate_id": "agg-1"},
     {"protocol": {"major": 1, "minor": 0}, "runtime_version": "9.9.9", "request_id": "s2", "op": "create", "aggregate_id": "agg-1"},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s3", "op": "create", "aggregate_id": "agg-1", "bogus_field": true},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.6.0", "request_id": "s4", "op": "frobnicate", "aggregate_id": "agg-1"}
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s3", "op": "create", "aggregate_id": "agg-1", "bogus_field": true},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s4", "op": "frobnicate", "aggregate_id": "agg-1"}
   ]
 }

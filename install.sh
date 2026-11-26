@@ -4,11 +4,11 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh
-#   DESMO_VERSION=v0.6.0 DESMO_INSTALL_DIR=/usr/local/bin sh install.sh
+#   DESMO_VERSION=v0.7.0 DESMO_INSTALL_DIR=/usr/local/bin sh install.sh
 set -eu
 
 REPO="${DESMO_REPO:-GauravAlbal/desmo}"
-VERSION="${DESMO_VERSION:-v0.6.0}"
+VERSION="${DESMO_VERSION:-v0.7.0}"
 INSTALL_DIR="${DESMO_INSTALL_DIR:-$HOME/.local/bin}"
 
 OS="$(uname -s)"

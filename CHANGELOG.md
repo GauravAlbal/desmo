@@ -9,6 +9,30 @@ always a SemVer major. See [docs/release-compatibility.md](docs/release-compatib
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-26
+
+### Added
+
+- **Interactive CLI quickstarts & demos (`ik init`, `ik demo`):** `ik init <name> --lang ts|py|go` scaffolds idempotent runnable starter projects (`--lang ts`, `--lang py`, `--lang go`); `ik demo` runs standalone Rust lifecycle & stale-worker demos with zero host runtime dependencies.
+- **`ik check --auto-seed` & `--summary`:** Automatically synthesize seed inputs when no `.cases.json` corpus is supplied and emit concise verdict summaries alongside structural dead-end/reachability diagnostics and invariant falsification.
+- **Indexed aggregate queries (`ik list` & SDK `list`):** Added read-only `ik list` (`ik.list.v1`) and `Machine.list` / `Kernel.list` across TypeScript, Python, and Go, backed by composite SQLite secondary indexes (`idx_aggregates_machine_id`, `idx_aggregates_machine_terminal_id`).
+- **Brownfield anti-bypass CI guard & whole-store integrity (`ik guard`, `ik store verify`):** `ik guard init --machine <file.ik.toml> --table <table>` + `ik guard check` scans TypeScript, Python, and Go repos (multi-line & case-insensitive) for direct status-table writes; `ik store verify` runs `PRAGMA quick_check(1)`, hash-chain, projection parity, and optional `--machine` semantic replay checks read-only.
+- **Effect-outcome guards & safe external effect runners:** Command guards can inspect `effect_status`, `effect_kind`, and `effect_outcome`; TypeScript `runEffect`, Python `run_effect`, and Go `RunEffect` execute external side effects with kernel-bound `idempotency_key` attribution.
+- **Authoring & benchmarks:** Added native TOML bool/int literals, simultaneous checked `i64` arithmetic in `then`, editor JSON Schema ([`schema/ik.schema.json`](schema/ik.schema.json)), and `scripts/bench.py` reproducible local commit/query benchmark.
+- **Assurance & mutation suites:** Expanded CI-gated Kani bounded proofs to 5 harnesses (including checked `i64` arithmetic, ordered-guard non-fallthrough, and 3-region terminal/joint atomicity) and added `validation/sdk_mutants/` killing 6/6 critical TypeScript, Python, and Go transport walls.
+
+### Changed
+
+- **SQLite durability default (`PRAGMA synchronous=FULL`):** Hardened `Store` default to `PRAGMA synchronous=FULL` (`IK_SQLITE_SYNCHRONOUS=normal` opt-in).
+- **Starter & Python session defaults:** `ik init` starters are idempotent across repeat runs; Python quickstarts and `README.md` use `Kernel(..., session=True)` context management.
+- **Explicit non-goals & verification boundaries:** Added explicit intentional non-goals sections to [`README.md`](README.md) and [`docs/assurance.md`](docs/assurance.md) and removed overclaiming wording around capability tokens.
+- **`Store::create` parent directory handling:** Auto-creates missing parent directories (e.g. `.state/`) on `Store::create` and classifies parent/open failures as `IK_INTERNAL` (`store.create_parent` / `store.open_failed`), keeping `Store::open` strictly non-creating (`IK_STORE_NOT_FOUND`).
+
+### Fixed
+
+- **Declarative & formal consistency (`policy = "once"`, `[invariants]`, SMT):** Enforced `policy = "once"` facts at runtime (and rejected `once` facts declared with `initial`); added static type-checking, `$arg` rejection, and unknown `state == '...'` validation in `[invariants]`; validated Schema-1 genesis invariants in `ik check`; enforced runtime type-checked `==`/`!=` with left-to-right error-preserving partial evaluation; aligned the SMT encoder (`policy = "once"` -> `Unsupported`, mixed-sort `==`/`!=` -> error); and rejected combining top-level `then` with `outcomes` or `then` without `to`.
+- **Checker & codegen fixes:** Fixed pending-effect state exploration in `ik check` and fixed Python `ik codegen` method body indentation.
+
 ## [0.6.0] - 2026-11-25
 
 ### Added

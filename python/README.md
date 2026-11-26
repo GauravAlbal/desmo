@@ -29,7 +29,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 IK_BINARY=target/debug/ik IK_RUN_PERFORMANCE=1 
 `Kernel(binary=...)` or `IK_BINARY` or `PATH` locates `ik`. Wheels do not
 bundle platform binaries.
 
-The `0.6.0` client uses protocol `1.0` and requires the `0.6.0` runtime and
+The `0.7.0` client uses protocol `1.0` and requires the `0.7.0` runtime and
 worker exactly; a shared protocol major does not permit mixing runtime versions.
 Install `ik` with the one-line installer (`curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh`) or from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases).
 
