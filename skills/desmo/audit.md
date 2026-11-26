@@ -4,6 +4,8 @@ Use this mode when the user wants to find hidden state machines, review a flow f
 
 This mode runs strictly inside `investigate_only` (`read` + `scratch` classes in `routing.json` beside this file): **never edit application source and never touch a production store or database.**
 
+> If the target directory is empty or has no application code yet, run `ik demo` to demonstrate illegal-transition refusal and stale-worker fencing, then offer `ik init order --lang ts` (`--lang py` or `--lang go`) to scaffold a runnable starter project.
+
 ## 1. Scan for implicit state machines
 
 Search the repository (or the specific flow the user named) for lifecycle fields that behave as state machines without an authoritative boundary:
@@ -35,7 +37,7 @@ schema_version = 1
 machine_id = "order"
 machine_version = 1
 
-[facts] # optional if no facts; types: "string" | "int" | "bool"; policy: "replace" | "counter" | "once"
+[facts] # optional if no facts; types: "string" | "int" | "bool"; policy: "replace" | "counter" | "once" (omit initial on "once")
 payment_ref = { type = "string", policy = "replace" }
 retries = { type = "int", policy = "counter", initial = 0 }
 cleared = { type = "bool", policy = "replace", initial = false }
@@ -47,12 +49,18 @@ returned = {}
 refunded = { terminal = true }
 cancelled = { terminal = true }
 
+[invariants] # boolean expressions over `state` and facts (no $args)
+paid_requires_ref = "state != 'paid' || payment_ref != ''"
+
 [commands.pay]
 from = ["cart"]
 to = "paid"
 args = { payment_ref = "string" }
 when = "text_in($payment_ref, 'A-Za-z0-9._-', 1, 64)" # $prefix for args, bare name for facts
 then = { payment_ref = "$payment_ref", cleared = true } # native bool/int & checked i64 math (e.g. "retries + 1") supported
+# optional external side effect before outcome recording:
+# [commands.pay.effect]
+# kind = "charge_card"
 
 [commands.refund]
 from = ["returned"]
@@ -69,9 +77,9 @@ ik laws <machine.ik.toml>
 ik simulate <machine.ik.toml> --out <simulator.html>
 ```
 
-*(`ik check` with `--auto-seed` requires zero hand-written corpus and catches structural traps plus invariant violations right away; use `ik corpus init` + `--corpus` when testing custom business witness cases.)*
+*(`ik check` with `--auto-seed` requires zero hand-written corpus and catches structural traps plus invariant violations right away; use `ik corpus init` + `--corpus` when testing custom business witness cases. Pass `--open` to `ik simulate` if running locally with a desktop browser.)*
 
-If `ik` is not on `PATH` yet, tell the user it can be installed in one command from the official release (`curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh`) before running the workbench and generating the interactive simulator.
+If `ik` is not on `PATH` (or `$HOME/.local/bin/ik`) yet: if the user asked to install or onboard Desmo, install via `curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh` and prepend `$HOME/.local/bin` to `PATH`; otherwise tell them the one-line installer before running the workbench and generating the interactive simulator.
 
 ## 4. Check existing writers against four concrete bug classes
 
