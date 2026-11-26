@@ -122,6 +122,41 @@ func runCheck(ctx context.Context, binary, machine string, prior, corpus, baseli
 	return stdout.String(), true, nil
 }
 
+func runEvents(ctx context.Context, binary, store string, since uint64, aggregateID string, limit uint64) (*EventFeed, error) {
+	args := []string{"events", store, "--since", fmt.Sprintf("%d", since)}
+	if aggregateID != "" {
+		args = append(args, "--aggregate", aggregateID)
+	}
+	if limit > 0 {
+		args = append(args, "--limit", fmt.Sprintf("%d", limit))
+	}
+	args = append(args, "--json")
+	cmd := exec.CommandContext(ctx, binary, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		msg := strings.TrimSpace(stderr.String())
+		if msg == "" {
+			msg = strings.TrimSpace(stdout.String())
+		}
+		if msg == "" {
+			msg = err.Error()
+		}
+		return nil, &TransportError{Op: "events", Message: msg, Err: err, Unsent: neverStarted(err)}
+	}
+	dec := json.NewDecoder(bytes.NewReader(stdout.Bytes()))
+	dec.UseNumber()
+	var feed EventFeed
+	if err := dec.Decode(&feed); err != nil {
+		return nil, &TransportError{Op: "events", Message: "ik events returned invalid JSON", Err: err}
+	}
+	if feed.Schema != "ik.events.v1" {
+		return nil, &TransportError{Op: "events", Message: fmt.Sprintf("ik events returned unexpected schema %q", feed.Schema)}
+	}
+	return &feed, nil
+}
+
 func invoke(ctx context.Context, binary, store, machine string, request map[string]any) (map[string]any, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {

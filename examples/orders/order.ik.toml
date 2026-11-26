@@ -1,3 +1,4 @@
+#:schema https://raw.githubusercontent.com/GauravAlbal/desmo/main/schema/ik.schema.json
 # Order lifecycle: cart -> paid -> delivered -> returned -> refunded, plus cancel from cart/paid.
 # Cancelled and refunded are terminal.
 schema_version = 1

@@ -208,3 +208,50 @@ func asBool(v any) bool {
 	b, _ := v.(bool)
 	return b
 }
+
+// EventsOptions configures a read-only `Kernel.Events` query.
+type EventsOptions struct {
+	Since       uint64
+	AggregateID string
+	Limit       uint64
+}
+
+// EventProjection is the aggregate's current materialized state paired with each event cursor row.
+type EventProjection struct {
+	State      map[string]any `json:"state"`
+	Sequence   uint64         `json:"sequence"`
+	Generation uint64         `json:"generation"`
+	Terminal   bool           `json:"terminal"`
+}
+
+// EventCursorRow is one ordered entry returned by `Kernel.Events`.
+type EventCursorRow struct {
+	Cursor               uint64          `json:"cursor"`
+	AggregateID          string          `json:"aggregate_id"`
+	Sequence             uint64          `json:"sequence"`
+	Generation           uint64          `json:"generation"`
+	MachineID            string          `json:"machine_id"`
+	MachineVersion       uint64          `json:"machine_version"`
+	MachineSpecHash      string          `json:"machine_spec_hash"`
+	EventKind            string          `json:"event_kind"`
+	EventType            string          `json:"event_type"`
+	EventVersion         uint64          `json:"event_version"`
+	Command              any             `json:"command"`
+	StateDigest          string          `json:"state_digest"`
+	Terminal             bool            `json:"terminal"`
+	EffectDelta          any             `json:"effect_delta"`
+	EventHash            string          `json:"event_hash"`
+	PrevEventHash        string          `json:"prev_event_hash"`
+	IsLatestForAggregate bool            `json:"is_latest_for_aggregate"`
+	CurrentProjection    EventProjection `json:"current_projection"`
+}
+
+// EventFeed is the paginated response from `ik events <store> --json`.
+type EventFeed struct {
+	Schema     string           `json:"schema"`
+	Store      string           `json:"store"`
+	Since      uint64           `json:"since"`
+	NextCursor uint64           `json:"next_cursor"`
+	HasMore    bool             `json:"has_more"`
+	Events     []EventCursorRow `json:"events"`
+}

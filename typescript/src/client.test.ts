@@ -100,3 +100,32 @@ test("text_in identifier guard commits a valid id and refuses an empty id", asyn
   const shown = await items.show("item-empty");
   assert.equal(shown.namedState(), "idle");
 });
+
+test("kernel.events streams ordered cursor pages and latest projections", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "desmo-ts-events-"));
+  const ordersPath = fileURLToPath(new URL("../../examples/orders/order.ik.toml", import.meta.url));
+  const kernel = new Kernel(join(dir, "store.db"));
+  try {
+    const orders = await kernel.machine(ordersPath);
+    const o1 = await orders.create("ord-1");
+    await o1.command("pay", { payment_ref: "ch_1" });
+    await orders.create("ord-2");
+
+    const page1 = await kernel.events({ since: 0, limit: 2 });
+    assert.equal(page1.schema, "ik.events.v1");
+    assert.equal(page1.hasMore, true);
+    assert.equal(page1.events.length, 2);
+    assert.equal(page1.events[0].isLatestForAggregate, false);
+    assert.equal(page1.events[1].eventType, "pay");
+    assert.equal(page1.events[1].isLatestForAggregate, true);
+    assert.equal((page1.events[1].currentProjection.state as Record<string, unknown>).state, "paid");
+
+    const page2 = await kernel.events({ since: page1.nextCursor });
+    assert.equal(page2.hasMore, false);
+    assert.equal(page2.events.length, 1);
+    assert.equal(page2.events[0].aggregateId, "ord-2");
+    assert.equal(page2.events[0].isLatestForAggregate, true);
+  } finally {
+    kernel.close();
+  }
+});

@@ -44,7 +44,7 @@ function usageFor(invocation: Invocation): string {
     return chunks.join("\n");
   }
   const bin = ikBinary();
-  const chunks = [usageText(bin, ["--help"])];
+  const chunks = [usageText(bin, ["--help"]), usageText(bin, ["--help-all"])];
   if (invocation.words[0]) {
     chunks.push(usageText(bin, [invocation.words[0], "--help"]));
     chunks.push(usageText(bin, [invocation.words[0]]));

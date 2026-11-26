@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Mapping
 
 
@@ -208,3 +209,51 @@ class OperationLookup:
 
     def __repr__(self) -> str:
         return f"OperationLookup({self.outcome!r})"
+
+
+@dataclass(frozen=True)
+class EventProjection:
+    """Aggregate's latest materialized projection snapshot paired with an event cursor row."""
+
+    state: Any
+    sequence: int
+    generation: int
+    terminal: bool
+
+
+@dataclass(frozen=True)
+class EventCursorRow:
+    """One ordered journal event plus the aggregate's latest projection snapshot."""
+
+    cursor: int
+    aggregate_id: str
+    sequence: int
+    generation: int
+    machine_id: str
+    machine_version: int
+    machine_spec_hash: str
+    event_kind: str
+    event_type: str
+    event_version: int
+    command: Any
+    state_digest: str
+    terminal: bool
+    effect_delta: Any
+    event_hash: str
+    prev_event_hash: str
+    is_latest_for_aggregate: bool
+    current_projection: EventProjection
+    raw: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class EventFeed:
+    """Paginated read-only feed returned by ``Kernel.events``."""
+
+    schema: str
+    store: str
+    since: int
+    next_cursor: int
+    has_more: bool
+    events: list[EventCursorRow]
+    raw: dict[str, Any]

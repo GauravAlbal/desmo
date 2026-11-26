@@ -20,6 +20,9 @@ from .types import (
     CheckResult,
     Effect,
     EffectIntent,
+    EventCursorRow,
+    EventFeed,
+    EventProjection,
     HistoricalResult,
     MachineIdentity,
     OperationLookup,
@@ -228,6 +231,63 @@ class Kernel:
 
     def verify(self, machine: "Machine", aggregate_id: Optional[str] = None) -> dict[str, Any]:
         return self._call("verify", machine, aggregate_id=aggregate_id)
+
+    def events(
+        self,
+        *,
+        since: int = 0,
+        aggregate_id: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> EventFeed:
+        """Stream committed events strictly after ``since`` paired with latest aggregate state."""
+        raw = transport.run_events(
+            self.binary,
+            self.store,
+            since=since,
+            aggregate_id=aggregate_id,
+            limit=limit,
+            timeout=self.timeout,
+        )
+        rows: list[EventCursorRow] = []
+        for item in raw["events"]:
+            proj = item["current_projection"]
+            rows.append(
+                EventCursorRow(
+                    cursor=int(item["cursor"]),
+                    aggregate_id=str(item["aggregate_id"]),
+                    sequence=int(item["sequence"]),
+                    generation=int(item["generation"]),
+                    machine_id=str(item["machine_id"]),
+                    machine_version=int(item["machine_version"]),
+                    machine_spec_hash=str(item["machine_spec_hash"]),
+                    event_kind=str(item["event_kind"]),
+                    event_type=str(item["event_type"]),
+                    event_version=int(item["event_version"]),
+                    command=item["command"],
+                    state_digest=str(item["state_digest"]),
+                    terminal=bool(item["terminal"]),
+                    effect_delta=item["effect_delta"],
+                    event_hash=str(item["event_hash"]),
+                    prev_event_hash=str(item["prev_event_hash"]),
+                    is_latest_for_aggregate=bool(item["is_latest_for_aggregate"]),
+                    current_projection=EventProjection(
+                        state=proj["state"],
+                        sequence=int(proj["sequence"]),
+                        generation=int(proj["generation"]),
+                        terminal=bool(proj["terminal"]),
+                    ),
+                    raw=dict(item),
+                )
+            )
+        return EventFeed(
+            schema=str(raw["schema"]),
+            store=str(raw["store"]),
+            since=int(raw["since"]),
+            next_cursor=int(raw["next_cursor"]),
+            has_more=bool(raw["has_more"]),
+            events=rows,
+            raw=dict(raw),
+        )
 
     def raw(self) -> "RawKernelClient":
         return RawKernelClient(self)

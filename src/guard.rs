@@ -8,11 +8,12 @@
 use crate::canonical::canonical_json;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const USAGE: &str =
-    "usage: ik guard init [--out <path>] [--force] | check [--config <path>] [--dir <path>] [--json]";
+    "usage: ik guard init [--machine <m.ik.toml>] [--table <name>] [--out <path>] [--force] | check [--config <path>] [--dir <path>] [--json]";
 const SCHEMA: &str = "ik.guard.v1";
 const DEFAULT_CONFIG: &str = ".ik/guard.toml";
 
@@ -23,16 +24,25 @@ guard_version = 1
 [[rules]]
 id = "orders-status-authority"
 description = "Direct order status writes must go through the Desmo projection module"
+case_insensitive = true
 forbidden_patterns = [
   "UPDATE orders SET *status*",
   ".status = \"paid\"",
   ".status = \"refunded\"",
   ".status = 'paid'",
-  ".status = 'refunded'"
+  ".status = 'refunded'",
+  "status: \"paid\"",
+  "status: 'paid'",
+  "status: \"refunded\"",
+  "status: 'refunded'"
 ]
 include_globs = ["*.ts", "*.tsx", "*.js", "*.mjs", "*.py", "*.go", "*.sql"]
 allow_paths = ["src/projections/*", "tests/*"]
 "#;
+
+fn default_true() -> bool {
+    true
+}
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -52,6 +62,8 @@ pub struct GuardRule {
     pub include_globs: Vec<String>,
     #[serde(default)]
     pub allow_paths: Vec<String>,
+    #[serde(default = "default_true")]
+    pub case_insensitive: bool,
 }
 
 fn default_include_globs() -> Vec<String> {
@@ -159,17 +171,84 @@ pub fn check_dir(root: &Path, cfg: &GuardConfig, config_path: &Path) -> Result<G
             continue;
         };
         files_scanned += 1;
-        for (idx, line) in content.lines().enumerate() {
+        let ext = abs.extension().and_then(|e| e.to_str()).unwrap_or("");
+        let stripped = strip_comments_preserve_lines(&content, ext);
+        let raw_lines: Vec<&str> = content.lines().collect();
+        let (collapsed_raw, line_map) = normalize_whitespace_with_lines(&stripped);
+        let collapsed_chars: Vec<char> = collapsed_raw.chars().collect();
+        let collapsed_lower: Vec<char> = collapsed_raw.to_lowercase().chars().collect();
+
+        let mut seen_hits: HashSet<(String, usize, String)> = HashSet::new();
+
+        for (idx, line) in stripped.lines().enumerate() {
+            let line_no = idx + 1;
+            let raw_snippet = raw_lines.get(idx).copied().unwrap_or(line);
+            let line_chars: Vec<char> = line.chars().collect();
+            let line_lower: Vec<char> = line.to_lowercase().chars().collect();
             for rule in &matching_rules {
+                let txt = if rule.case_insensitive {
+                    &line_lower
+                } else {
+                    &line_chars
+                };
                 for pat in &rule.forbidden_patterns {
-                    if wildcard_match(pat, line, true) {
+                    let pat_chars: Vec<char> = if rule.case_insensitive {
+                        pat.to_lowercase().chars().collect()
+                    } else {
+                        pat.chars().collect()
+                    };
+                    if find_wildcard_start(&pat_chars, txt).is_some()
+                        && seen_hits.insert((rule.id.clone(), line_no, pat.clone()))
+                    {
                         violations.push(GuardViolation {
                             rule_id: rule.id.clone(),
                             file: rel.clone(),
-                            line: idx + 1,
+                            line: line_no,
                             pattern: pat.clone(),
-                            snippet: trim_snippet(line),
+                            snippet: trim_snippet(raw_snippet),
                         });
+                    }
+                }
+            }
+        }
+
+        // Also match patterns across formatted multi-line SQL / ORM calls using comment-stripped,
+        // whitespace-collapsed source so wrapped statements cannot evade single-line scanning.
+        if !collapsed_chars.is_empty() {
+            for rule in &matching_rules {
+                let txt = if rule.case_insensitive {
+                    &collapsed_lower
+                } else {
+                    &collapsed_chars
+                };
+                for pat in &rule.forbidden_patterns {
+                    let pat_chars: Vec<char> = if rule.case_insensitive {
+                        pat.to_lowercase().chars().collect()
+                    } else {
+                        pat.chars().collect()
+                    };
+                    let mut search_from = 0usize;
+                    while search_from <= txt.len() {
+                        let Some(rel_idx) = find_wildcard_start(&pat_chars, &txt[search_from..])
+                        else {
+                            break;
+                        };
+                        let abs_idx = search_from + rel_idx;
+                        let line_no = *line_map.get(abs_idx).unwrap_or(&1);
+                        let raw_snippet = raw_lines
+                            .get(line_no.saturating_sub(1))
+                            .copied()
+                            .unwrap_or("");
+                        if seen_hits.insert((rule.id.clone(), line_no, pat.clone())) {
+                            violations.push(GuardViolation {
+                                rule_id: rule.id.clone(),
+                                file: rel.clone(),
+                                line: line_no,
+                                pattern: pat.clone(),
+                                snippet: trim_snippet(raw_snippet),
+                            });
+                        }
+                        search_from = abs_idx + 1;
                     }
                 }
             }
@@ -279,26 +358,146 @@ fn match_path_glob(glob: &str, path: &str) -> bool {
     }
 }
 
-/// Pure-Rust wildcard matcher supporting `*` (and `?` when not line-pattern matching).
-/// If `line_mode` is true, matches substring anywhere on the line and `*` crosses any char;
-/// if `line_mode` is false, matches full string with `*` stopping at `/`.
+/// Strip comments outside string/template literals while preserving line breaks and string contents.
+fn strip_comments_preserve_lines(content: &str, ext: &str) -> String {
+    let is_py = ext.eq_ignore_ascii_case("py");
+    let is_sql = ext.eq_ignore_ascii_case("sql");
+    let has_c_comments = matches!(
+        ext.to_ascii_lowercase().as_str(),
+        "ts" | "tsx" | "js" | "mjs" | "go" | "sql"
+    );
+
+    let chars: Vec<char> = content.chars().collect();
+    let mut out = String::with_capacity(content.len());
+    let mut i = 0usize;
+    let mut quote: Option<char> = None;
+    let mut in_line_comment = false;
+    let mut in_block_comment = false;
+
+    while i < chars.len() {
+        let c = chars[i];
+        if in_line_comment {
+            if c == '\n' {
+                in_line_comment = false;
+                out.push('\n');
+            } else {
+                out.push(' ');
+            }
+            i += 1;
+            continue;
+        }
+        if in_block_comment {
+            if c == '*' && chars.get(i + 1) == Some(&'/') {
+                in_block_comment = false;
+                out.push_str("  ");
+                i += 2;
+            } else if c == '\n' {
+                out.push('\n');
+                i += 1;
+            } else {
+                out.push(' ');
+                i += 1;
+            }
+            continue;
+        }
+        if let Some(q) = quote {
+            out.push(c);
+            if !is_sql && c == '\\' && i + 1 < chars.len() {
+                out.push(chars[i + 1]);
+                i += 2;
+                continue;
+            }
+            if c == q {
+                quote = None;
+            }
+            i += 1;
+            continue;
+        }
+
+        if is_py && c == '#' {
+            in_line_comment = true;
+            out.push(' ');
+            i += 1;
+            continue;
+        }
+        if is_sql && c == '-' && chars.get(i + 1) == Some(&'-') {
+            in_line_comment = true;
+            out.push_str("  ");
+            i += 2;
+            continue;
+        }
+        if !is_py && !is_sql && c == '/' && chars.get(i + 1) == Some(&'/') {
+            in_line_comment = true;
+            out.push_str("  ");
+            i += 2;
+            continue;
+        }
+        if has_c_comments && c == '/' && chars.get(i + 1) == Some(&'*') {
+            in_block_comment = true;
+            out.push_str("  ");
+            i += 2;
+            continue;
+        }
+        if c == '\'' || c == '"' || (!is_py && !is_sql && c == '`') {
+            quote = Some(c);
+        }
+        out.push(c);
+        i += 1;
+    }
+    out
+}
+
+fn normalize_whitespace_with_lines(text: &str) -> (String, Vec<usize>) {
+    let mut collapsed = String::with_capacity(text.len());
+    let mut line_map = Vec::with_capacity(text.len());
+    let mut line_no = 1usize;
+    let mut prev_space = true;
+    for ch in text.chars() {
+        if ch == '\n' {
+            if !prev_space {
+                collapsed.push(' ');
+                line_map.push(line_no);
+                prev_space = true;
+            }
+            line_no += 1;
+        } else if ch.is_whitespace() {
+            if !prev_space {
+                collapsed.push(' ');
+                line_map.push(line_no);
+                prev_space = true;
+            }
+        } else {
+            collapsed.push(ch);
+            line_map.push(line_no);
+            prev_space = false;
+        }
+    }
+    (collapsed, line_map)
+}
+
 fn wildcard_match(pattern: &str, text: &str, line_mode: bool) -> bool {
     let pat: Vec<char> = pattern.chars().collect();
     let txt: Vec<char> = text.chars().collect();
     if line_mode {
-        // Line-mode checks if `pat` matches any substring in `txt` when `*` crosses all chars.
-        return line_contains_wildcard(&pat, &txt);
+        return find_wildcard_start(&pat, &txt).is_some();
     }
     match_full_path_glob(&pat, &txt)
 }
 
-fn line_contains_wildcard(pat: &[char], txt: &[char]) -> bool {
+fn find_wildcard_start(pat: &[char], txt: &[char]) -> Option<usize> {
+    if pat.is_empty() {
+        return Some(0);
+    }
+    let first_non_star = pat[0] != '*';
     for start in 0..=txt.len() {
+        if first_non_star && txt.get(start) != Some(&pat[0]) {
+            continue;
+        }
         if match_anchored_crossing(pat, &txt[start..]) {
-            return true;
+            return Some(start);
         }
     }
-    false
+    None
 }
 
 fn match_anchored_crossing(pat: &[char], txt: &[char]) -> bool {
@@ -377,8 +576,72 @@ pub fn run(args: &[String]) -> i32 {
     }
 }
 
+fn guard_toml_for_machine(machine_path: &Path, table_override: Option<&str>) -> Result<String, String> {
+    let raw = std::fs::read_to_string(machine_path)
+        .map_err(|e| format!("read {}: {e}", machine_path.display()))?;
+    let source = crate::declarative::region::parse_source_with_limits(
+        &raw,
+        crate::declarative::region::RegionLimits::default(),
+    )
+    .map_err(|e| format!("parse {}: {}", machine_path.display(), e.join("; ")))?;
+    let compiled = crate::declarative::compile::compile(source.definition)
+        .map_err(|e| format!("compile {}: {}", machine_path.display(), e.join("; ")))?;
+    let def = compiled.definition();
+    let table = table_override
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("{}s", def.machine_id));
+
+    let mut states: Vec<String> = def
+        .states
+        .iter()
+        .filter(|(_, s)| !s.initial)
+        .map(|(k, _)| k.clone())
+        .collect();
+    if states.is_empty() {
+        states = def.states.keys().cloned().collect();
+    }
+    states.sort();
+
+    let mut patterns = vec![
+        format!("UPDATE {table} SET *status*"),
+        format!("UPDATE {table} SET *state*"),
+    ];
+    for st in &states {
+        patterns.push(format!(".status = \"{st}\""));
+        patterns.push(format!(".status = '{st}'"));
+        patterns.push(format!("status: \"{st}\""));
+        patterns.push(format!("status: '{st}'"));
+        patterns.push(format!(".Update(\"status\", \"{st}\")"));
+    }
+
+    let mut out = String::new();
+    out.push_str(&format!(
+        "# Generated by `ik guard init` from {} (machine `{}`).\n",
+        machine_path.display(),
+        def.machine_id
+    ));
+    out.push_str("# Exemptions belong in `allow_paths` here; inline ignore comments in source files are ignored.\n");
+    out.push_str("guard_version = 1\n\n[[rules]]\n");
+    out.push_str(&format!("id = \"{}-status-authority\"\n", def.machine_id));
+    out.push_str(&format!(
+        "description = \"Direct `{table}` status writes must go through the `{}` Desmo projection\"\n",
+        def.machine_id
+    ));
+    out.push_str("case_insensitive = true\nforbidden_patterns = [\n");
+    for (idx, pat) in patterns.iter().enumerate() {
+        let comma = if idx + 1 < patterns.len() { "," } else { "" };
+        out.push_str(&format!("  {}{comma}\n", serde_json::to_string(pat).unwrap()));
+    }
+    out.push_str("]\n");
+    out.push_str("include_globs = [\"*.ts\", \"*.tsx\", \"*.js\", \"*.mjs\", \"*.py\", \"*.go\", \"*.sql\"]\n");
+    out.push_str("allow_paths = [\"src/projections/*\", \"tests/*\"]\n");
+    Ok(out)
+}
+
 fn run_init(args: &[String]) -> i32 {
     let mut out = PathBuf::from(DEFAULT_CONFIG);
+    let mut machine: Option<PathBuf> = None;
+    let mut table: Option<String> = None;
     let mut force = false;
     let mut i = 0;
     while i < args.len() {
@@ -386,6 +649,22 @@ fn run_init(args: &[String]) -> i32 {
             "-h" | "--help" => {
                 println!("{USAGE}");
                 return 0;
+            }
+            "--machine" => {
+                i += 1;
+                let Some(val) = args.get(i) else {
+                    eprintln!("ik guard init: --machine requires a path\n{USAGE}");
+                    return 2;
+                };
+                machine = Some(PathBuf::from(val));
+            }
+            "--table" => {
+                i += 1;
+                let Some(val) = args.get(i) else {
+                    eprintln!("ik guard init: --table requires a name\n{USAGE}");
+                    return 2;
+                };
+                table = Some(val.clone());
             }
             "--out" => {
                 i += 1;
@@ -414,13 +693,23 @@ fn run_init(args: &[String]) -> i32 {
         );
         return 2;
     }
+    let body = match machine.as_deref() {
+        Some(path) => match guard_toml_for_machine(path, table.as_deref()) {
+            Ok(toml) => toml,
+            Err(e) => {
+                eprintln!("ik guard init: {e}");
+                return 2;
+            }
+        },
+        None => STARTER_GUARD_TOML.to_string(),
+    };
     if let Some(parent) = out.parent().filter(|p| !p.as_os_str().is_empty()) {
         if let Err(e) = std::fs::create_dir_all(parent) {
             eprintln!("ik guard init: create {}: {e}", parent.display());
             return 2;
         }
     }
-    if let Err(e) = std::fs::write(&out, STARTER_GUARD_TOML) {
+    if let Err(e) = std::fs::write(&out, body) {
         eprintln!("ik guard init: write {}: {e}", out.display());
         return 2;
     }

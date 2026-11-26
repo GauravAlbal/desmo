@@ -148,10 +148,37 @@ fn ik_guard_catches_bypass_ignores_inline_comments_and_respects_allow_paths() {
     assert_eq!(ok_json["ok"], true);
     assert_eq!(ok_json["violations"].as_array().unwrap().len(), 0);
 
-    // Direct status mutation outside allow_paths fails even with a fake inline ignore comment.
+    // Direct status mutation outside allow_paths fails even with a fake inline ignore comment,
+    // and multi-line SQL + ORM mutations are caught while prose comments do not false-positive.
+    std::fs::write(
+        dir.join("src/handlers/comments_only.ts"),
+        "// Legacy note: previously order.status = 'paid'; and UPDATE orders SET status = 'paid'\nconst ok = true;\n",
+    )
+    .unwrap();
+    let (comments_out, _, comments_code) = run_ik(&[
+        "guard",
+        "check",
+        "--config",
+        cfg.to_str().unwrap(),
+        "--dir",
+        dir.to_str().unwrap(),
+        "--json",
+    ]);
+    assert_eq!(comments_code, Some(0), "prose comments must not fail: {comments_out}");
+
     std::fs::write(
         dir.join("src/handlers/webhook.ts"),
-        "// ik-guard-ignore\norder.status = 'refunded';\n",
+        "// ik-guard-ignore\norder.status = 'refunded'; // ik-guard-ignore\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("src/handlers/multiline.sql"),
+        "update orders\n  set status = 'paid'\n  where id = 1;\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("src/handlers/orm.ts"),
+        "await db.order.update({ data: {\n  status: 'paid'\n} });\n",
     )
     .unwrap();
     let (bad_out, bad_err, bad_code) = run_ik(&[
@@ -166,10 +193,28 @@ fn ik_guard_catches_bypass_ignores_inline_comments_and_respects_allow_paths() {
     assert_eq!(bad_code, Some(1), "out={bad_out}\nerr={bad_err}");
     let bad_json: Value = serde_json::from_str(&bad_out).unwrap();
     assert_eq!(bad_json["ok"], false);
-    let v = &bad_json["violations"][0];
-    assert_eq!(v["rule_id"], "orders-status-authority");
-    assert_eq!(v["file"], "src/handlers/webhook.ts");
-    assert_eq!(v["line"], 2);
+    let violations = bad_json["violations"].as_array().unwrap();
+    assert!(violations.iter().any(|v| v["file"] == "src/handlers/webhook.ts" && v["line"] == 2), "{violations:?}");
+    assert!(violations.iter().any(|v| v["file"] == "src/handlers/multiline.sql" && v["line"] == 1), "{violations:?}");
+    assert!(violations.iter().any(|v| v["file"] == "src/handlers/orm.ts" && v["line"] == 2), "{violations:?}");
+
+    // Machine-derived `ik guard init --machine ... --table ...` works cleanly.
+    let gen_cfg = dir.join(".ik/generated-guard.toml");
+    let order_toml = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/orders/order.ik.toml");
+    let (_, gen_err, gen_code) = run_ik(&[
+        "guard",
+        "init",
+        "--machine",
+        order_toml,
+        "--table",
+        "customer_orders",
+        "--out",
+        gen_cfg.to_str().unwrap(),
+    ]);
+    assert_eq!(gen_code, Some(0), "gen stderr={gen_err}");
+    let gen_txt = std::fs::read_to_string(&gen_cfg).unwrap();
+    assert!(gen_txt.contains("UPDATE customer_orders SET *status*"), "{gen_txt}");
+    assert!(gen_txt.contains("delivered"), "{gen_txt}");
 
     let _ = std::fs::remove_dir_all(&dir);
 }

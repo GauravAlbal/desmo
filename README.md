@@ -6,10 +6,16 @@
 
 Run `SELECT DISTINCT status FROM orders;` on almost any app that has been shipped fast — or edited by coding agents — and you'll find `PAID`, `NULL`, unpaid carts refunded, cancelled orders delivered by a late worker, or a rogue status nobody remembers adding. Every PR passed its unit tests; the global lifecycle rules silently broke because nothing enforced them at runtime.
 
-Desmo gives you two moves in one tool:
+Desmo gives you two clear tracks in one zero-dependency binary (`ik`):
 
-1. **Audit any existing repo in 60 seconds (read-only):** scan your codebase with Claude Code, Codex, or Cursor to find implicit state machines (`status` columns, boolean flag clusters, worker races) and open a zero-dependency interactive HTML simulator (`ik simulate`) to click illegal transitions yourself.
-2. **Enforce critical lifecycles at runtime (no rewrite, zero Rust to write):** keep your app in TypeScript, Python, or Go. Define the rules once in a `.ik.toml` file — **the exact same file** `ik check` explores before deploy and `ik` (a single zero-dependency Rust + SQLite binary) enforces at runtime. Your code calls **commands** (`order.pay()`, `order.refund()`), never sets `status` directly, and every handle is version-checked so stale workers and late webhooks cannot overwrite newer state.
+1. **Track 1 — Audit any existing repo in 60 seconds (read-only, zero infrastructure changes):** works even on multi-replica Postgres apps. Scan your codebase with Claude Code, Codex, or Cursor (`npx skills add GauravAlbal/desmo`), draw the live route map (`ik diagram`), falsify invariants without a manual corpus (`ik check --auto-seed --summary`), and open an offline interactive HTML simulator (`ik simulate`).
+2. **Track 2 — Enforce critical lifecycles at runtime (no rewrite, zero Rust to write):** built for **AI coding-agent harnesses, background job/workflow orchestrators, approval gates, CLI/local-first daemons, and single-node SQLite services** — plus brownfield services that project committed events read-only into Postgres via `kernel.events()` + `ik guard`. Define rules once in `.ik.toml`; `ik` (a single Rust + SQLite binary) enforces commands, guards, and version-checked capability handles so stale workers and late webhooks cannot overwrite newer state.
+
+## Why Desmo vs. Postgres triggers or XState?
+
+- **vs. Postgres `CHECK` + `WHERE version = $1`:** SQL constraints catch single-row bad states inside one DB, but they do not give your developers or coding agents a shared pre-deploy invariant falsifier (`ik check --auto-seed`), interactive HTML simulator (`ik simulate`), typed TS/Python/Go command wrappers (`ik codegen`), crash-safe external effect intents (`runEffect` / `run_effect` / `RunEffect`), or CI anti-bypass enforcement (`ik guard`) — and agent/orchestrator harnesses often want zero external Postgres/Temporal ops.
+- **vs. XState / in-memory workflow libs:** XState validates transitions in host memory inside one process; Desmo commits atomic event-sourced SQLite transactions across processes, fences stale workers with cryptographic capability nonces, verifies entire stores read-only (`ik store verify`), and guards against coding-agent bypasses.
+- **Explicit topology boundary today:** Desmo runtime stores are single-node local SQLite databases (for multi-container stateless web servers, either point one dedicated single-writer service at the store and project read-only, or wait for the planned single-writer `ik serve` socket/HTTP daemon).
 
 ## Try it on your repo in 60 seconds (read-only)
 
@@ -30,7 +36,7 @@ Or scaffold a runnable typed project directly in TypeScript, Python, or Go:
 
 ```bash
 ik init order --lang ts   # or --lang py | --lang go
-ik check desmo-order/order.ik.toml --summary
+ik check desmo-order/order.ik.toml --auto-seed --summary
 ik doctor --dir desmo-order
 ```
 
@@ -195,9 +201,9 @@ paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
 - **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
 - **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
 - **Unified typed codegen & schema authoring (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale); [`schema/ik.schema.json`](schema/ik.schema.json) gives editors inline validation and autocompletion for schema 1 & 2 files, alongside native TOML bool/int literals and simultaneous checked `i64` arithmetic in `then`.
-- **Brownfield projections, anti-bypass CI guard & offline store audit:** stream ordered changes with `ik events`, enforce CI bypass prevention via `ik guard init|check` ([docs/brownfield-migration.md](docs/brownfield-migration.md)), and audit entire multi-machine SQLite stores read-only with `ik store verify`.
+- **Brownfield projections, anti-bypass CI guard & offline store audit:** stream ordered changes via `kernel.events()` (`TS` / `Py` / `Go`, wrapping `ik events`), derive CI anti-bypass rules directly from any machine via `ik guard init --machine <file.ik.toml> --table <table>` + `ik guard check` ([docs/brownfield-migration.md](docs/brownfield-migration.md)), and audit entire multi-machine SQLite stores read-only with `ik store verify`.
 - **Effect-outcome guards & safe effect runners:** command guards can inspect `effect_status`, `effect_kind`, and `effect_outcome` (`when = "effect_status == 'recorded' && effect_outcome == 'succeeded'"`) so the kernel enforces outcome routing directly; TypeScript `runEffect`, Python `run_effect`, and Go `RunEffect` orchestrate plan → external execution with bound `idempotency_key` → outcome recording without blind duplicate execution.
-- **Developer workbench:** `ik demo`, `ik init --lang ts|py|go`, `ik doctor`, `ik check` (with `--auto-seed`, `--summary`, `--compact`, zero-corpus structural lints, and automatic invariant-violation falsification), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` run against the exact same transition engine.
+- **Developer workbench:** `ik demo`, `ik init --lang ts|py|go`, `ik doctor`, `ik check` (with `--auto-seed`, `--summary`, `--compact`, zero-corpus structural lints, and automatic invariant-violation falsification), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` (`ik --help` shows everyday commands; `ik --help-all` lists specialist adapters).
 
 ## What's verified vs. what's open
 
@@ -205,8 +211,8 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 
 | Claim | Status | Boundary |
 |---|---|---|
-| Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; `ik guard` adds a configurable CI check against direct status-table writes, not full-program static proof. |
-| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160+ Python, 83 TS, 45+ Go tests on macOS arm64 & Linux x64. |
+| Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; `ik guard` adds a configurable case-insensitive, multi-line CI check against direct status-table writes, not full-program static proof. |
+| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160+ Python, 84+ TS, 45+ Go tests on macOS arm64 & Linux x64. |
 | Deleted-wall mutation controls | **15/15 kernel + 6/6 SDK walls killed** | Deleting any of 15 core runtime walls or any of 6 TS/Python/Go transport walls fails tests in CI. |
 | Real process-crash recovery | **35+ crash tests** | Kills child processes (`SIGABRT` / `exit(86)`) across SQLite persistence & `after_operation` boundaries; trusts SQLite WAL & OS. |
 | Multi-worker linearizability | **40 seeds × 3 workers** | Finite schedule check against a sequential reference model; not universal linearizability. |

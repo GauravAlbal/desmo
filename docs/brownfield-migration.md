@@ -28,7 +28,6 @@ When adopting Desmo in an existing TypeScript, Python, or Go service, **do not d
 
 ```ts
 import express from "express";
-import { execFileSync } from "node:child_process";
 import { Kernel, IllegalStateError } from "@desmo/runtime";
 
 const app = express();
@@ -48,28 +47,28 @@ app.post("/orders/:id/pay", async (req, res) => {
   }
 });
 
-// Background catch-up projector using monotonic `ik events` cursor:
-export async function syncReadModel(lastCursor: number): Promise<number> {
-  const raw = execFileSync("ik", ["events", ".state/orders.db", "--since", String(lastCursor), "--json"], { encoding: "utf8" });
-  const feed = JSON.parse(raw) as { next_cursor: number; events: Array<{ aggregate_id: string; is_latest_for_aggregate: boolean; current_projection: { state: { state: string }; generation: number } }> };
+// Background catch-up projector using first-class `kernel.events()` (no manual shelling out):
+export async function syncReadModel(lastCursor: number | bigint): Promise<number | bigint> {
+  const feed = await kernel.events({ since: lastCursor });
   for (const ev of feed.events) {
-    if (ev.is_latest_for_aggregate) {
-      await projectRow(ev.aggregate_id, ev.current_projection.state.state, ev.current_projection.generation);
+    if (ev.isLatestForAggregate) {
+      const stateName = String((ev.currentProjection.state as { state?: string }).state ?? "");
+      await projectRow(ev.aggregateId, stateName, Number(ev.currentProjection.generation));
     }
   }
-  return feed.next_cursor;
+  return feed.nextCursor;
 }
 ```
 
 ### Python (FastAPI + Desmo + Read-Model Projector)
 
 ```python
-import json, subprocess
 from fastapi import FastAPI, HTTPException, Header
 from invariant_kernel import Kernel, IllegalStateError
 
 app = FastAPI()
-orders = Kernel(".state/orders.db").machine("order.ik.toml")
+kernel = Kernel(".state/orders.db")
+orders = kernel.machine("order.ik.toml")
 
 @app.post("/orders/{order_id}/pay")
 def pay_order(order_id: str, payment_ref: str, idempotency_key: str | None = Header(default=None)):
@@ -82,13 +81,13 @@ def pay_order(order_id: str, payment_ref: str, idempotency_key: str | None = Hea
         raise HTTPException(status_code=409, detail={"code": err.code, "message": err.message})
 
 def sync_read_model(last_cursor: int) -> int:
-    out = subprocess.check_output(["ik", "events", ".state/orders.db", "--since", str(last_cursor), "--json"], text=True)
-    feed = json.loads(out)
-    for ev in feed["events"]:
-        if ev["is_latest_for_aggregate"]:
-            proj = ev["current_projection"]
-            upsert_read_model(ev["aggregate_id"], proj["state"]["state"], proj["generation"])
-    return int(feed["next_cursor"])
+    feed = kernel.events(since=last_cursor)
+    for ev in feed.events:
+        if ev.is_latest_for_aggregate:
+            proj = ev.current_projection
+            state_name = proj.state["state"] if isinstance(proj.state, dict) else ""
+            upsert_read_model(ev.aggregate_id, state_name, proj.generation)
+    return feed.next_cursor
 ```
 
 ### Go (`net/http` + Desmo + `database/sql` Projector)
@@ -98,10 +97,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"os/exec"
-	"strconv"
 
 	ik "github.com/GauravAlbal/desmo/go"
 )
@@ -127,27 +123,13 @@ func payHandler(m *ik.Machine, upsert func(id, state string, gen uint64) error) 
 	}
 }
 
-func syncReadModel(ctx context.Context, lastCursor uint64, upsert func(id, state string, gen uint64) error) (uint64, error) {
-	out, err := exec.CommandContext(ctx, "ik", "events", ".state/orders.db", "--since", strconv.FormatUint(lastCursor, 10), "--json").Output()
+func syncReadModel(ctx context.Context, k *ik.Kernel, lastCursor uint64, upsert func(id, state string, gen uint64) error) (uint64, error) {
+	feed, err := k.Events(ctx, ik.EventsOptions{Since: lastCursor})
 	if err != nil {
 		return lastCursor, err
 	}
-	var feed struct {
-		NextCursor uint64 `json:"next_cursor"`
-		Events     []struct {
-			AggregateID       string `json:"aggregate_id"`
-			IsLatest          bool   `json:"is_latest_for_aggregate"`
-			CurrentProjection struct {
-				Generation uint64         `json:"generation"`
-				State      map[string]any `json:"state"`
-			} `json:"current_projection"`
-		} `json:"events"`
-	}
-	if err := json.Unmarshal(out, &feed); err != nil {
-		return lastCursor, err
-	}
 	for _, ev := range feed.Events {
-		if ev.IsLatest {
+		if ev.IsLatestForAggregate {
 			if st, ok := ev.CurrentProjection.State["state"].(string); ok {
 				_ = upsert(ev.AggregateID, st, ev.CurrentProjection.Generation)
 			}
@@ -157,18 +139,20 @@ func syncReadModel(ctx context.Context, lastCursor uint64, upsert func(id, state
 }
 ```
 
+> **Deployment Topology Note:** Desmo stores are local single-node SQLite databases. In brownfield web backends, point a single dedicated writer/worker service (or single-instance deployment) at `.state/orders.db` rather than letting multiple stateless containers write to unshared local SQLite files.
+
 ---
 
 ## 3. Locking Down Bypass Writes in CI (`ik guard`)
 
-After moving status transitions into Desmo, prevent accidental regressions or coding-agent shortcuts by adding `.ik/guard.toml`:
+After moving status transitions into Desmo, prevent accidental regressions or coding-agent shortcuts by adding `.ik/guard.toml` (or deriving rules directly from your `.ik.toml`):
 
 ```sh
-ik guard init
+ik guard init --machine order.ik.toml --table orders
 ik guard check --json
 ```
 
-Add `ik guard check` to your CI workflow. Exemptions are explicit in `allow_paths` inside `.ik/guard.toml` (inline comment ignores inside source files are not honored).
+`ik guard check` is case-insensitive, strips prose comments (so developer comments never false-positive, while code lines with trailing inline-ignore pragmas still fail), and scans across wrapped multi-line SQL and ORM statements. Exemptions belong explicitly in `allow_paths` inside `.ik/guard.toml`.
 
 ---
 

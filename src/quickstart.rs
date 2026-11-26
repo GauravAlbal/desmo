@@ -15,6 +15,8 @@ use crate::store::{CommandRequest, Store};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
+const SCHEMA_DIRECTIVE: &str =
+    "#:schema https://raw.githubusercontent.com/GauravAlbal/desmo/main/schema/ik.schema.json\n";
 const ORDER_TOML: &str = include_str!("../examples/orders/order.ik.toml");
 const JOB_TOML: &str = include_str!("../machines/verification_attempt.ik.toml");
 
@@ -401,13 +403,19 @@ fn run_init_inner(args: &[String]) -> Result<i32, String> {
     let def = compiled.definition();
     let cases_json = serde_json::to_string_pretty(&smart_starter_corpus(def))
         .map_err(|e| e.to_string())?;
-    let generated = codegen::generate(def, compiled.identity(), lang, None, None);
+    let go_pkg = (lang == TargetLang::Go).then_some("main");
+    let generated = codegen::generate(def, compiled.identity(), lang, None, go_pkg);
+    let toml_out = if toml_src.starts_with("#:schema ") {
+        toml_src.to_string()
+    } else {
+        format!("{SCHEMA_DIRECTIVE}{toml_src}")
+    };
 
     std::fs::create_dir_all(&out_dir)
         .map_err(|e| format!("create {}: {e}", out_dir.display()))?;
 
     let mut files: Vec<(String, String)> = vec![
-        (toml_name.to_string(), toml_src.to_string()),
+        (toml_name.to_string(), toml_out),
         (
             format!("{template}.ik.cases.json"),
             format!("{cases_json}\n"),
@@ -460,10 +468,23 @@ fn run_init_inner(args: &[String]) -> Result<i32, String> {
         out_dir.display()
     );
     match lang {
-        TargetLang::TypeScript => println!(
-            "  # Install @desmo/runtime from GitHub Release v{RUNTIME_VERSION}, then run:\n  node {}/demo.mjs",
-            out_dir.display()
-        ),
+        TargetLang::TypeScript => {
+            let plat = match (std::env::consts::OS, std::env::consts::ARCH) {
+                ("macos", "aarch64") => "darwin-arm64",
+                _ => "linux-x64",
+            };
+            println!(
+                "  cd {} && curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v{RUNTIME_VERSION}/desmo-runtime-{RUNTIME_VERSION}.tgz \\",
+                out_dir.display()
+            );
+            println!(
+                "    && curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v{RUNTIME_VERSION}/desmo-{plat}-{RUNTIME_VERSION}.tgz \\"
+            );
+            println!(
+                "    && npm install --no-audit --no-fund --ignore-scripts ./desmo-runtime-{RUNTIME_VERSION}.tgz ./desmo-{plat}-{RUNTIME_VERSION}.tgz \\"
+            );
+            println!("    && node demo.mjs");
+        }
         TargetLang::Python => println!(
             "  pip install https://github.com/GauravAlbal/desmo/releases/download/v{RUNTIME_VERSION}/invariant_kernel-{RUNTIME_VERSION}-py3-none-any.whl\n  python3 {}/demo.py",
             out_dir.display()
@@ -493,11 +514,15 @@ fn ts_package_json(template: &str) -> String {
 fn ts_demo_script(template: &str, toml_name: &str) -> String {
     if template == "order" {
         format!(
-            r#"import {{ Kernel, IllegalStateError }} from "@desmo/runtime";
+            r#"import {{ join }} from "node:path";
+import {{ fileURLToPath }} from "node:url";
+import {{ Kernel, IllegalStateError }} from "@desmo/runtime";
+// In TypeScript projects (via `tsc` or `tsx`), import OrderMachine from "./order.machine.ts".
 
-const kernel = new Kernel(".state/orders.db");
+const here = fileURLToPath(new URL(".", import.meta.url));
+const kernel = new Kernel(join(here, ".state", "orders.db"));
 try {{
-  const orders = await kernel.machine("{toml_name}");
+  const orders = await kernel.machine(join(here, "{toml_name}"));
   const order = await orders.create("order-1");
   try {{
     await order.command("refund");
@@ -517,11 +542,15 @@ try {{
         )
     } else {
         format!(
-            r#"import {{ Kernel, StaleCapabilityError }} from "@desmo/runtime";
+            r#"import {{ join }} from "node:path";
+import {{ fileURLToPath }} from "node:url";
+import {{ Kernel, StaleCapabilityError }} from "@desmo/runtime";
+// In TypeScript projects (via `tsc` or `tsx`), import VerificationAttemptMachine from "./job.machine.ts".
 
-const kernel = new Kernel(".state/jobs.db");
+const here = fileURLToPath(new URL(".", import.meta.url));
+const kernel = new Kernel(join(here, ".state", "jobs.db"));
 try {{
-  const jobs = await kernel.machine("{toml_name}");
+  const jobs = await kernel.machine(join(here, "{toml_name}"));
   const created = await jobs.create("job-1");
   const running = await created.command("start");
   const cancelled = await running.command("cancel");
@@ -548,10 +577,11 @@ fn py_demo_script(template: &str, toml_name: &str) -> String {
         format!(
             r#"from pathlib import Path
 from invariant_kernel import Kernel, IllegalStateError
+from order_machine import OrderMachine
 
 here = Path(__file__).resolve().parent
 kernel = Kernel(store=here / ".state" / "orders.db")
-orders = kernel.machine(here / "{toml_name}")
+orders = OrderMachine(kernel.machine(here / "{toml_name}"))
 
 order = orders.create("order-1")
 try:
@@ -560,22 +590,25 @@ except IllegalStateError as err:
     print("Refused illegal refund from cart:", err.code)
 
 paid = order.pay(payment_ref="ch_001")
-print("Committed:", paid.state, "gen", paid.generation)
+print("Committed:", paid.state_name if hasattr(paid, "state_name") else "historical", "gen", paid.generation)
 "#
         )
     } else {
         format!(
             r#"from pathlib import Path
-from invariant_kernel import Kernel, StaleCapabilityError
+from invariant_kernel import Kernel, HistoricalResult, StaleCapabilityError
+from job_machine import VerificationAttemptMachine
 
 here = Path(__file__).resolve().parent
 kernel = Kernel(store=here / ".state" / "jobs.db")
-jobs = kernel.machine(here / "{toml_name}")
+jobs = VerificationAttemptMachine(kernel.machine(here / "{toml_name}"))
 
 created = jobs.create("job-1")
 running = created.start()
+assert not isinstance(running, HistoricalResult)
 cancelled = running.cancel()
-print("Cancelled:", cancelled.state, "gen", cancelled.generation)
+assert not isinstance(cancelled, HistoricalResult)
+print("Cancelled:", cancelled.state_name, "gen", cancelled.generation)
 try:
     running.submit(artifact_digest="late", baseline_digest="worker")
 except StaleCapabilityError as err:
@@ -617,22 +650,26 @@ func main() {{
 	}}
 	defer k.Close()
 
-	m, err := k.Machine(ctx, "{toml_name}")
+	rawMachine, err := k.Machine(ctx, "{toml_name}")
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	order, err := m.Create(ctx, "order-1")
+	orders, err := WrapOrderMachine(rawMachine)
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	if _, err := order.Command(ctx, "refund", nil); err != nil {{
+	order, err := orders.Create(ctx, "order-1")
+	if err != nil {{
+		log.Fatal(err)
+	}}
+	if _, _, err := order.Refund(ctx, "demo-refund-check"); err != nil {{
 		fmt.Println("Refused illegal refund from cart:", err)
 	}}
-	paid, err := order.Command(ctx, "pay", map[string]any{{"payment_ref": "ch_001"}})
+	paid, _, err := order.Pay(ctx, "demo-pay-1", OrderPayArgs{{PaymentRef: "ch_001"}})
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	fmt.Printf("Committed: %s (gen %d)\n", paid.StateName(), paid.Generation)
+	fmt.Printf("Committed: %s (gen %d)\n", paid.StateName(), paid.Raw.Generation)
 }}
 "#
         )
@@ -656,25 +693,30 @@ func main() {{
 	}}
 	defer k.Close()
 
-	m, err := k.Machine(ctx, "{toml_name}")
+	rawMachine, err := k.Machine(ctx, "{toml_name}")
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	created, err := m.Create(ctx, "job-1")
+	jobs, err := WrapVerificationAttemptMachine(rawMachine)
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	running, err := created.Command(ctx, "start", nil)
+	created, err := jobs.Create(ctx, "job-1")
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	cancelled, err := running.Command(ctx, "cancel", nil)
+	running, _, err := created.Start(ctx, "demo-start-1")
 	if err != nil {{
 		log.Fatal(err)
 	}}
-	fmt.Printf("Cancelled: %s (gen %d)\n", cancelled.StateName(), cancelled.Generation)
-	if _, err := running.Command(ctx, "submit", map[string]any{{
-		"artifact_digest": "late", "baseline_digest": "worker",
+	cancelled, _, err := running.Cancel(ctx, "demo-cancel-1")
+	if err != nil {{
+		log.Fatal(err)
+	}}
+	fmt.Printf("Cancelled: %s (gen %d)\n", cancelled.StateName(), cancelled.Raw.Generation)
+	if _, _, err := running.Submit(ctx, "demo-stale-1", VerificationAttemptSubmitArgs{{
+		ArtifactDigest: "late",
+		BaselineDigest: "worker",
 	}}); err != nil {{
 		fmt.Println("Stale worker refused:", err)
 	}}
@@ -875,8 +917,12 @@ fn check_sdk_pins(dir: &Path) -> Vec<Value> {
     let gomod = dir.join("go.mod");
     if let Ok(text) = std::fs::read_to_string(&gomod) {
         for line in text.lines() {
-            if line.contains("GauravAlbal/desmo/go") {
-                let declared = line.trim().to_string();
+            let trimmed = line.trim();
+            if trimmed.starts_with("replace ") || trimmed.starts_with("//") {
+                continue;
+            }
+            if trimmed.contains("GauravAlbal/desmo/go") {
+                let declared = trimmed.to_string();
                 let drift = !declared.contains(RUNTIME_VERSION);
                 out.push(json!({
                     "file": gomod.display().to_string(),

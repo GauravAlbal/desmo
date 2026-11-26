@@ -41,8 +41,8 @@
       "id": "GO_DropUseNumberPrecision",
       "sdk": "go",
       "file": "go/transport.go",
-      "target": "\tdec.UseNumber()",
-      "replacement": "\t// mutant: dropped dec.UseNumber()",
+      "target": "\tvar out map[string]any\n\tdec := json.NewDecoder(bytes.NewReader(raw))\n\tdec.UseNumber()",
+      "replacement": "\tvar out map[string]any\n\tdec := json.NewDecoder(bytes.NewReader(raw))\n\t// mutant: dropped dec.UseNumber()",
       "command": "cd go && go test -run TestLargeInt64PrecisionPreserved",
       "wall": "Preserve exact int64 precision across JSON transport via json.Decoder.UseNumber"
     },

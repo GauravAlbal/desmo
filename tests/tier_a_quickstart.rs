@@ -55,6 +55,48 @@ fn init_scaffolds_ts_py_go_and_passes_check_and_doctor() {
         assert!(dir.join("order.ik.toml").is_file());
         assert!(dir.join("order.ik.cases.json").is_file());
         assert!(dir.join(expected_file).is_file());
+        let machine_txt = std::fs::read_to_string(dir.join("order.ik.toml")).unwrap();
+        assert!(machine_txt.starts_with("#:schema "), "missing #:schema directive:\n{machine_txt}");
+
+        // Generated project passes `ik doctor --json` cleanly before local test replace!
+        let (doc_out, doc_err, doc_code) =
+            run_ik(&["doctor", "--dir", dir.to_str().unwrap(), "--json"]);
+        assert_eq!(doc_code, Some(0), "stderr:\n{doc_err}");
+        let doc: Value = serde_json::from_str(&doc_out).expect("doctor json");
+        assert_eq!(doc["healthy"], true, "doctor:\n{doc}");
+
+        if lang == "go" {
+            let gen_txt = std::fs::read_to_string(dir.join("order_machine.go")).unwrap();
+            assert!(gen_txt.contains("package main\n"), "go generated wrapper must be package main:\n{gen_txt}");
+            let repo_go = concat!(env!("CARGO_MANIFEST_DIR"), "/go");
+            let orig_mod = std::fs::read_to_string(dir.join("go.mod")).unwrap();
+            std::fs::write(
+                dir.join("go.mod"),
+                format!("{orig_mod}\nreplace github.com/GauravAlbal/desmo/go => {repo_go}\n"),
+            )
+            .unwrap();
+            let build_out = Command::new("go")
+                .args(["build", "."])
+                .current_dir(&dir)
+                .output()
+                .expect("run go build on scaffold");
+            assert!(
+                build_out.status.success(),
+                "go build failed:\nstdout: {}\nstderr: {}",
+                String::from_utf8_lossy(&build_out.stdout),
+                String::from_utf8_lossy(&build_out.stderr)
+            );
+            // `ik doctor` still ignores local `replace` lines in go.mod cleanly.
+            let (_, doc2_err, doc2_code) =
+                run_ik(&["doctor", "--dir", dir.to_str().unwrap(), "--json"]);
+            assert_eq!(doc2_code, Some(0), "doctor with go.mod replace:\n{doc2_err}");
+        } else if lang == "ts" {
+            let demo_txt = std::fs::read_to_string(dir.join("demo.mjs")).unwrap();
+            assert!(demo_txt.contains("import.meta.url"), "ts demo should resolve paths via import.meta.url:\n{demo_txt}");
+        } else if lang == "py" {
+            let demo_txt = std::fs::read_to_string(dir.join("demo.py")).unwrap();
+            assert!(demo_txt.contains("from order_machine import OrderMachine"), "py demo should use generated OrderMachine:\n{demo_txt}");
+        }
 
         // Refuses overwrite without --force.
         let (_, force_err, force_code) = run_ik(&[
@@ -80,13 +122,6 @@ fn init_scaffolds_ts_py_go_and_passes_check_and_doctor() {
             "lang={lang} check stdout:\n{check_out}\nstderr:\n{check_err}"
         );
         assert!(check_out.contains("ACCEPT"), "stdout:\n{check_out}");
-
-        // Generated project passes `ik doctor --json` cleanly!
-        let (doc_out, doc_err, doc_code) =
-            run_ik(&["doctor", "--dir", dir.to_str().unwrap(), "--json"]);
-        assert_eq!(doc_code, Some(0), "stderr:\n{doc_err}");
-        let doc: Value = serde_json::from_str(&doc_out).expect("doctor json");
-        assert_eq!(doc["healthy"], true, "doctor:\n{doc}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
@@ -119,5 +154,9 @@ fn help_is_grouped_into_quickstart_and_workbench_sections() {
     assert!(help.contains("Quickstart:"), "help:\n{help}");
     assert!(help.contains("Model & Verify:"), "help:\n{help}");
     assert!(help.contains("Inspect & Store:"), "help:\n{help}");
-    assert!(help.contains("Advanced & Adapters:"), "help:\n{help}");
+    assert!(help.contains("--help-all"), "help:\n{help}");
+
+    let (help_all, _, code_all) = run_ik(&["--help-all"]);
+    assert_eq!(code_all, Some(0));
+    assert!(help_all.contains("Advanced & Adapters:"), "help-all:\n{help_all}");
 }

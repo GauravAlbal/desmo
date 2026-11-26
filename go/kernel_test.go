@@ -624,3 +624,52 @@ then = { amount = "$amount" }
 		t.Fatalf("expected exact int64 9007199254740993, got %s", num.String())
 	}
 }
+
+func TestKernelEventsCursor(t *testing.T) {
+	dir := t.TempDir()
+	k, err := invariantkernel.Open(filepath.Join(dir, "events.db"), invariantkernel.Options{
+		Binary:  ikBin(t),
+		Session: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+	ctx := context.Background()
+	m, err := k.Machine(ctx, filepath.Join(repoRoot(t), "examples", "orders", "order.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ord1, err := m.Create(ctx, "ord-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ord1.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Create(ctx, "ord-2"); err != nil {
+		t.Fatal(err)
+	}
+
+	page1, err := k.Events(ctx, invariantkernel.EventsOptions{Since: 0, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page1.Schema != "ik.events.v1" || !page1.HasMore || len(page1.Events) != 2 {
+		t.Fatalf("unexpected page1: %+v", page1)
+	}
+	if page1.Events[0].IsLatestForAggregate || !page1.Events[1].IsLatestForAggregate || page1.Events[1].EventType != "pay" {
+		t.Fatalf("unexpected latest flags: %+v", page1.Events)
+	}
+	if st, _ := page1.Events[1].CurrentProjection.State["state"].(string); st != "paid" {
+		t.Fatalf("expected projection state=paid, got %v", page1.Events[1].CurrentProjection.State)
+	}
+
+	page2, err := k.Events(ctx, invariantkernel.EventsOptions{Since: page1.NextCursor})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page2.HasMore || len(page2.Events) != 1 || page2.Events[0].AggregateID != "ord-2" || !page2.Events[0].IsLatestForAggregate {
+		t.Fatalf("unexpected page2: %+v", page2)
+	}
+}
