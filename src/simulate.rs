@@ -735,21 +735,50 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     return out;
   }
 
+  function evalArithExpr(src, stateName, factState, args) {
+    const toks = tokenize(src);
+    let idx = 0;
+    const peek = () => toks[idx];
+    const next = () => toks[idx++];
+    function primary() {
+      const tk = next();
+      if (!tk) throw new Error("operand");
+      if (tk.t === "int" || tk.t === "str" || tk.t === "bool") return tk.v;
+      if (tk.t === "$") return args[tk.v];
+      if (tk.t === "id") return factState[tk.v];
+      throw new Error("primary");
+    }
+    let base = primary();
+    while (peek() && peek().t === "op" && ["+", "-", "*", "/"].includes(peek().v)) {
+      const op = next().v;
+      const rhs = primary();
+      if (typeof base !== "number" || typeof rhs !== "number") return undefined;
+      if (op === "+") base = base + rhs;
+      else if (op === "-") base = base - rhs;
+      else if (op === "*") base = base * rhs;
+      else if (op === "/") base = rhs === 0 ? undefined : Math.trunc(base / rhs);
+    }
+    return idx === toks.length ? base : undefined;
+  }
+
   function applyThen(factState, thenMap, args) {
     const next = { ...factState };
     for (const [k, raw] of Object.entries(thenMap || {})) {
       const expr = String(raw).trim();
-      if (expr.startsWith("$")) {
+      if (/^\$[A-Za-z0-9_]+$/.test(expr)) {
         next[k] = args[expr.slice(1)];
-      } else if (expr.startsWith("+") || expr.startsWith("-")) {
+      } else if (/^\+[0-9]+$/.test(expr)) {
         const delta = Number(expr);
-        next[k] = (typeof next[k] === "number" ? next[k] : 0) + delta;
+        next[k] = (typeof factState[k] === "number" ? factState[k] : 0) + delta;
       } else if (expr === "true" || expr === "false") {
         next[k] = expr === "true";
       } else if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
         next[k] = expr.slice(1, -1);
       } else if (/^-?\d+$/.test(expr)) {
         next[k] = Number(expr);
+      } else if (/[+\-*/]/.test(expr)) {
+        const computed = evalArithExpr(expr, "", factState, args);
+        next[k] = computed !== undefined ? computed : expr;
       } else {
         next[k] = expr;
       }

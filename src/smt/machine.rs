@@ -267,9 +267,20 @@ fn then_op(
     if let Some(arg) = value.strip_prefix('$') {
         return Ok(ThenOp::Arg(arg.to_string()));
     }
-    parse_literal(value).map(ThenOp::Literal).ok_or_else(|| {
-        Unsupported::new(format!("`then` value `{value}` is not a literal or `$arg`"))
-    })
+    if let Some(lit) = parse_literal(value) {
+        return Ok(ThenOp::Literal(lit));
+    }
+    if matches!(
+        crate::declarative::expr::parse_then_arith(value),
+        Ok(Some(_))
+    ) {
+        return Err(Unsupported::new(
+            "arithmetic then expression is outside the exact SMT fragment",
+        ));
+    }
+    Err(Unsupported::new(format!(
+        "`then` value `{value}` is not a literal or `$arg`"
+    )))
 }
 
 fn parse_literal(value: &str) -> Option<Value> {

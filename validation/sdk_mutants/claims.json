@@ -1,0 +1,59 @@
+{
+  "schema": "ik.sdk_mutants.v1",
+  "mutants": [
+    {
+      "id": "TS_SkipRuntimeVersionCheck",
+      "sdk": "ts",
+      "file": "typescript/src/envelope.ts",
+      "target": "  if (rec.runtime_version !== expected.runtime_version) {",
+      "replacement": "  if (false && rec.runtime_version !== expected.runtime_version) {",
+      "command": "cd typescript && ./node_modules/.bin/tsc -p tsconfig.json && node --test dist/envelope.test.js",
+      "wall": "Reject incompatible ik binary runtime_version during handshake"
+    },
+    {
+      "id": "TS_AllowDuplicatePlanInRunEffect",
+      "sdk": "ts",
+      "file": "typescript/src/client.ts",
+      "target": "    const planned = await this.execute(\n      { name: commandName, args },\n      { operationId: options.planOperationId },\n    );\n    if (planned instanceof HistoricalResult) {\n      const err = new EffectCompletionError(\n        `planning command \\`${commandName}\\` replayed as HistoricalResult; inspect show() and reconcile before re-running external side effects`,\n      );\n      err.operationId = options.planOperationId;\n      throw err;\n    }",
+      "replacement": "    const planned = await this.command(commandName, args); // mutant: dropped duplicate-plan HistoricalResult wall",
+      "command": "cd typescript && ./node_modules/.bin/tsc -p tsconfig.json && node --test dist/effect.test.js",
+      "wall": "Refuse replaying a cached planning command as HistoricalResult in runEffect"
+    },
+    {
+      "id": "PY_DropUncertainOpTracking",
+      "sdk": "py",
+      "file": "python/src/invariant_kernel/transport.py",
+      "target": "            self._uncertain.add(str(operation_id))",
+      "replacement": "            pass  # mutant: dropped uncertain op tracking",
+      "command": "python3 -m pytest -q python/tests/test_operation_recovery.py",
+      "wall": "Track failed session operations as uncertain so callers must reconcile before reuse"
+    },
+    {
+      "id": "PY_AllowDuplicatePlanInRunEffect",
+      "sdk": "py",
+      "file": "python/src/invariant_kernel/client.py",
+      "target": "        if isinstance(planned, HistoricalResult):",
+      "replacement": "        if False and isinstance(planned, HistoricalResult):",
+      "command": "python3 -m pytest -q python/tests/test_effect_completion.py",
+      "wall": "Refuse replaying a cached planning command as HistoricalResult in run_effect"
+    },
+    {
+      "id": "GO_DropUseNumberPrecision",
+      "sdk": "go",
+      "file": "go/transport.go",
+      "target": "\tdec.UseNumber()",
+      "replacement": "\t// mutant: dropped dec.UseNumber()",
+      "command": "cd go && go test -run TestLargeInt64PrecisionPreserved",
+      "wall": "Preserve exact int64 precision across JSON transport via json.Decoder.UseNumber"
+    },
+    {
+      "id": "GO_AllowDuplicatePlanInRunEffect",
+      "sdk": "go",
+      "file": "go/kernel.go",
+      "target": "\tif hist != nil {\n\t\treturn nil, fmt.Errorf(\"planning command %q replayed",
+      "replacement": "\tif false && hist != nil {\n\t\treturn nil, fmt.Errorf(\"planning command %q replayed",
+      "command": "cd go && go test -run TestRunEffect",
+      "wall": "Refuse replaying a cached planning command as HistoricalResult in RunEffect"
+    }
+  ]
+}

@@ -9,6 +9,8 @@ cargo build --bin ik
 test -x "$ROOT/target/debug/ik"
 python3 validation/ik06/qualify.py --check
 python3 validation/ik06/qualify.py --self-test
+python3 validation/sdk_mutants/qualify.py --check
+python3 validation/sdk_mutants/qualify.py --self-test
 # Serial by default. IK_PYTEST_JOBS=<n|auto> runs the Python tests in parallel and needs pytest-xdist
 # (plugin autoload is disabled, so it is named explicitly; a missing xdist fails loudly).
 if [ -n "${IK_PYTEST_JOBS:-}" ]; then
@@ -21,6 +23,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 IK_BINARY="$ROOT/target/debug/ik" \
   python3 -m pytest -q $PYTEST_JOBS "$ROOT/python/tests"
 ( cd "$ROOT/go" && IK_BINARY="$ROOT/target/debug/ik" go test ./... )
 ( cd "$ROOT/typescript" && npm ci --omit=optional && npx tsc -p tsconfig.json && IK_BINARY="$ROOT/target/debug/ik" npm test )
+IK_BINARY="$ROOT/target/debug/ik" python3 validation/sdk_mutants/qualify.py --run
 SCENARIO_OUT="${TMPDIR:-/tmp}/desmo-public-verify-scenarios"
 rm -rf "$SCENARIO_OUT"
 python3 examples/publish-approval/scenarios.py --out "$SCENARIO_OUT" > /dev/null

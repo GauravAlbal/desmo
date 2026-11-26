@@ -387,7 +387,10 @@ struct JointCommand {
     outcomes: Option<Vec<JointOutcome>>,
     #[serde(default)]
     args: Option<BTreeMap<String, String>>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::declarative::def::deserialize_optional_then"
+    )]
     then: Option<BTreeMap<String, String>>,
     #[serde(default)]
     effect: Option<EffectDef>,
@@ -399,7 +402,10 @@ struct JointOutcome {
     #[serde(default)]
     when: Option<String>,
     to: BTreeMap<String, String>,
-    #[serde(default)]
+    #[serde(
+        default,
+        deserialize_with = "crate::declarative::def::deserialize_optional_then"
+    )]
     then: Option<BTreeMap<String, String>>,
 }
 
@@ -2078,4 +2084,136 @@ fn validate_initial(definition: &Definition) -> Result<(), StaticErrors> {
         )));
     }
     Ok(())
+}
+
+/// Pure fixed-width joint-transition step over `R` orthogonal regions:
+/// - refuses if any participating region is currently terminal (`Err(())`)
+/// - otherwise atomically updates every participating region to `target_states[i]`
+///   and preserves all non-participating sibling states untouched.
+#[cfg(any(kani, test))]
+pub(crate) fn apply_joint_product_step<const R: usize>(
+    current_states: &[u8; R],
+    current_terminal: &[bool; R],
+    participating: &[bool; R],
+    target_states: &[u8; R],
+) -> Result<[u8; R], ()> {
+    let mut i = 0;
+    while i < R {
+        if participating[i] && current_terminal[i] {
+            return Err(());
+        }
+        i += 1;
+    }
+    let mut next = *current_states;
+    let mut j = 0;
+    while j < R {
+        if participating[j] {
+            next[j] = target_states[j];
+        }
+        j += 1;
+    }
+    Ok(next)
+}
+
+#[cfg(test)]
+mod joint_step_parity_tests {
+    use super::*;
+
+    #[test]
+    fn apply_joint_product_step_matches_joint_lowering_terminal_and_sibling_laws() {
+        let toml = r#"
+schema_version = 2
+machine_id = "tri"
+machine_version = 1
+
+[regions.a.states]
+a0 = { initial = true }
+a_done = { terminal = true }
+
+[regions.b.states]
+b0 = { initial = true }
+b1 = {}
+
+[regions.c.states]
+c0 = { initial = true }
+c1 = {}
+
+[regions.c.commands.advance_c]
+from = ["c0"]
+to = "c1"
+
+[commands.ab_finish]
+from = { a = ["a0"], b = ["b0"] }
+to = { a = "a_done", b = "b1" }
+"#;
+        let lowered = parse_source_with_limits(toml, RegionLimits::default()).expect("lower tri");
+        let cmd = &lowered.definition.commands["ab_finish"];
+        let outcomes = cmd.outcomes.as_deref().unwrap_or(&[]);
+
+        // Non-terminal product updates `a` and `b` atomically across both `c` states (`c0`, `c1`).
+        assert_eq!(cmd.from.len(), 2);
+        assert_eq!(outcomes.len(), 2);
+        assert!(outcomes.iter().any(|o| {
+            let t = o.to.as_str();
+            t.contains("a_done") && t.contains("b1") && t.contains("c0")
+        }));
+        assert!(outcomes.iter().any(|o| {
+            let t = o.to.as_str();
+            t.contains("a_done") && t.contains("b1") && t.contains("c1")
+        }));
+        assert_eq!(
+            apply_joint_product_step(&[0, 0, 1], &[false, false, false], &[true, true, false], &[1, 1, 0]),
+            Ok([1, 1, 1])
+        );
+
+        // Terminal participating region `a_done` refuses emission in lowering AND step model.
+        let bad_terminal_joint = toml.replacen(
+            r#"from = { a = ["a0"], b = ["b0"] }"#,
+            r#"from = { a = ["a0", "a_done"], b = ["b0"] }"#,
+            1,
+        );
+        assert!(parse_source_with_limits(&bad_terminal_joint, RegionLimits::default()).is_err());
+        assert_eq!(
+            apply_joint_product_step(&[1, 0, 1], &[true, false, false], &[true, true, false], &[1, 1, 0]),
+            Err(())
+        );
+    }
+}
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    #[kani::proof]
+    #[kani::unwind(5)]
+    fn prove_region_lowering_terminal_and_joint_invariants() {
+        let cur: [u8; 3] = kani::any();
+        let term: [bool; 3] = kani::any();
+        let part: [bool; 3] = kani::any();
+        let tgt: [u8; 3] = kani::any();
+
+        let res = apply_joint_product_step(&cur, &term, &part, &tgt);
+        let any_terminal_participating = (part[0] && term[0]) || (part[1] && term[1]) || (part[2] && term[2]);
+
+        if any_terminal_participating {
+            assert!(res.is_err());
+            kani::cover!(true, "terminal participating region refuses joint step");
+        } else {
+            let next = res.expect("non-terminal participating regions must commit atomically");
+            let mut i = 0;
+            while i < 3 {
+                if part[i] {
+                    assert_eq!(next[i], tgt[i]);
+                } else {
+                    assert_eq!(next[i], cur[i]);
+                }
+                i += 1;
+            }
+            kani::cover!(!part[0] && part[1] && part[2], "unmentioned sibling stays unchanged");
+            kani::cover!(
+                !part[2] && term[2] && part[0],
+                "non-participating terminal sibling does not block disjoint region"
+            );
+        }
+    }
 }

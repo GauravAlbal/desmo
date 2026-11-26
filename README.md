@@ -194,7 +194,8 @@ paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
 - **Bounded compound & parallel regions (schema 2):** author orthogonal regions, guarded child-first parent fallback, and atomic joint commands in `.ik.toml`, lowered to the same flat runtime engine ([docs/region-lowering.md](docs/region-lowering.md)).
 - **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
 - **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
-- **Unified typed codegen (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale).
+- **Unified typed codegen & schema authoring (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale); [`schema/ik.schema.json`](schema/ik.schema.json) gives editors inline validation and autocompletion for schema 1 & 2 files, alongside native TOML bool/int literals and simultaneous checked `i64` arithmetic in `then`.
+- **Brownfield projections, anti-bypass CI guard & offline store audit:** stream ordered changes with `ik events`, enforce CI bypass prevention via `ik guard init|check` ([docs/brownfield-migration.md](docs/brownfield-migration.md)), and audit entire multi-machine SQLite stores read-only with `ik store verify`.
 - **Effect-outcome guards & safe effect runners:** command guards can inspect `effect_status`, `effect_kind`, and `effect_outcome` (`when = "effect_status == 'recorded' && effect_outcome == 'succeeded'"`) so the kernel enforces outcome routing directly; TypeScript `runEffect`, Python `run_effect`, and Go `RunEffect` orchestrate plan → external execution with bound `idempotency_key` → outcome recording without blind duplicate execution.
 - **Developer workbench:** `ik demo`, `ik init --lang ts|py|go`, `ik doctor`, `ik check` (with `--auto-seed`, `--summary`, `--compact`, zero-corpus structural lints, and automatic invariant-violation falsification), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` run against the exact same transition engine.
 
@@ -204,13 +205,13 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 
 | Claim | Status | Boundary |
 |---|---|---|
-| Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; does not stop host code from bypassing `ik`. |
-| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160 Python, 83 TS, 45 Go tests on macOS arm64 & Linux x64. |
-| Deleted-wall mutation controls | **15/15 kernel walls killed** | Deleting any of 15 core runtime walls fails tests; client transport layers not yet mutated. |
+| Shared transition semantics (`ik check` = runtime) | **Implemented & tested** | Same `.ik.toml` AST/evaluator; `ik guard` adds a configurable CI check against direct status-table writes, not full-program static proof. |
+| Core test suites (Rust / Python / TS / Go) | **Passing (`scripts/public-verify`)** | 700+ Rust, 160+ Python, 83 TS, 45+ Go tests on macOS arm64 & Linux x64. |
+| Deleted-wall mutation controls | **15/15 kernel + 6/6 SDK walls killed** | Deleting any of 15 core runtime walls or any of 6 TS/Python/Go transport walls fails tests in CI. |
 | Real process-crash recovery | **35+ crash tests** | Kills child processes (`SIGABRT` / `exit(86)`) across SQLite persistence & `after_operation` boundaries; trusts SQLite WAL & OS. |
 | Multi-worker linearizability | **40 seeds × 3 workers** | Finite schedule check against a sequential reference model; not universal linearizability. |
 | Dual-solver SMT / TLC / Hegel adapters | **Optional adapters** | `Z3 + cvc5` dual-solver feasibility, TLC 2.19 finite graph checks, Hegel sampling. |
-| Kani bounded proofs (`src/runtime/authority.rs`) | **Verified (Kani 0.68 / CBMC 6.11)** | Exhaustive proofs over production payload-opaque `authorize_command` & `authorize_outcome_binding` gates (zero cutpoints, `<1s`, `8/8` cover properties each) + `validate_capability` ASCII nonces; concrete JSON/SHA-256 & SQLite remain outside Kani. |
+| Kani bounded proofs (CI-gated `kani` job) | **Verified in CI (Kani 0.68 / CBMC 6.11)** | 5 CI-gated Kani harnesses covering production authority gates, checked `i64` arithmetic, ordered-guard non-fallthrough, and region terminal/joint lowering; concrete JSON/SHA-256 & SQLite remain outside Kani. |
 
 ## When to use Desmo (and when not to)
 

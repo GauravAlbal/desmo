@@ -51,6 +51,7 @@ enum ThenValue {
     Literal(Value),
     Arg(String),
     CounterIncr(i64),
+    Arith(crate::declarative::expr::Operand),
 }
 
 struct CompiledEffect {
@@ -304,14 +305,21 @@ fn compile_then_value(
             })?;
         return Ok(ThenValue::CounterIncr(n));
     }
-    if let Some(arg) = value.strip_prefix('$') {
+    if let Some(arg) = value
+        .strip_prefix('$')
+        .filter(|a| !a.is_empty() && a.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_'))
+    {
         return Ok(ThenValue::Arg(arg.to_string()));
     }
-    parse_literal(value).map(ThenValue::Literal).ok_or_else(|| {
-        vec![format!(
-            "`then` value `{value}` for `{fact}` is not a literal or `$arg` (use '\"text\"' for strings, \"1\" for ints, \"true\"/\"false\" for bools, \"+1\" on counters, or \"$arg\")"
-        )]
-    })
+    if let Some(lit) = parse_literal(value) {
+        return Ok(ThenValue::Literal(lit));
+    }
+    if let Ok(Some(op)) = crate::declarative::expr::parse_then_arith(value) {
+        return Ok(ThenValue::Arith(op));
+    }
+    Err(vec![format!(
+        "`then` value `{value}` for `{fact}` is not a literal or `$arg` (use '\"text\"' for strings, \"1\" for ints, \"true\"/\"false\" for bools, \"+1\" on counters, or \"$arg\")"
+    )])
 }
 
 fn parse_literal(value: &str) -> Option<Value> {
@@ -562,9 +570,16 @@ impl Machine for CompiledMachine {
             )));
         }
         let outcome = &cmd.outcomes[index];
-        let mut new_facts = current_facts;
+        let mut new_facts = current_facts.clone();
         for (fact, value) in &outcome.then {
-            apply_assignment(&event.event_type, fact, value, &args, &mut new_facts)?;
+            apply_assignment(
+                &event.event_type,
+                fact,
+                value,
+                &args,
+                &current_facts,
+                &mut new_facts,
+            )?;
         }
         #[cfg(feature = "test-support")]
         let skip = crate::law_mutant::is(crate::law_mutant::LawMutant::SkipInvariantValidation);
@@ -640,9 +655,16 @@ impl CompiledMachine {
             )));
         }
         let outcome = &cmd.outcomes[index];
-        let mut new_facts = current_facts;
+        let mut new_facts = current_facts.clone();
         for (fact, value) in &outcome.then {
-            apply_assignment(&event.event_type, fact, value, &args, &mut new_facts)?;
+            apply_assignment(
+                &event.event_type,
+                fact,
+                value,
+                &args,
+                &current_facts,
+                &mut new_facts,
+            )?;
         }
         let invariants = self.check_invariants(&new_facts, &outcome.to);
         let terminal = self.terminal_states.iter().any(|s| s == &outcome.to);
@@ -930,6 +952,7 @@ fn apply_assignment(
     fact: &str,
     value: &ThenValue,
     args: &BTreeMap<String, Value>,
+    prior_facts: &BTreeMap<String, Value>,
     facts: &mut BTreeMap<String, Value>,
 ) -> Result<(), Diagnostic> {
     let resolved = match value {
@@ -942,7 +965,7 @@ fn apply_assignment(
             )
         })?,
         ThenValue::CounterIncr(n) => {
-            let current = facts
+            let current = prior_facts
                 .get(fact)
                 .and_then(|v| v.as_i64())
                 .ok_or_else(|| Diagnostic::internal(format!("counter fact `{fact}` missing")))?;
@@ -954,6 +977,15 @@ fn apply_assignment(
                 )
             })?;
             Value::Number(next.into())
+        }
+        ThenValue::Arith(op) => {
+            crate::declarative::expr::eval_then_arith(op, prior_facts, args).map_err(|reason| {
+                Diagnostic::new(
+                    DiagnosticCode::IkInvariantFailed,
+                    Some(format!("{name}.then.{fact}")),
+                    reason,
+                )
+            })?
         }
     };
     facts.insert(fact.to_string(), resolved);
