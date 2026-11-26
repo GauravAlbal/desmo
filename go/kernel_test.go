@@ -673,3 +673,95 @@ func TestKernelEventsCursor(t *testing.T) {
 		t.Fatalf("unexpected page2: %+v", page2)
 	}
 }
+
+func TestMachineAndKernelList(t *testing.T) {
+	dir := t.TempDir()
+	k, err := invariantkernel.Open(filepath.Join(dir, ".state", "list.db"), invariantkernel.Options{
+		Binary:  ikBin(t),
+		Session: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+	ctx := context.Background()
+	orders, err := k.Machine(ctx, filepath.Join(repoRoot(t), "examples", "orders", "order.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fx, err := k.Machine(ctx, filepath.Join(repoRoot(t), "machines", "effect_probe.ik.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	o1, err := orders.Create(ctx, "ord-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := o1.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1"}); err != nil {
+		t.Fatal(err)
+	}
+	o2, err := orders.Create(ctx, "ord-2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := o2.Command(ctx, "cancel", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := orders.Create(ctx, "ord-3"); err != nil {
+		t.Fatal(err)
+	}
+
+	f1, err := fx.Create(ctx, "fx-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f1.Command(ctx, "plan", map[string]any{
+		"effect_id":       "e1",
+		"payload_digest":  "p1",
+		"idempotency_key": "k1",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	p1, err := orders.List(ctx, invariantkernel.ListOptions{Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p1.Schema != "ik.list.v1" || !p1.HasMore || p1.NextAfter != "ord-2" || len(p1.Aggregates) != 2 {
+		t.Fatalf("unexpected page1: %+v", p1)
+	}
+
+	p2, err := orders.List(ctx, invariantkernel.ListOptions{After: p1.NextAfter, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p2.HasMore || len(p2.Aggregates) != 1 || p2.Aggregates[0].AggregateID != "ord-3" {
+		t.Fatalf("unexpected page2: %+v", p2)
+	}
+
+	paid, err := orders.List(ctx, invariantkernel.ListOptions{State: "paid"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paid.Aggregates) != 1 || paid.Aggregates[0].AggregateID != "ord-1" {
+		t.Fatalf("unexpected paid: %+v", paid)
+	}
+
+	pend, err := k.List(ctx, invariantkernel.ListOptions{Effect: "pending"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pend.Aggregates) != 1 || pend.Aggregates[0].AggregateID != "fx-1" || pend.Aggregates[0].Effect.Status != "pending" {
+		t.Fatalf("unexpected pending: %+v", pend)
+	}
+
+	termFlag := true
+	term, err := orders.List(ctx, invariantkernel.ListOptions{Terminal: &termFlag})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(term.Aggregates) != 1 || term.Aggregates[0].AggregateID != "ord-2" {
+		t.Fatalf("unexpected terminal: %+v", term)
+	}
+}

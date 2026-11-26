@@ -251,3 +251,23 @@ fn an_unknown_aggregate_is_not_a_corrupt_store() {
         Some("IK_STORE_CORRUPT")
     );
 }
+
+#[test]
+fn open_or_create_creates_missing_parent_dirs_while_open_remains_strict() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let absent = dir.path().join("still-absent").join(".state").join("orders.db");
+    let err = match Store::open(&absent) {
+        Err(err) => err,
+        Ok(_) => panic!("Store::open must refuse missing parent without creating"),
+    };
+    assert_eq!(err.code, DiagnosticCode::IkStoreNotFound);
+    assert_eq!(err.rule.as_deref(), Some("store.missing"));
+    assert!(!absent.parent().unwrap().exists());
+
+    let nested = dir.path().join("nested").join(".state").join("orders.db");
+    assert!(!nested.parent().unwrap().exists());
+    let store = Store::open_or_create(&nested).expect("open_or_create creates missing parents");
+    drop(store);
+    assert!(nested.is_file());
+    Store::open(&nested).expect("reopen created store");
+}

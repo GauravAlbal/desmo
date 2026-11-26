@@ -15,12 +15,15 @@ export {
   classify,
 } from "./client.js";
 export type {
+  AggregateList,
+  AggregateSummary,
   EffectRunResult,
   EventCursorRow,
   EventFeed,
   EventProjection,
   EventsOptions,
   FailureClass,
+  ListOptions,
 } from "./client.js";
 export type { Json, OperationBody } from "./client.js";
 export {

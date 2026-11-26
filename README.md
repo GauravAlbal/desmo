@@ -14,7 +14,7 @@ Desmo gives you two clear tracks in one zero-dependency binary (`ik`):
 ## Why Desmo vs. Postgres triggers or XState?
 
 - **vs. Postgres `CHECK` + `WHERE version = $1`:** SQL constraints catch single-row bad states inside one DB, but they do not give your developers or coding agents a shared pre-deploy invariant falsifier (`ik check --auto-seed`), interactive HTML simulator (`ik simulate`), typed TS/Python/Go command wrappers (`ik codegen`), crash-safe external effect intents (`runEffect` / `run_effect` / `RunEffect`), or CI anti-bypass enforcement (`ik guard`) — and agent/orchestrator harnesses often want zero external Postgres/Temporal ops.
-- **vs. XState / in-memory workflow libs:** XState validates transitions in host memory inside one process; Desmo commits atomic event-sourced SQLite transactions across processes, fences stale workers with cryptographic capability nonces, verifies entire stores read-only (`ik store verify`), and guards against coding-agent bypasses.
+- **vs. XState / in-memory workflow libs:** XState validates transitions in host memory inside one process; Desmo commits atomic event-sourced SQLite transactions across processes, fences stale workers with generation-bound capability tokens `(generation, rotation digest)`, verifies entire stores read-only (`ik store verify`), and guards against coding-agent bypasses.
 - **Explicit topology boundary today:** Desmo runtime stores are single-node local SQLite databases (for multi-container stateless web servers, either point one dedicated single-writer service at the store and project read-only, or wait for the planned single-writer `ik serve` socket/HTTP daemon).
 
 ## Try it on your repo in 60 seconds (read-only)
@@ -170,16 +170,17 @@ pip install https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/invari
 ```python
 from invariant_kernel import Kernel, IllegalStateError
 
-orders = Kernel(store=".state/orders.db").machine("examples/orders/order.ik.toml")
-order = orders.create("order-1042")
+with Kernel(store=".state/orders.db", session=True) as kernel:
+    orders = kernel.machine("examples/orders/order.ik.toml")
+    order = orders.create("order-1042")
 
-try:
-    order.refund()
-except IllegalStateError as err:
-    print(err.code)  # IK_ILLEGAL_STATE — canonical state stays "cart"
+    try:
+        order.refund()
+    except IllegalStateError as err:
+        print(err.code)  # IK_ILLEGAL_STATE — canonical state stays "cart"
 
-paid = order.pay(payment_ref="ch_1042")
-print(paid.state, paid.generation)  # paid 1
+    paid = order.pay(payment_ref="ch_1042")
+    print(paid.state, paid.generation)  # paid 1
 ```
 
 ### Go
@@ -201,7 +202,7 @@ paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"})
 - **Versioned machine evolution:** each aggregate pins `(machine_id, version, spec_hash)`. Deploy v2 for new aggregates while v1 aggregates drain cleanly on their original rules ([docs/machine-evolution.md](docs/machine-evolution.md)).
 - **Python external reducers:** bind a deterministic `module:qualname` reducer for complex domain reduction while Rust retains sole authority over capabilities, transactions, journaling, replay, and declared kernel laws ([docs/python.md](docs/python.md)).
 - **Unified typed codegen & schema authoring (TypeScript, Python, Go):** `ik codegen machine.ik.toml --lang ts|py|go --out <file>` generates typed `Machine`/`Aggregate` wrappers, `StateName` literals, and `Facts` directly from the compiled `.ik.toml` (`--check` fails if stale); [`schema/ik.schema.json`](schema/ik.schema.json) gives editors inline validation and autocompletion for schema 1 & 2 files, alongside native TOML bool/int literals and simultaneous checked `i64` arithmetic in `then`.
-- **Brownfield projections, anti-bypass CI guard & offline store audit:** stream ordered changes via `kernel.events()` (`TS` / `Py` / `Go`, wrapping `ik events`), derive CI anti-bypass rules directly from any machine via `ik guard init --machine <file.ik.toml> --table <table>` + `ik guard check` ([docs/brownfield-migration.md](docs/brownfield-migration.md)), and audit entire multi-machine SQLite stores read-only with `ik store verify`.
+- **Brownfield projections, indexed queries, anti-bypass CI guard & offline store audit:** query materialized state/effect status read-only via `ik list` / `machine.list(...)` (`TS` / `Py` / `Go`, backed by composite SQLite indexes), stream ordered changes via `kernel.events()` (`ik events`), derive CI anti-bypass rules directly from any machine via `ik guard init --machine <file.ik.toml> --table <table>` + `ik guard check` ([docs/brownfield-migration.md](docs/brownfield-migration.md)), and audit entire multi-machine SQLite stores read-only (`PRAGMA quick_check(1)`, hash chains, projections, and optional semantic replay) with `ik store verify`.
 - **Effect-outcome guards & safe effect runners:** command guards can inspect `effect_status`, `effect_kind`, and `effect_outcome` (`when = "effect_status == 'recorded' && effect_outcome == 'succeeded'"`) so the kernel enforces outcome routing directly; TypeScript `runEffect`, Python `run_effect`, and Go `RunEffect` orchestrate plan → external execution with bound `idempotency_key` → outcome recording without blind duplicate execution.
 - **Developer workbench:** `ik demo`, `ik init --lang ts|py|go`, `ik doctor`, `ik check` (with `--auto-seed`, `--summary`, `--compact`, zero-corpus structural lints, and automatic invariant-violation falsification), `ik laws`, `ik scenario run`, `ik diagram`, `ik simulate --open`, `ik codegen`, `ik handoff`, and `ik readout` (`ik --help` shows everyday commands; `ik --help-all` lists specialist adapters).
 
@@ -217,7 +218,9 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 | Real process-crash recovery | **35+ crash tests** | Kills child processes (`SIGABRT` / `exit(86)`) across SQLite persistence & `after_operation` boundaries; trusts SQLite WAL & OS. |
 | Multi-worker linearizability | **40 seeds × 3 workers** | Finite schedule check against a sequential reference model; not universal linearizability. |
 | Dual-solver SMT / TLC / Hegel adapters | **Optional adapters** | `Z3 + cvc5` dual-solver feasibility, TLC 2.19 finite graph checks, Hegel sampling. |
-| Kani bounded proofs (CI-gated `kani` job) | **Verified in CI (Kani 0.68 / CBMC 6.11)** | 5 CI-gated Kani harnesses covering production authority gates, checked `i64` arithmetic, ordered-guard non-fallthrough, and region terminal/joint lowering; concrete JSON/SHA-256 & SQLite remain outside Kani. |
+| Kani bounded proofs (CI-gated `kani` job) | **Verified in CI (Kani 0.68 / CBMC 6.11)** | 5 CI-gated Kani harnesses covering production authority gates, checked `i64` add/sub/div and bounded mul, ordered-guard non-fallthrough, and region terminal/joint lowering; concrete JSON/SHA-256 & SQLite remain outside Kani. |
+| SQLite durability & fencing boundary | **WAL + `synchronous=FULL` default** | Default `PRAGMA synchronous=FULL` syncs WAL transactions (`IK_SQLITE_SYNCHRONOUS=normal` opt-in). `(generation, nonce)` is a deterministic staleness-fencing token, not a secret against untrusted callers. |
+| Local throughput & latency (`scripts/bench.py`) | **Measured (release `ik --session`, Apple Silicon macOS)** | `WAL + FULL`: **3,495 commits/s** (`p50=0.232ms`, `p99=1.132ms`); indexed `ik list` at 5,000 aggregates (`limit=50`): **`p50=5.27ms`** (includes CLI subprocess spawn). Reproduce: `cargo build --release --bin ik && python3 scripts/bench.py`. |
 
 ## When to use Desmo (and when not to)
 

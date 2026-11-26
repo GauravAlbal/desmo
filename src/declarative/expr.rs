@@ -260,7 +260,7 @@ pub fn eval_then_arith(
         },
     )
 }
-/// Three-valued guard evaluation for facts known at lowering time.
+/// Left-to-right error-preserving three-valued guard evaluation for facts known at lowering time.
 ///
 /// Only comparisons between an explicitly assigned fact and a literal are
 /// folded. Arguments, unset facts, arithmetic, and other comparisons remain
@@ -284,10 +284,9 @@ pub fn eval_with_assignments_at(
     eval_known(expr, assignments, Some(state))
 }
 
-/// Three-valued evaluation with known facts, bound arguments, and optional state.
+/// Left-to-right error-preserving three-valued evaluation with known facts, bound arguments, and optional state.
 ///
-/// Same Kleene folding as [`eval_with_assignments`]. Unbound names, overflow, and
-/// comparison errors stay unknown; they are never treated as false.
+/// Unbound names, overflow, and comparison errors return `None` immediately in evaluation order so a runtime error can never be masked by a later short-circuit.
 pub fn eval_partial(
     expr: &Expr,
     facts: &std::collections::BTreeMap<String, Value>,
@@ -314,19 +313,14 @@ fn fold_partial_and(
     args: &std::collections::BTreeMap<String, Value>,
     state: Option<&str>,
 ) -> Option<bool> {
-    let mut unknown = false;
     for part in parts {
         match eval_partial(part, facts, args, state) {
-            Some(false) => return Some(false),
             Some(true) => {}
-            None => unknown = true,
+            Some(false) => return Some(false),
+            None => return None,
         }
     }
-    if unknown {
-        None
-    } else {
-        Some(true)
-    }
+    Some(true)
 }
 
 fn fold_partial_or(
@@ -335,19 +329,14 @@ fn fold_partial_or(
     args: &std::collections::BTreeMap<String, Value>,
     state: Option<&str>,
 ) -> Option<bool> {
-    let mut unknown = false;
     for part in parts {
         match eval_partial(part, facts, args, state) {
-            Some(true) => return Some(true),
             Some(false) => {}
-            None => unknown = true,
+            Some(true) => return Some(true),
+            None => return None,
         }
     }
-    if unknown {
-        None
-    } else {
-        Some(false)
-    }
+    Some(false)
 }
 
 fn resolve_partial(
@@ -429,19 +418,14 @@ fn eval_and_with_assignments(
     assignments: &std::collections::BTreeMap<String, Value>,
     state: Option<&str>,
 ) -> Option<bool> {
-    let mut unknown = false;
     for part in parts {
         match eval_known(part, assignments, state) {
-            Some(false) => return Some(false),
             Some(true) => {}
-            None => unknown = true,
+            Some(false) => return Some(false),
+            None => return None,
         }
     }
-    if unknown {
-        None
-    } else {
-        Some(true)
-    }
+    Some(true)
 }
 
 fn eval_or_with_assignments(
@@ -449,19 +433,14 @@ fn eval_or_with_assignments(
     assignments: &std::collections::BTreeMap<String, Value>,
     state: Option<&str>,
 ) -> Option<bool> {
-    let mut unknown = false;
     for part in parts {
         match eval_known(part, assignments, state) {
-            Some(true) => return Some(true),
             Some(false) => {}
-            None => unknown = true,
+            Some(true) => return Some(true),
+            None => return None,
         }
     }
-    if unknown {
-        None
-    } else {
-        Some(false)
-    }
+    Some(false)
 }
 
 fn eval_cmp_with_assignments(
@@ -567,6 +546,12 @@ fn int_value(n: i64) -> Result<Value, String> {
 }
 
 fn compare(left: &Value, op: CmpOp, right: &Value) -> Result<bool, String> {
+    let same_type = (left.as_i64().is_some() && right.as_i64().is_some())
+        || (left.is_string() && right.is_string())
+        || (left.is_boolean() && right.is_boolean());
+    if !same_type {
+        return Err("type mismatch: cannot compare values of different types".to_string());
+    }
     let ord = |a: &Value, b: &Value| -> Result<std::cmp::Ordering, String> {
         if let (Some(a), Some(b)) = (a.as_i64(), b.as_i64()) {
             return Ok(a.cmp(&b));

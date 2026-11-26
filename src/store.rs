@@ -95,6 +95,10 @@ CREATE TABLE receipts (
   PRIMARY KEY (aggregate_id, sequence),
   UNIQUE (aggregate_id, receipt_id)
 );
+CREATE INDEX IF NOT EXISTS idx_aggregates_machine_id
+  ON aggregates (machine_id, aggregate_id);
+CREATE INDEX IF NOT EXISTS idx_aggregates_machine_terminal_id
+  ON aggregates (machine_id, terminal, aggregate_id);
 ";
 
 /// A mutating request for a domain command.
@@ -242,18 +246,30 @@ fn map_sqlite(err: rusqlite::Error) -> Diagnostic {
     )
 }
 
+fn sqlite_synchronous_pragma() -> &'static str {
+    match std::env::var("IK_SQLITE_SYNCHRONOUS")
+        .ok()
+        .map(|s| s.trim().to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("normal") => "NORMAL",
+        _ => "FULL",
+    }
+}
+
 fn configure(conn: &Connection, is_create: bool) -> Result<(), Diagnostic> {
     conn.busy_timeout(Duration::from_millis(5000))
         .map_err(map_sqlite)?;
+    let sync = sqlite_synchronous_pragma();
     if is_create {
-        conn.execute_batch(
-            "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-16000;",
-        )
+        conn.execute_batch(&format!(
+            "PRAGMA journal_mode=WAL; PRAGMA synchronous={sync}; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-16000;"
+        ))
         .map_err(map_sqlite)?;
     } else {
-        conn.execute_batch(
-            "PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-16000;",
-        )
+        conn.execute_batch(&format!(
+            "PRAGMA synchronous={sync}; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-16000;"
+        ))
         .map_err(map_sqlite)?;
     }
     Ok(())
@@ -296,7 +312,7 @@ fn migrate_previous_schema(conn: &mut Connection) -> Result<(), Diagnostic> {
 }
 
 impl Store {
-    /// Create a fresh store at `path`. Refuses an existing path.
+    /// Create a fresh store at `path`. Creates missing parent directories and refuses an existing path.
     pub fn create(path: &Path) -> Result<Store, Diagnostic> {
         if path.exists() {
             return Err(Diagnostic::new(
@@ -305,7 +321,29 @@ impl Store {
                 format!("store already exists at {}", path.display()),
             ));
         }
-        let mut conn = Connection::open(path).map_err(map_sqlite)?;
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() && !parent.exists() {
+                std::fs::create_dir_all(parent).map_err(|e| {
+                    Diagnostic::new(
+                        DiagnosticCode::IkInternal,
+                        Some("store.create_parent"),
+                        format!("cannot create parent directory {}: {e}", parent.display()),
+                    )
+                })?;
+            }
+        }
+        let mut conn = Connection::open(path).map_err(|e| {
+            let diag = map_sqlite(e);
+            if diag.code == DiagnosticCode::IkStoreCorrupt {
+                Diagnostic::new(
+                    DiagnosticCode::IkInternal,
+                    Some("store.open_failed"),
+                    diag.message,
+                )
+            } else {
+                diag
+            }
+        })?;
         configure(&conn, true)?;
         let store_id = StoreId(format!("ik-store-{}", Uuid::new_v4()));
         let tx = conn
@@ -1115,6 +1153,16 @@ pub(crate) fn verify_connection_readonly(
     conn: &Connection,
     machines: Option<&[Box<dyn Machine>]>,
 ) -> Result<ReadonlyVerifyReport, Diagnostic> {
+    let quick: String = conn
+        .query_row("PRAGMA quick_check(1)", [], |row| row.get(0))
+        .map_err(map_sqlite)?;
+    if quick != "ok" {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkStoreCorrupt,
+            Some("store.quick_check"),
+            format!("SQLite quick_check failed: {quick}"),
+        ));
+    }
     let schema_version = meta_value(conn, "schema_version")?;
     if schema_version != SCHEMA_VERSION.to_string() {
         return Err(Diagnostic::new(
@@ -2868,6 +2916,36 @@ fn replay_events(machine: &dyn Machine, events: &[JournalEvent]) -> Result<Repla
         sequence: last.sequence,
         last_event_hash: last.hash.clone(),
     })
+}
+
+#[cfg(test)]
+mod store_pragma_tests {
+    use super::*;
+
+    #[test]
+    fn configure_defaults_to_synchronous_full_and_honors_normal_override() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        std::env::remove_var("IK_SQLITE_SYNCHRONOUS");
+        let full_db = dir.path().join("full.db");
+        let full_store = Store::open_or_create(&full_db).expect("open_or_create full");
+        let full_sync: i64 = full_store
+            .conn
+            .query_row("PRAGMA synchronous", [], |row| row.get(0))
+            .expect("query synchronous");
+        // SQLite PRAGMA synchronous: 0=OFF, 1=NORMAL, 2=FULL, 3=EXTRA
+        assert_eq!(full_sync, 2, "expected FULL (2) by default");
+        drop(full_store);
+
+        std::env::set_var("IK_SQLITE_SYNCHRONOUS", "normal");
+        let norm_db = dir.path().join("normal.db");
+        let norm_store = Store::open_or_create(&norm_db).expect("open_or_create normal");
+        let norm_sync: i64 = norm_store
+            .conn
+            .query_row("PRAGMA synchronous", [], |row| row.get(0))
+            .expect("query synchronous normal");
+        std::env::remove_var("IK_SQLITE_SYNCHRONOUS");
+        assert_eq!(norm_sync, 1, "expected NORMAL (1) when IK_SQLITE_SYNCHRONOUS=normal");
+    }
 }
 
 struct Replayed {

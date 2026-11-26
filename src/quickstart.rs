@@ -523,18 +523,35 @@ const here = fileURLToPath(new URL(".", import.meta.url));
 const kernel = new Kernel(join(here, ".state", "orders.db"));
 try {{
   const orders = await kernel.machine(join(here, "{toml_name}"));
-  const order = await orders.create("order-1");
   try {{
-    await order.command("refund");
+    const order = await orders.create("order-1");
+    try {{
+      await order.command("refund");
+    }} catch (err) {{
+      if (err instanceof IllegalStateError) {{
+        console.log("Refused illegal refund from cart:", err.code);
+      }} else {{
+        throw err;
+      }}
+    }}
+    const paid = await order.command("pay", {{ payment_ref: "ch_001" }});
+    console.log("Committed:", paid.namedState(), "gen", paid.generation.toString());
   }} catch (err) {{
-    if (err instanceof IllegalStateError) {{
-      console.log("Refused illegal refund from cart:", err.code);
-    }} else {{
+    if (!(err instanceof IllegalStateError)) {{
       throw err;
     }}
+    const existing = await orders.show("order-1");
+    console.log("Loaded existing order-1:", existing.namedState(), "gen", existing.generation.toString());
+    try {{
+      await existing.command("pay", {{ payment_ref: "ch_002" }});
+    }} catch (payErr) {{
+      if (payErr instanceof IllegalStateError) {{
+        console.log("Refused pay from", existing.namedState() + ":", payErr.code);
+      }} else {{
+        throw payErr;
+      }}
+    }}
   }}
-  const paid = await order.command("pay", {{ payment_ref: "ch_001" }});
-  console.log("Committed:", paid.namedState(), "gen", paid.generation.toString());
 }} finally {{
   kernel.close();
 }}
@@ -544,24 +561,41 @@ try {{
         format!(
             r#"import {{ join }} from "node:path";
 import {{ fileURLToPath }} from "node:url";
-import {{ Kernel, StaleCapabilityError }} from "@desmo/runtime";
+import {{ Kernel, IllegalStateError, StaleCapabilityError }} from "@desmo/runtime";
 // In TypeScript projects (via `tsc` or `tsx`), import VerificationAttemptMachine from "./job.machine.ts".
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const kernel = new Kernel(join(here, ".state", "jobs.db"));
 try {{
   const jobs = await kernel.machine(join(here, "{toml_name}"));
-  const created = await jobs.create("job-1");
-  const running = await created.command("start");
-  const cancelled = await running.command("cancel");
-  console.log("Cancelled:", cancelled.namedState(), "gen", cancelled.generation.toString());
   try {{
-    await running.command("submit", {{ artifact_digest: "late", baseline_digest: "worker" }});
+    const created = await jobs.create("job-1");
+    const running = await created.command("start");
+    const cancelled = await running.command("cancel");
+    console.log("Cancelled:", cancelled.namedState(), "gen", cancelled.generation.toString());
+    try {{
+      await running.command("submit", {{ artifact_digest: "late", baseline_digest: "worker" }});
+    }} catch (err) {{
+      if (err instanceof StaleCapabilityError) {{
+        console.log("Stale worker refused:", err.code);
+      }} else {{
+        throw err;
+      }}
+    }}
   }} catch (err) {{
-    if (err instanceof StaleCapabilityError) {{
-      console.log("Stale worker refused:", err.code);
-    }} else {{
+    if (!(err instanceof IllegalStateError)) {{
       throw err;
+    }}
+    const existing = await jobs.show("job-1");
+    console.log("Loaded existing job-1:", existing.namedState(), "gen", existing.generation.toString());
+    try {{
+      await existing.command("submit", {{ artifact_digest: "late", baseline_digest: "worker" }});
+    }} catch (subErr) {{
+      if (subErr instanceof IllegalStateError) {{
+        console.log("Refused submit from", existing.namedState() + ":", subErr.code);
+      }} else {{
+        throw subErr;
+      }}
     }}
   }}
 }} finally {{
@@ -580,39 +614,55 @@ from invariant_kernel import Kernel, IllegalStateError
 from order_machine import OrderMachine
 
 here = Path(__file__).resolve().parent
-kernel = Kernel(store=here / ".state" / "orders.db")
-orders = OrderMachine(kernel.machine(here / "{toml_name}"))
+with Kernel(store=here / ".state" / "orders.db", session=True) as kernel:
+    orders = OrderMachine(kernel.machine(here / "{toml_name}"))
+    try:
+        order = orders.create("order-1")
+    except IllegalStateError:
+        existing = orders.show("order-1")
+        print("Loaded existing order-1:", existing.state_name, "gen", existing.generation)
+        try:
+            existing.pay(payment_ref="ch_002")
+        except IllegalStateError as err:
+            print(f"Refused pay from {{existing.state_name}}:", err.code)
+    else:
+        try:
+            order.refund()
+        except IllegalStateError as err:
+            print("Refused illegal refund from cart:", err.code)
 
-order = orders.create("order-1")
-try:
-    order.refund()
-except IllegalStateError as err:
-    print("Refused illegal refund from cart:", err.code)
-
-paid = order.pay(payment_ref="ch_001")
-print("Committed:", paid.state_name if hasattr(paid, "state_name") else "historical", "gen", paid.generation)
+        paid = order.pay(payment_ref="ch_001")
+        print("Committed:", paid.state_name if hasattr(paid, "state_name") else "historical", "gen", paid.generation)
 "#
         )
     } else {
         format!(
             r#"from pathlib import Path
-from invariant_kernel import Kernel, HistoricalResult, StaleCapabilityError
+from invariant_kernel import Kernel, HistoricalResult, IllegalStateError, StaleCapabilityError
 from job_machine import VerificationAttemptMachine
 
 here = Path(__file__).resolve().parent
-kernel = Kernel(store=here / ".state" / "jobs.db")
-jobs = VerificationAttemptMachine(kernel.machine(here / "{toml_name}"))
-
-created = jobs.create("job-1")
-running = created.start()
-assert not isinstance(running, HistoricalResult)
-cancelled = running.cancel()
-assert not isinstance(cancelled, HistoricalResult)
-print("Cancelled:", cancelled.state_name, "gen", cancelled.generation)
-try:
-    running.submit(artifact_digest="late", baseline_digest="worker")
-except StaleCapabilityError as err:
-    print("Stale worker refused:", err.code)
+with Kernel(store=here / ".state" / "jobs.db", session=True) as kernel:
+    jobs = VerificationAttemptMachine(kernel.machine(here / "{toml_name}"))
+    try:
+        created = jobs.create("job-1")
+    except IllegalStateError:
+        existing = jobs.show("job-1")
+        print("Loaded existing job-1:", existing.state_name, "gen", existing.generation)
+        try:
+            existing.submit(artifact_digest="late", baseline_digest="worker")
+        except IllegalStateError as err:
+            print(f"Refused submit from {{existing.state_name}}:", err.code)
+    else:
+        running = created.start()
+        assert not isinstance(running, HistoricalResult)
+        cancelled = running.cancel()
+        assert not isinstance(cancelled, HistoricalResult)
+        print("Cancelled:", cancelled.state_name, "gen", cancelled.generation)
+        try:
+            running.submit(artifact_digest="late", baseline_digest="worker")
+        except StaleCapabilityError as err:
+            print("Stale worker refused:", err.code)
 "#
         )
     }
@@ -636,6 +686,7 @@ fn go_demo_script(template: &str, toml_name: &str) -> String {
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -660,7 +711,19 @@ func main() {{
 	}}
 	order, err := orders.Create(ctx, "order-1")
 	if err != nil {{
-		log.Fatal(err)
+		var illegal *ik.IllegalStateError
+		if !errors.As(err, &illegal) {{
+			log.Fatal(err)
+		}}
+		existing, showErr := orders.Show(ctx, "order-1")
+		if showErr != nil {{
+			log.Fatal(showErr)
+		}}
+		fmt.Printf("Loaded existing order-1: %s (gen %d)\n", existing.StateName(), existing.Raw.Generation)
+		if _, _, payErr := existing.Pay(ctx, "demo-pay-2", OrderPayArgs{{PaymentRef: "ch_002"}}); payErr != nil {{
+			fmt.Printf("Refused pay from %s: %v\n", existing.StateName(), payErr)
+		}}
+		return
 	}}
 	if _, _, err := order.Refund(ctx, "demo-refund-check"); err != nil {{
 		fmt.Println("Refused illegal refund from cart:", err)
@@ -679,6 +742,7 @@ func main() {{
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -703,7 +767,22 @@ func main() {{
 	}}
 	created, err := jobs.Create(ctx, "job-1")
 	if err != nil {{
-		log.Fatal(err)
+		var illegal *ik.IllegalStateError
+		if !errors.As(err, &illegal) {{
+			log.Fatal(err)
+		}}
+		existing, showErr := jobs.Show(ctx, "job-1")
+		if showErr != nil {{
+			log.Fatal(showErr)
+		}}
+		fmt.Printf("Loaded existing job-1: %s (gen %d)\n", existing.StateName(), existing.Raw.Generation)
+		if _, _, subErr := existing.Submit(ctx, "demo-submit-2", VerificationAttemptSubmitArgs{{
+			ArtifactDigest: "late",
+			BaselineDigest: "worker",
+		}}); subErr != nil {{
+			fmt.Printf("Refused submit from %s: %v\n", existing.StateName(), subErr)
+		}}
+		return
 	}}
 	running, _, err := created.Start(ctx, "demo-start-1")
 	if err != nil {{

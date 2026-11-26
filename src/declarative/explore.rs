@@ -480,7 +480,6 @@ fn walk(
                         depth: node.depth + 1,
                     });
                 }
-                continue;
             }
         }
         let cur_state_name = node.state.get("state").and_then(Value::as_str);
@@ -502,6 +501,17 @@ fn walk(
                     outcome_index,
                     planned_effect,
                 } => {
+                    if uses_effect_guards
+                        && planned_effect.is_some()
+                        && matches!(node.effect, EffectStatus::Pending(_))
+                    {
+                        refusal_classes
+                            .insert(crate::diagnostic::DiagnosticCode::IkEffectStale.as_str());
+                        if let Some(gb) = traced.as_mut() {
+                            gb.record_loop(&node.state, candidate, "refused:IK_EFFECT_STALE");
+                        }
+                        continue;
+                    }
                     edges += 1;
                     if let Some(gb) = traced.as_mut() {
                         gb.record_commit(&node.state, &next, terminal, candidate);

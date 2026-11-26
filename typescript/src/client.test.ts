@@ -129,3 +129,60 @@ test("kernel.events streams ordered cursor pages and latest projections", async 
     kernel.close();
   }
 });
+
+test("machine.list and kernel.list filter by state, effect, terminal and paginate", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "desmo-ts-list-"));
+  const ordersPath = fileURLToPath(new URL("../../examples/orders/order.ik.toml", import.meta.url));
+  const fxPath = fileURLToPath(new URL("../../machines/effect_probe.ik.toml", import.meta.url));
+  const kernel = new Kernel(join(dir, ".state", "store.db"));
+  try {
+    const orders = await kernel.machine(ordersPath);
+    const fx = await kernel.machine(fxPath);
+
+    const o1 = await orders.create("ord-1");
+    await o1.command("pay", { payment_ref: "ch_1" });
+    const o2 = await orders.create("ord-2");
+    await o2.command("cancel");
+    await orders.create("ord-3");
+
+    const f1 = await fx.create("fx-1");
+    await f1.command("plan", { effect_id: "e1", payload_digest: "p1", idempotency_key: "k1" });
+
+    const page1 = await orders.list({ limit: 2 });
+    assert.equal(page1.schema, "ik.list.v1");
+    assert.equal(page1.hasMore, true);
+    assert.equal(page1.nextAfter, "ord-2");
+    assert.deepEqual(
+      page1.aggregates.map((a) => a.aggregateId),
+      ["ord-1", "ord-2"],
+    );
+
+    const page2 = await orders.list({ after: page1.nextAfter, limit: 2 });
+    assert.equal(page2.hasMore, false);
+    assert.deepEqual(
+      page2.aggregates.map((a) => a.aggregateId),
+      ["ord-3"],
+    );
+
+    const paid = await orders.list({ state: "paid" });
+    assert.deepEqual(
+      paid.aggregates.map((a) => a.aggregateId),
+      ["ord-1"],
+    );
+
+    const pending = await kernel.list({ effect: "pending" });
+    assert.deepEqual(
+      pending.aggregates.map((a) => a.aggregateId),
+      ["fx-1"],
+    );
+    assert.equal(pending.aggregates[0].effect.status, "pending");
+
+    const terminal = await orders.list({ terminal: true });
+    assert.deepEqual(
+      terminal.aggregates.map((a) => a.aggregateId),
+      ["ord-2"],
+    );
+  } finally {
+    kernel.close();
+  }
+});

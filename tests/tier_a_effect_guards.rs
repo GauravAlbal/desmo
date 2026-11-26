@@ -246,3 +246,78 @@ fn ik_check_auto_seed_explores_through_effect_outcomes() {
     assert_eq!(v["assurance_mode"], "auto_seeded_bounded", "compact={v}");
     let _ = std::fs::remove_dir_all(&tmp);
 }
+
+#[test]
+fn ik_check_explores_commands_guarded_by_pending_effect_and_blocks_second_plan() {
+    let m = ik::declarative::parse_and_compile(
+        r#"
+schema_version = 1
+machine_id = "pending_fx_cancel"
+machine_version = 1
+
+[facts]
+
+[states]
+idle = { initial = true }
+waiting = {}
+cancelled = { terminal = true }
+done = { terminal = true }
+
+[commands.start_job]
+from = ["idle"]
+to = "waiting"
+effect = { kind = "job", id = "j1", payload_digest = "p1", idempotency_key = "k1" }
+
+[commands.cancel_while_pending]
+from = ["waiting"]
+to = "cancelled"
+when = "effect_status == 'pending'"
+
+[commands.replan_blocked]
+from = ["waiting"]
+to = "done"
+when = "effect_status == 'pending'"
+effect = { kind = "job2", id = "j2", payload_digest = "p2", idempotency_key = "k2" }
+
+[commands.finish]
+from = ["waiting"]
+to = "done"
+when = "effect_status == 'recorded' && effect_outcome == 'ok'"
+"#,
+    )
+    .expect("compile pending cancel machine");
+
+    let corpus = ik::declarative::auto_seed_corpus(m.definition());
+    let run = ik::declarative::explore::explore(
+        &m,
+        &corpus,
+        ik::declarative::explore::Bounds {
+            max_nodes: 128,
+            max_depth: 8,
+        },
+    );
+    assert!(
+        run.coverage
+            .executed_commands
+            .iter()
+            .any(|c| c == "cancel_while_pending"),
+        "cancel_while_pending must be reachable while effect is pending: {:?}",
+        run.coverage.executed_commands
+    );
+    assert!(
+        !run.coverage
+            .executed_commands
+            .iter()
+            .any(|c| c == "replan_blocked"),
+        "second effect-planning command while pending must refuse with IK_EFFECT_STALE: {:?}",
+        run.coverage.executed_commands
+    );
+    assert!(
+        run.coverage
+            .refusal_classes
+            .iter()
+            .any(|c| c == "IK_EFFECT_STALE"),
+        "expected IK_EFFECT_STALE refusal: {:?}",
+        run.coverage.refusal_classes
+    );
+}

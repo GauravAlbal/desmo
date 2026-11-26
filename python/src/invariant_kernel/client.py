@@ -16,6 +16,8 @@ from .errors import EffectCompletionError, TransportError
 from .invocation import Invocation
 from .reducer import ReducerIdentity, binding_descriptor, canonical_digest, freeze
 from .types import (
+    AggregateList,
+    AggregateSummary,
     Capability,
     CheckResult,
     Effect,
@@ -289,6 +291,58 @@ class Kernel:
             raw=dict(raw),
         )
 
+    def list(
+        self,
+        *,
+        machine_id: Optional[str] = None,
+        state: Optional[str] = None,
+        effect: Optional[str] = None,
+        terminal: Optional[bool] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> AggregateList:
+        """Query aggregates read-only with optional machine, state, effect, terminal, and keyset filters."""
+        raw = transport.run_list(
+            self.binary,
+            self.store,
+            machine_id=machine_id,
+            state=state,
+            effect=effect,
+            terminal=terminal,
+            after=after,
+            limit=limit,
+            timeout=self.timeout,
+        )
+        rows: list[AggregateSummary] = []
+        for item in raw["aggregates"]:
+            eff = Effect(item.get("effect") if isinstance(item.get("effect"), Mapping) else None)
+            state_name = item.get("state_name")
+            rows.append(
+                AggregateSummary(
+                    aggregate_id=str(item["aggregate_id"]),
+                    machine_id=str(item["machine_id"]),
+                    machine_version=int(item["machine_version"]),
+                    machine_spec_hash=str(item["machine_spec_hash"]),
+                    state=item["state"],
+                    state_name=str(state_name) if isinstance(state_name, str) else None,
+                    terminal=bool(item["terminal"]),
+                    generation=int(item["generation"]),
+                    sequence=int(item["sequence"]),
+                    effect=eff,
+                    effect_status=str(item.get("effect_status") or eff.status),
+                    raw=dict(item),
+                )
+            )
+        next_after = raw.get("next_after")
+        return AggregateList(
+            schema=str(raw["schema"]),
+            store=str(raw["store"]),
+            next_after=str(next_after) if isinstance(next_after, str) else None,
+            has_more=bool(raw["has_more"]),
+            aggregates=rows,
+            raw=dict(raw),
+        )
+
     def raw(self) -> "RawKernelClient":
         return RawKernelClient(self)
 
@@ -549,6 +603,25 @@ class Machine:
 
     def show(self, aggregate_id: str) -> "Aggregate":
         return self.kernel.show(aggregate_id, self)
+
+    def list(
+        self,
+        *,
+        state: Optional[str] = None,
+        effect: Optional[str] = None,
+        terminal: Optional[bool] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> AggregateList:
+        """List aggregates belonging to this machine."""
+        return self.kernel.list(
+            machine_id=self.identity.machine_id,
+            state=state,
+            effect=effect,
+            terminal=terminal,
+            after=after,
+            limit=limit,
+        )
 
     def replay(self, aggregate_id: Optional[str] = None) -> dict[str, Any]:
         return self.kernel.replay(self, aggregate_id)

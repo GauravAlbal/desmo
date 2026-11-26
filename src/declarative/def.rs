@@ -629,25 +629,24 @@ fn check_effect(cmd: &CommandDef, name: &str, errors: &mut Vec<String>) {
     }
 }
 
-/// Invariant fact references in `when` and `assert` clauses.
+/// Invariant fact references, types, and state literals in `when` and `assert` clauses.
 fn check_invariants(def: &Definition, errors: &mut Vec<String>) {
     for (inv_name, inv) in &def.invariants {
         if let Some(when) = &inv.when {
             match crate::declarative::expr::parse(when) {
-                Ok(expr) => check_invariant_fact_refs(&expr, def, inv_name, "when ", errors),
+                Ok(expr) => check_invariant_expr(&expr, def, inv_name, "when ", errors),
                 Err(e) => errors.push(format!("invariant `{inv_name}` when parse error: {e}")),
             }
         }
         match crate::declarative::expr::parse(&inv.assert) {
-            Ok(expr) => check_invariant_fact_refs(&expr, def, inv_name, "", errors),
+            Ok(expr) => check_invariant_expr(&expr, def, inv_name, "", errors),
             Err(e) => errors.push(format!("invariant `{inv_name}` assert parse error: {e}")),
         }
     }
 }
 
-/// Emit `unknown fact` errors for every fact reference in an invariant expression.
-/// `when_prefix` is `"when "` for a `when` clause and `""` for an `assert` clause.
-fn check_invariant_fact_refs(
+/// Type-check and validate fact/state references in an invariant clause.
+fn check_invariant_expr(
     expr: &crate::declarative::expr::Expr,
     def: &Definition,
     inv_name: &str,
@@ -659,14 +658,10 @@ fn check_invariant_fact_refs(
             "invariant `{inv_name}` {when_prefix}cannot reference `effect_status`, `effect_kind`, or `effect_outcome` (effect guards belong on commands)"
         ));
     }
-    let mut facts = Vec::new();
-    collect_fact_refs(expr, &mut facts);
-    for f in facts {
-        if !def.facts.contains_key(&f) {
-            errors.push(format!(
-                "invariant `{inv_name}` {when_prefix}references unknown fact `{f}`"
-            ));
-        }
+    let mut issues = Vec::new();
+    walk_expr(expr, def, None, &mut issues);
+    for issue in issues {
+        errors.push(format!("invariant `{inv_name}` {when_prefix}{issue}"));
     }
 }
 
@@ -679,38 +674,6 @@ fn value_matches_type(v: &Value, ty: &str) -> bool {
     }
 }
 
-fn collect_fact_refs(expr: &crate::declarative::expr::Expr, out: &mut Vec<String>) {
-    use crate::declarative::expr::Expr as E;
-    match expr {
-        E::Or(parts) | E::And(parts) => {
-            for p in parts {
-                collect_fact_refs(p, out);
-            }
-        }
-        E::Cmp(cmp) => {
-            collect_operand_refs(&cmp.left, out);
-            collect_operand_refs(&cmp.right, out);
-        }
-        E::Exists(name) | E::NotExists(name) => out.push(name.clone()),
-        E::TextIn(pred) => collect_operand_refs(&pred.value, out),
-    }
-}
-
-fn collect_operand_refs(op: &crate::declarative::expr::Operand, out: &mut Vec<String>) {
-    use crate::declarative::expr::Operand;
-    match op {
-        Operand::Fact(name) => out.push(name.clone()),
-        Operand::Arith { base, .. } | Operand::Mul { base, .. } | Operand::Div { base, .. } => {
-            collect_operand_refs(base, out)
-        }
-        Operand::BinArith { left, right, .. } => {
-            collect_operand_refs(left, out);
-            collect_operand_refs(right, out);
-        }
-        _ => {}
-    }
-}
-
 /// Type-check a guard: facts exist, arg refs exist, operand types are compatible.
 fn check_guard(
     expr: &crate::declarative::expr::Expr,
@@ -718,7 +681,7 @@ fn check_guard(
     cmd: &CommandDef,
 ) -> Option<Vec<String>> {
     let mut issues = Vec::new();
-    walk_guard(expr, def, cmd, &mut issues);
+    walk_expr(expr, def, Some(cmd), &mut issues);
     if issues.is_empty() {
         None
     } else {
@@ -726,17 +689,17 @@ fn check_guard(
     }
 }
 
-fn walk_guard(
+fn walk_expr(
     expr: &crate::declarative::expr::Expr,
     def: &Definition,
-    cmd: &CommandDef,
+    cmd: Option<&CommandDef>,
     issues: &mut Vec<String>,
 ) {
-    use crate::declarative::expr::Expr as E;
+    use crate::declarative::expr::{CmpOp, Expr as E};
     match expr {
         E::Or(parts) | E::And(parts) => {
             for p in parts {
-                walk_guard(p, def, cmd, issues);
+                walk_expr(p, def, cmd, issues);
             }
         }
         E::Exists(name) | E::NotExists(name) => {
@@ -752,6 +715,10 @@ fn walk_guard(
                     issues.push(format!("type mismatch: cannot compare {l:?} with {r:?}"));
                 }
             }
+            if matches!(cmp.op, CmpOp::Eq | CmpOp::Ne) {
+                check_state_literal(&cmp.left, &cmp.right, def, issues);
+                check_state_literal(&cmp.right, &cmp.left, def, issues);
+            }
         }
         E::TextIn(pred) => match operand_ty(&pred.value, def, cmd, issues) {
             Some(Ty::Str) => {}
@@ -760,6 +727,22 @@ fn walk_guard(
             }
             None => {}
         },
+    }
+}
+
+fn check_state_literal(
+    side: &crate::declarative::expr::Operand,
+    other: &crate::declarative::expr::Operand,
+    def: &Definition,
+    issues: &mut Vec<String>,
+) {
+    if matches!(side, crate::declarative::expr::Operand::State) {
+        if let crate::declarative::expr::Operand::Literal(Value::String(s)) = other {
+            if !def.states.contains_key(s) {
+                let hint = suggest_suffix(s, def.states.keys());
+                issues.push(format!("comparison references unknown state `{s}`{hint}"));
+            }
+        }
     }
 }
 
@@ -773,7 +756,7 @@ enum Ty {
 fn operand_ty(
     op: &crate::declarative::expr::Operand,
     def: &Definition,
-    cmd: &CommandDef,
+    cmd: Option<&CommandDef>,
     issues: &mut Vec<String>,
 ) -> Option<Ty> {
     use crate::declarative::expr::Operand;
@@ -805,7 +788,13 @@ fn fact_operand_ty(name: &str, def: &Definition, issues: &mut Vec<String>) -> Op
     }
 }
 
-fn arg_operand_ty(name: &str, cmd: &CommandDef, issues: &mut Vec<String>) -> Option<Ty> {
+fn arg_operand_ty(name: &str, cmd: Option<&CommandDef>, issues: &mut Vec<String>) -> Option<Ty> {
+    let Some(cmd) = cmd else {
+        issues.push(format!(
+            "cannot reference command argument `${name}` in invariant"
+        ));
+        return None;
+    };
     match cmd.args.as_ref().and_then(|a| a.get(name)) {
         Some(ty) => ty_from_str(ty),
         None => {
@@ -839,7 +828,7 @@ fn literal_operand_ty(v: &Value) -> Option<Ty> {
 fn arith_operand_ty(
     base: &crate::declarative::expr::Operand,
     def: &Definition,
-    cmd: &CommandDef,
+    cmd: Option<&CommandDef>,
     issues: &mut Vec<String>,
 ) -> Option<Ty> {
     match operand_ty(base, def, cmd, issues) {
@@ -856,7 +845,7 @@ fn scale_operand_ty(
     amount: i64,
     base: &crate::declarative::expr::Operand,
     def: &Definition,
-    cmd: &CommandDef,
+    cmd: Option<&CommandDef>,
     issues: &mut Vec<String>,
 ) -> Option<Ty> {
     if amount <= 0 {
@@ -947,7 +936,7 @@ fn check_then(
                             ));
                         } else {
                             let mut expr_issues = Vec::new();
-                            let _ = operand_ty(&op, def, cmd, &mut expr_issues);
+                            let _ = operand_ty(&op, def, Some(cmd), &mut expr_issues);
                             for issue in expr_issues {
                                 issues.push(format!("`then` for `{fact}`: {issue}"));
                             }

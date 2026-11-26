@@ -1098,35 +1098,71 @@ proptest::proptest! {
                 Expr::And(vec![nested_expr, leaf.clone()])
             };
         }
-        let mut conjunction_completions = Vec::new();
-        let mut disjunction_completions = Vec::new();
-        let mut nested_completions = Vec::new();
-        for assignment in 0..(1usize << unknown_index) {
+        // Each unknown leaf has 3 runtime outcomes: False (0), True (1), Error (2).
+        // Runtime evaluates left-to-right with short-circuiting and never recovers past an Error.
+        let mut conjunction_completions: Vec<Option<bool>> = Vec::new();
+        let mut disjunction_completions: Vec<Option<bool>> = Vec::new();
+        let mut nested_completions: Vec<Option<bool>> = Vec::new();
+        let mut limit = 1usize;
+        for _ in 0..unknown_index {
+            limit *= 3;
+        }
+        for assignment in 0..limit {
+            let mut rem = assignment;
+            let mut unknown_vals = Vec::with_capacity(unknown_index);
+            for _ in 0..unknown_index {
+                unknown_vals.push(rem % 3);
+                rem /= 3;
+            }
             let values = kinds
                 .iter()
                 .enumerate()
                 .map(|(index, kind)| match *kind {
-                    0 => true,
-                    1 => false,
-                    _ => assignment & (1usize << unknowns[index].unwrap()) != 0,
+                    0 => Some(true),
+                    1 => Some(false),
+                    _ => match unknown_vals[unknowns[index].unwrap()] {
+                        0 => Some(false),
+                        1 => Some(true),
+                        _ => None,
+                    },
                 })
                 .collect::<Vec<_>>();
-            conjunction_completions.push(values.iter().all(|value| *value));
-            disjunction_completions.push(values.iter().any(|value| *value));
+            let eval_and = |vs: &[Option<bool>]| -> Option<bool> {
+                for &v in vs {
+                    match v {
+                        Some(true) => {}
+                        Some(false) => return Some(false),
+                        None => return None,
+                    }
+                }
+                Some(true)
+            };
+            let eval_or = |vs: &[Option<bool>]| -> Option<bool> {
+                for &v in vs {
+                    match v {
+                        Some(false) => {}
+                        Some(true) => return Some(true),
+                        None => return None,
+                    }
+                }
+                Some(false)
+            };
+            conjunction_completions.push(eval_and(&values));
+            disjunction_completions.push(eval_or(&values));
             let mut nested = values[0];
             for (value, is_or) in values.iter().skip(1).zip(&connectives) {
                 nested = if *is_or {
-                    nested || *value
+                    eval_or(&[nested, *value])
                 } else {
-                    nested && *value
+                    eval_and(&[nested, *value])
                 };
             }
             nested_completions.push(nested);
         }
-        let consensus = |values: &[bool]| {
-            if values.iter().all(|value| *value) {
+        let consensus = |values: &[Option<bool>]| {
+            if values.iter().all(|value| *value == Some(true)) {
                 Some(true)
-            } else if values.iter().all(|value| !*value) {
+            } else if values.iter().all(|value| *value == Some(false)) {
                 Some(false)
             } else {
                 None
@@ -1145,6 +1181,42 @@ proptest::proptest! {
             consensus(&nested_completions)
         );
     }
+}
+
+#[test]
+fn unset_fact_before_contradicted_region_is_not_pruned_and_refuses_at_runtime() {
+    const SRC: &str = r#"schema_version = 2
+machine_id = "err_order"
+machine_version = 1
+[facts]
+unset_fact = { type = "int", policy = "replace" }
+[regions.a.states]
+a1 = { initial = true }
+a2 = {}
+[regions.a.commands.go]
+from = ["a1"]
+outcomes = [
+  { when = 'unset_fact == 1 && region_a == "a2"', to = "a2" },
+  { to = "a1" },
+]
+"#;
+    let parsed = parse_source(SRC).expect("parse");
+    let outcomes = parsed.definition.commands["go"].outcomes.as_ref().unwrap();
+    assert_eq!(
+        outcomes.len(),
+        2,
+        "left-hand unset fact may error before right-hand region_a contradiction, so lowering must preserve the arm"
+    );
+    let compiled = ik::declarative::compile::compile(parsed.definition).expect("compile");
+    let err = compiled
+        .decide(
+            &compiled.initial_state(),
+            None,
+            &ik::effect::EffectStatus::None,
+            &json!({ "name": "go", "args": {} }),
+        )
+        .expect_err("unset_fact == 1 on outcome 0 must refuse instead of falling through");
+    assert_eq!(err.code, ik::diagnostic::DiagnosticCode::IkInvariantFailed);
 }
 
 #[test]

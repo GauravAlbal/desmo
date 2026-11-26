@@ -224,3 +224,34 @@ def test_kernel_events_cursor_pagination(ik_bin: Path, tmp_path: Path) -> None:
     assert len(page2.events) == 1
     assert page2.events[0].aggregate_id == "ord-2"
     assert page2.events[0].is_latest_for_aggregate is True
+
+
+def test_machine_and_kernel_list(ik_bin: Path, tmp_path: Path) -> None:
+    with Kernel(tmp_path / ".state" / "list.db", binary=str(ik_bin)) as k:
+        orders = k.machine(REPO / "examples" / "orders" / "order.ik.toml")
+        fx = k.machine(EFFECT)
+
+        orders.create("ord-1").pay(payment_ref="ch_1")
+        orders.create("ord-2").cancel()
+        orders.create("ord-3")
+        fx.create("fx-1").plan(effect_id="e1", payload_digest="p1", idempotency_key="k1")
+
+        p1 = orders.list(limit=2)
+        assert p1.schema == "ik.list.v1"
+        assert p1.has_more is True
+        assert p1.next_after == "ord-2"
+        assert [a.aggregate_id for a in p1.aggregates] == ["ord-1", "ord-2"]
+
+        p2 = orders.list(after=p1.next_after, limit=2)
+        assert p2.has_more is False
+        assert [a.aggregate_id for a in p2.aggregates] == ["ord-3"]
+
+        paid = orders.list(state="paid")
+        assert [a.aggregate_id for a in paid.aggregates] == ["ord-1"]
+
+        pending = k.list(effect="pending")
+        assert [a.aggregate_id for a in pending.aggregates] == ["fx-1"]
+        assert pending.aggregates[0].effect.status == "pending"
+
+        terminal = orders.list(terminal=True)
+        assert [a.aggregate_id for a in terminal.aggregates] == ["ord-2"]

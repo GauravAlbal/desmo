@@ -129,6 +129,12 @@ const SUBCOMMANDS: &[Subcommand] = &[
     },
     Subcommand {
         group: "Inspect & Store",
+        name: "list",
+        usage: "       ik list <store.sqlite> [--machine <id>] [--state <name>] [--effect none|pending|recorded] [--terminal true|false] [--after <aggregate_id>] [--limit <n>] [--json]",
+        run: crate::list::run,
+    },
+    Subcommand {
+        group: "Inspect & Store",
         name: "census",
         usage: "       ik census <store.sqlite> [--json]",
         run: crate::census::run,

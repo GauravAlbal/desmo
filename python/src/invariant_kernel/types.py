@@ -257,3 +257,33 @@ class EventFeed:
     has_more: bool
     events: list[EventCursorRow]
     raw: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class AggregateSummary:
+    """One aggregate summary row returned by ``Kernel.list`` / ``Machine.list``."""
+
+    aggregate_id: str
+    machine_id: str
+    machine_version: int
+    machine_spec_hash: str
+    state: Any
+    state_name: Optional[str]
+    terminal: bool
+    generation: int
+    sequence: int
+    effect: Effect
+    effect_status: str
+    raw: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class AggregateList:
+    """Paginated read-only aggregate list returned by ``Kernel.list`` / ``Machine.list``."""
+
+    schema: str
+    store: str
+    next_after: Optional[str]
+    has_more: bool
+    aggregates: list[AggregateSummary]
+    raw: dict[str, Any]

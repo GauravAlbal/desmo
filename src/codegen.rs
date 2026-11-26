@@ -409,39 +409,41 @@ fn generate_py(def: &Definition, identity: &MachineIdentity, import_from: &str) 
             out.push_str(&format!("    {name}: {py_ty}\n"));
         }
     }
-    out.push_str(&format!(
+    out.push_str(
         "\n\nclass StaleContractError(RuntimeError):\n    pass\n\n\n\
-         def assert_machine(machine: Machine) -> None:\n\
-             ident = machine.identity\n\
-             wire_hash = ident.to_wire().get(\"spec_hash\")\n\
-             if (\n\
-                 ident.machine_id != MACHINE_ID\n\
-                 or ident.version != MACHINE_VERSION\n\
-                 or wire_hash != SPEC_HASH\n\
-             ):\n\
-                 raise StaleContractError(\n\
-                     f\"generated contract is for {{MACHINE_ID}} v{{MACHINE_VERSION}} ({{SPEC_HASH}}); \"\n\
-                     f\"bound machine is {{ident.machine_id}} v{{ident.version}} ({{wire_hash}})\"\n\
-                 )\n\n\n\
-         class {prefix}Aggregate:\n\
-             def __init__(self, raw: Aggregate) -> None:\n\
-                 assert_machine(raw._machine)\n\
-                 self.raw = raw\n\n\
-             @property\n\
-             def id(self) -> str:\n\
-                 return self.raw.id\n\n\
-             @property\n\
-             def generation(self) -> int:\n\
-                 return self.raw.generation\n\n\
-             @property\n\
-             def terminal(self) -> bool:\n\
-                 return self.raw.terminal\n\n\
-             @property\n\
-             def state_name(self) -> StateName:\n\
-                 return self.raw.state  # type: ignore[return-value]\n\n\
-             @property\n\
-             def facts(self) -> Facts:\n\
-                 return self.raw.facts  # type: ignore[return-value]\n"
+def assert_machine(machine: Machine) -> None:\n    \
+    ident = machine.identity\n    \
+    wire_hash = ident.to_wire().get(\"spec_hash\")\n    \
+    if (\n        \
+        ident.machine_id != MACHINE_ID\n        \
+        or ident.version != MACHINE_VERSION\n        \
+        or wire_hash != SPEC_HASH\n    \
+    ):\n        \
+        raise StaleContractError(\n            \
+            f\"generated contract is for {MACHINE_ID} v{MACHINE_VERSION} ({SPEC_HASH}); \"\n            \
+            f\"bound machine is {ident.machine_id} v{ident.version} ({wire_hash})\"\n        \
+        )\n\n\n"
+    );
+    out.push_str(&format!(
+        "class {prefix}Aggregate:\n    \
+def __init__(self, raw: Aggregate) -> None:\n        \
+    assert_machine(raw._machine)\n        \
+    self.raw = raw\n\n    \
+@property\n    \
+def id(self) -> str:\n        \
+    return self.raw.id\n\n    \
+@property\n    \
+def generation(self) -> int:\n        \
+    return self.raw.generation\n\n    \
+@property\n    \
+def terminal(self) -> bool:\n        \
+    return self.raw.terminal\n\n    \
+@property\n    \
+def state_name(self) -> StateName:\n        \
+    return self.raw.state  # type: ignore[return-value]\n\n    \
+@property\n    \
+def facts(self) -> Facts:\n        \
+    return self.raw.facts  # type: ignore[return-value]\n"
     ));
 
     for (name, cmd) in &def.commands {
@@ -474,24 +476,24 @@ fn generate_py(def: &Definition, identity: &MachineIdentity, import_from: &str) 
             format!("{{{}}}", arg_dict_entries.join(", "))
         };
         out.push_str(&format!(
-            "\n    def {method}({}) -> {prefix}Aggregate | HistoricalResult:\n\
-                 res = self.raw.execute({{\"name\": {name:?}, \"args\": {body_args}}}, operation_id=operation_id)\n\
-                 if isinstance(res, HistoricalResult):\n\
-                     return res\n\
-                 return {prefix}Aggregate(res)\n",
+            "\n    def {method}({}) -> {prefix}Aggregate | HistoricalResult:\n        \
+res = self.raw.execute({{\"name\": {name:?}, \"args\": {body_args}}}, operation_id=operation_id)\n        \
+if isinstance(res, HistoricalResult):\n            \
+return res\n        \
+return {prefix}Aggregate(res)\n",
             params.join(", ")
         ));
     }
 
     out.push_str(&format!(
-        "\n\nclass {prefix}Machine:\n\
-             def __init__(self, raw: Machine) -> None:\n\
-                 assert_machine(raw)\n\
-                 self.raw = raw\n\n\
-             def create(self, aggregate_id: str) -> {prefix}Aggregate:\n\
-                 return {prefix}Aggregate(self.raw.create(aggregate_id))\n\n\
-             def show(self, aggregate_id: str) -> {prefix}Aggregate:\n\
-                 return {prefix}Aggregate(self.raw.show(aggregate_id))\n"
+        "\n\nclass {prefix}Machine:\n    \
+def __init__(self, raw: Machine) -> None:\n        \
+    assert_machine(raw)\n        \
+    self.raw = raw\n\n    \
+def create(self, aggregate_id: str) -> {prefix}Aggregate:\n        \
+    return {prefix}Aggregate(self.raw.create(aggregate_id))\n\n    \
+def show(self, aggregate_id: str) -> {prefix}Aggregate:\n        \
+    return {prefix}Aggregate(self.raw.show(aggregate_id))\n"
     ));
     let _ = command_successors;
     out
