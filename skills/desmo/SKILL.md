@@ -14,12 +14,19 @@ You engineer the lifecycle. The human supplies behavior and reserved permission.
 - `diagnose.md` — investigate a runtime refusal, race, or lost reply.
 - `readout.md` — write and lint the human summary around `ik handoff`.
 
+## Fast onboarding
+
+1. **Check binary availability:** run `ik --version` (and check `$HOME/.local/bin/ik`). If `ik` is missing and the human asked to install or onboard Desmo, run `curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh` and prepend `$HOME/.local/bin` to `PATH`.
+2. **Audit read-only first (`audit.md`):** scan the repo for implicit `status`/flag/timestamp lifecycles, extract a scratch `.ik.toml`, run `ik check` (`--auto-seed --summary`) and `ik simulate`, and report findings with `file:line` pointers. If the workspace has no application code yet, run `ik demo` and offer `ik init order --lang ts` (or `--lang py`, `--lang go`).
+3. **Ask once before modifying source:** share the findings + simulator path and ask which lifecycle (if any) to enforce with `build.md`.
+
 ## Commands & resolution
 
 `ik` is the single kernel binary (`demo`, `init`, `doctor`, `diagram`, `simulate`, `check`, `codegen`, `laws`, `corpus`, `scenario`, `guard`, `identity`, `schema`, `operations`, `events`, `census`, `store`, `report`, `handoff`, `readout`, plus `--store`/`--session` runtime modes and `--help-all` for advanced commands). Resolve it before assuming it is missing:
 - **Global install (all languages):** `ik` on `PATH` (or `$HOME/.local/bin/ik`, or `IK_BINARY`).
 - **Node/TypeScript:** `node_modules/@desmo/<platform>/bin/ik` (e.g. `darwin-arm64`, `linux-x64`); `desmo` runs as `npx --no-install desmo ...` or `node node_modules/@desmo/runtime/dist/cli.js ...`.
 - **Python / Go:** `ik` on `PATH` or `IK_BINARY`.
+- **Installing language SDKs (do not use bare npm/PyPI yet):** read `v<VER>` from `ik --version`. Node tarballs (`desmo-runtime-<VER>.tgz` + `desmo-<platform>-<VER>.tgz`) and the Python wheel (`invariant_kernel-<VER>-py3-none-any.whl`) install from `https://github.com/GauravAlbal/desmo/releases/tag/v<VER>`; Go installs via `go get github.com/GauravAlbal/desmo/go@go/v<VER>`.
 
 ## Discover
 
