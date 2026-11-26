@@ -227,7 +227,7 @@ fn encode_cmp(cmp: &Cmp, names: &Names) -> Result<Term, Unsupported> {
     let left = encode_operand(&cmp.left, names)?;
     let right = encode_operand(&cmp.right, names)?;
     if left.sort != right.sort {
-        return Ok(mixed_cmp(cmp.op, left, right));
+        return Ok(err_join(&left, &right));
     }
     if left.sort == Sort::Str && !matches!(cmp.op, CmpOp::Eq | CmpOp::Ne) {
         return Err(Unsupported::new(
@@ -244,23 +244,6 @@ fn encode_cmp(cmp: &Cmp, names: &Names) -> Result<Term, Unsupported> {
         value: val,
         error: err,
     })
-}
-
-fn mixed_cmp(op: CmpOp, left: Term, right: Term) -> Term {
-    let err = or_smt(&left.error, &right.error);
-    match op {
-        CmpOp::Eq => Term {
-            sort: Sort::Bool,
-            value: "false".to_string(),
-            error: err,
-        },
-        CmpOp::Ne => Term {
-            sort: Sort::Bool,
-            value: "true".to_string(),
-            error: err,
-        },
-        CmpOp::Lt | CmpOp::Le | CmpOp::Gt | CmpOp::Ge => err_join(&left, &right),
-    }
 }
 
 fn err_join(left: &Term, right: &Term) -> Term {

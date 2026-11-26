@@ -378,6 +378,9 @@ fn static_checker_rejects_malformed_fixtures() {
         ("invariant arg reference", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"counter\", initial = 0 }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\n[invariants.i]\nassert = \"$x == 1\""),
         ("unknown state literal in guard", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\nwhen = \"state == 'ghost'\""),
         ("unknown state literal in invariant", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"counter\", initial = 0 }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\n[invariants.i]\nwhen = \"state == 'ghost'\"\nassert = \"x >= 0\""),
+        ("then combined with outcomes", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"replace\", initial = 0 }\n[states]\ns = { initial = true }\nt = {}\n[commands.c]\nfrom = [\"s\"]\nthen = { x = \"1\" }\noutcomes = [{ to = \"t\" }]"),
+        ("then without to", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"replace\", initial = 0 }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nthen = { x = \"1\" }"),
+        ("once fact with initial assigned in then", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nk = { type = \"string\", policy = \"once\", initial = \"init\" }\n[states]\ns = { initial = true }\nt = {}\n[commands.c]\nfrom = [\"s\"]\nto = \"t\"\nthen = { k = '\"next\"' }"),
     ];
     for (label, text) in cases {
         let result = parse_and_compile(text);

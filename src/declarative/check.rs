@@ -11,6 +11,7 @@ use super::local::LocalAdequacy;
 use super::plan::{plan_diff, verification_plan, VerificationObligationV1, VerificationPlanV1};
 use super::release::{release_evidence, ReleaseEvidence, ReleaseInputs};
 use super::report::{judge_acceptance, report_from_evidence, AcceptJudgment, VerificationReportV1};
+use crate::machine::Machine;
 use serde::{Deserialize, Serialize};
 
 /// Standard `ik check` lane. Other kinds need a specialized verifier.
@@ -79,6 +80,7 @@ pub(crate) fn check_with_run(
     String,
 > {
     let new_machine = compile(new.clone()).map_err(|e| e.join("; "))?;
+    let initial_violation = new_machine.validate_initial().err();
     let mut new_plan = verification_plan(new);
     if crate::smt::adapter_configured() {
         for problem in crate::smt::adapter_problems() {
@@ -141,6 +143,15 @@ pub(crate) fn check_with_run(
         - judge_report.obligations.falsified
         - judge_report.obligations.incomplete;
     let mut judgment = judge_acceptance(&new_plan, &judge_report, &diff, baseline);
+    if let Some(diag) = initial_violation {
+        judgment.verdict = "refused".into();
+        judgment.status = "witnessed_violation".into();
+        judgment.reasons.push(format!(
+            "initial state violates invariant {}: {} (runtime `create` will refuse)",
+            diag.rule.as_deref().unwrap_or("unknown"),
+            diag.message
+        ));
+    }
     if !invariant_refusals.is_empty() {
         judgment.verdict = "refused".into();
         judgment.status = "witnessed_violation".into();

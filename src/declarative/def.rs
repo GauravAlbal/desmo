@@ -474,17 +474,20 @@ fn check_command_sources(def: &Definition, cmd: &CommandDef, name: &str, errors:
     }
 }
 
-/// Destination shape: `to`/`when` sugar and `outcomes` are mutually exclusive,
+/// Destination shape: `to`/`when`/`then` sugar and `outcomes` are mutually exclusive,
 /// and exactly one of them must be present.
 fn check_dest_shape(cmd: &CommandDef, name: &str, errors: &mut Vec<String>) {
-    let has_to = cmd.to.is_some() || cmd.when.is_some();
-    if has_to && cmd.outcomes.is_some() {
+    let has_sugar = cmd.to.is_some() || cmd.when.is_some() || cmd.then.is_some();
+    if has_sugar && cmd.outcomes.is_some() {
         errors.push(format!(
-            "command `{name}` must not combine `to`/`when` with `outcomes`"
+            "command `{name}` must not combine `to`/`when` with `outcomes` (`then` is also mutually exclusive with `outcomes`)"
         ));
     }
-    if !has_to && cmd.outcomes.is_none() {
+    if !has_sugar && cmd.outcomes.is_none() {
         errors.push(format!("command `{name}` must declare `to` or `outcomes`"));
+    }
+    if cmd.then.is_some() && cmd.to.is_none() && cmd.outcomes.is_none() {
+        errors.push(format!("command `{name}` has `then` without `to`"));
     }
 }
 
@@ -889,6 +892,11 @@ fn check_then(
         };
         if fdef.policy == "kernel_only" {
             issues.push(format!("`then` may not assign kernel_only fact `{fact}`"));
+        }
+        if fdef.policy == "once" && fdef.initial.is_some() {
+            issues.push(format!(
+                "`then` may not assign `policy = \"once\"` fact `{fact}` because it already has an `initial` value"
+            ));
         }
         if fdef.policy == "counter" {
             if !(value.starts_with('+') && value[1..].parse::<i64>().is_ok()) {
