@@ -255,3 +255,37 @@ type EventFeed struct {
 	HasMore    bool             `json:"has_more"`
 	Events     []EventCursorRow `json:"events"`
 }
+
+// ListOptions configures a read-only `Kernel.List` or `Machine.List` query.
+type ListOptions struct {
+	MachineID string
+	State     string
+	Effect    string
+	Terminal  *bool
+	After     string
+	Limit     uint64
+}
+
+// AggregateSummary is one materialized aggregate row returned by `Kernel.List`.
+type AggregateSummary struct {
+	AggregateID     string
+	MachineID       string
+	MachineVersion  uint64
+	MachineSpecHash string
+	State           any
+	StateName       string
+	Terminal        bool
+	Generation      uint64
+	Sequence        uint64
+	Effect          Effect
+	EffectStatus    string
+}
+
+// AggregateList is the paginated response from `ik list <store> --json`.
+type AggregateList struct {
+	Schema     string
+	Store      string
+	NextAfter  string
+	HasMore    bool
+	Aggregates []AggregateSummary
+}

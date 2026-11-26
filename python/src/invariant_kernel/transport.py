@@ -544,6 +544,50 @@ def run_events(
     return data
 
 
+def run_list(
+    binary: str,
+    store: str | Path,
+    *,
+    machine_id: Optional[str] = None,
+    state: Optional[str] = None,
+    effect: Optional[str] = None,
+    terminal: Optional[bool] = None,
+    after: Optional[str] = None,
+    limit: Optional[int] = None,
+    timeout: float,
+) -> dict[str, Any]:
+    argv = [binary, "list", str(store)]
+    if machine_id is not None:
+        argv.extend(["--machine", machine_id])
+    if state is not None:
+        argv.extend(["--state", state])
+    if effect is not None:
+        argv.extend(["--effect", effect])
+    if terminal is not None:
+        argv.extend(["--terminal", "true" if terminal else "false"])
+    if after is not None:
+        argv.extend(["--after", after])
+    if limit is not None:
+        argv.extend(["--limit", str(limit)])
+    argv.append("--json")
+    try:
+        proc = _run(argv, timeout=timeout)
+    except FileNotFoundError as exc:
+        raise PreDispatchError("IK_TRANSPORT", f"ik binary not found: {binary}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise TransportError("IK_TRANSPORT", f"ik list timed out after {timeout}s") from exc
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip()
+        raise TransportError("IK_TRANSPORT", err or f"ik list exited {proc.returncode}")
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise TransportError("IK_TRANSPORT", f"ik list returned invalid JSON: {exc}") from exc
+    if not isinstance(data, dict) or data.get("schema") != "ik.list.v1":
+        raise TransportError("IK_TRANSPORT", "ik list returned an unexpected payload schema")
+    return data
+
+
 def _unwrap(envelope: Any, op: str) -> dict[str, Any]:
     if not isinstance(envelope, dict):
         raise TransportError("IK_TRANSPORT", "ik returned a non-object envelope")

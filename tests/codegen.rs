@@ -61,3 +61,33 @@ fn codegen_emits_typed_wrappers_for_ts_py_and_go_and_checks_staleness() {
         assert!(stale_err.contains("stale"), "{lang} stale stderr: {stale_err}");
     }
 }
+
+#[test]
+fn generated_python_parses_cleanly_for_shipped_machines() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    for (name, machine_path) in [
+        ("order", "examples/orders/order.ik.toml"),
+        ("job", "machines/verification_attempt.ik.toml"),
+    ] {
+        let out_file = dir.path().join(format!("{name}_machine.py"));
+        let (_, stderr, code) = ik(&[
+            "codegen",
+            machine_path,
+            "--lang",
+            "py",
+            "--out",
+            out_file.to_str().unwrap(),
+        ]);
+        assert_eq!(code, Some(0), "{name} codegen stderr: {stderr}");
+        let py = Command::new("python3")
+            .args(["-m", "py_compile", out_file.to_str().unwrap()])
+            .output()
+            .expect("spawn python3");
+        assert!(
+            py.status.success(),
+            "{name} generated python failed py_compile:\n{}\n{}",
+            String::from_utf8_lossy(&py.stderr),
+            std::fs::read_to_string(&out_file).unwrap_or_default()
+        );
+    }
+}

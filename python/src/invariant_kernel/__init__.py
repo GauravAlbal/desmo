@@ -33,6 +33,8 @@ from .reducer import (
     freeze,
 )
 from .types import (
+    AggregateList,
+    AggregateSummary,
     Capability,
     CheckResult,
     Effect,
@@ -48,6 +50,8 @@ from .types import (
 
 __all__ = [
     "Aggregate",
+    "AggregateList",
+    "AggregateSummary",
     "ApplyOutcome",
     "Capability",
     "CheckResult",

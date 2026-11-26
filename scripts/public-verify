@@ -27,3 +27,25 @@ IK_BINARY="$ROOT/target/debug/ik" python3 validation/sdk_mutants/qualify.py --ru
 SCENARIO_OUT="${TMPDIR:-/tmp}/desmo-public-verify-scenarios"
 rm -rf "$SCENARIO_OUT"
 python3 examples/publish-approval/scenarios.py --out "$SCENARIO_OUT" > /dev/null
+
+INIT_SMOKE="${TMPDIR:-/tmp}/desmo-public-verify-init"
+rm -rf "$INIT_SMOKE"
+mkdir -p "$INIT_SMOKE"
+for tpl in order job; do
+  "$ROOT/target/debug/ik" init "$tpl" --lang py --out "$INIT_SMOKE/py-$tpl" > /dev/null
+  python3 -m py_compile "$INIT_SMOKE/py-$tpl/${tpl}_machine.py"
+  PYTHONPATH="$ROOT/python/src" IK_BINARY="$ROOT/target/debug/ik" python3 "$INIT_SMOKE/py-$tpl/demo.py" > /dev/null
+  PYTHONPATH="$ROOT/python/src" IK_BINARY="$ROOT/target/debug/ik" python3 "$INIT_SMOKE/py-$tpl/demo.py" > /dev/null
+
+  "$ROOT/target/debug/ik" init "$tpl" --lang ts --out "$INIT_SMOKE/ts-$tpl" > /dev/null
+  mkdir -p "$INIT_SMOKE/ts-$tpl/node_modules/@desmo"
+  ln -s "$ROOT/typescript" "$INIT_SMOKE/ts-$tpl/node_modules/@desmo/runtime"
+  "$ROOT/typescript/node_modules/.bin/tsc" --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck "$INIT_SMOKE/ts-$tpl/${tpl}.machine.ts"
+  IK_BINARY="$ROOT/target/debug/ik" node "$INIT_SMOKE/ts-$tpl/demo.mjs" > /dev/null
+  IK_BINARY="$ROOT/target/debug/ik" node "$INIT_SMOKE/ts-$tpl/demo.mjs" > /dev/null
+
+  "$ROOT/target/debug/ik" init "$tpl" --lang go --out "$INIT_SMOKE/go-$tpl" > /dev/null
+  printf '\nreplace github.com/GauravAlbal/desmo/go => %s/go\n' "$ROOT" >> "$INIT_SMOKE/go-$tpl/go.mod"
+  ( cd "$INIT_SMOKE/go-$tpl" && go vet ./... && IK_BINARY="$ROOT/target/debug/ik" go run . > /dev/null && IK_BINARY="$ROOT/target/debug/ik" go run . > /dev/null )
+done
+rm -rf "$INIT_SMOKE"

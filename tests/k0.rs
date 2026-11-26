@@ -373,11 +373,58 @@ fn static_checker_rejects_malformed_fixtures() {
         ("bad guard syntax", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\n[states]\ns = { initial = true }\nt = {}\n[commands.c]\nfrom = [\"s\"]\nto = \"t\"\nwhen = \"x ==\""),
         ("reserved genesis command", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\n[states]\ns = { initial = true }\n[commands.genesis]\nfrom = [\"s\"]\nto = \"s\""),
         ("reserved kernel command", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\n[states]\ns = { initial = true }\n[commands.\"kernel.effect\"]\nfrom = [\"s\"]\nto = \"s\""),
+        ("invariant type mismatch", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"counter\", initial = 0 }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\n[invariants.i]\nassert = \"x != '5'\""),
+        ("invariant boolean ordered cmp", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nb = { type = \"bool\", policy = \"replace\", initial = false }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\n[invariants.i]\nassert = \"b < true\""),
+        ("invariant arg reference", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"counter\", initial = 0 }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\n[invariants.i]\nassert = \"$x == 1\""),
+        ("unknown state literal in guard", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\nwhen = \"state == 'ghost'\""),
+        ("unknown state literal in invariant", "schema_version = 1\nmachine_id = \"m\"\nmachine_version = 1\n[facts]\nx = { type = \"int\", policy = \"counter\", initial = 0 }\n[states]\ns = { initial = true }\n[commands.c]\nfrom = [\"s\"]\nto = \"s\"\n[invariants.i]\nwhen = \"state == 'ghost'\"\nassert = \"x >= 0\""),
     ];
     for (label, text) in cases {
         let result = parse_and_compile(text);
         assert!(result.is_err(), "static check must reject: {label}");
     }
+}
+
+#[test]
+fn once_policy_allows_initial_write_and_refuses_overwrite() {
+    let toml = r#"
+schema_version = 1
+machine_id = "once_guard"
+machine_version = 1
+[facts]
+token = { type = "string", policy = "once" }
+[states]
+draft = { initial = true }
+sealed = {}
+done = { terminal = true }
+[commands.seal]
+from = ["draft", "sealed"]
+to = "sealed"
+args = { token = "string" }
+then = { token = "$token" }
+[commands.finish]
+from = ["sealed"]
+to = "done"
+"#;
+    let m = parse_and_compile(toml).expect("compile once machine");
+    let st0 = m.initial_state();
+    let st1 = fold(
+        &m,
+        &st0,
+        &json!({ "name": "seal", "args": { "token": "first" } }),
+    )
+    .expect("first write to once fact succeeds")
+    .state;
+    assert_eq!(st1["token"], "first");
+
+    let err = fold(
+        &m,
+        &st1,
+        &json!({ "name": "seal", "args": { "token": "second" } }),
+    )
+    .expect_err("second write to once fact must refuse");
+    assert_eq!(err.code, DiagnosticCode::IkInvariantFailed);
+    assert_eq!(err.rule.as_deref(), Some("seal.then.token"));
 }
 
 #[test]

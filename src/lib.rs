@@ -41,6 +41,7 @@ mod readout;
 pub mod identity;
 #[cfg(feature = "test-support")]
 pub mod law_mutant;
+pub mod list;
 pub mod machine;
 pub mod metamorphic;
 pub mod operation;

@@ -65,6 +65,8 @@ Then-literal quoting and native TOML values:
 - String literals require inner double quotes inside a TOML string: `then = { status = '"paid"' }` or `then = { status = "\"paid\"" }` stores `paid`; `then = { deposit_id = '""' }` stores an empty string (clearing a string fact). Bare `then = { status = "paid" }` is rejected so typos fail loudly instead of storing unintended strings.
 - Booleans and integers accept either native TOML literals (`then = { approved = true, retries_left = 3 }`) or quoted strings (`then = { approved = "true", retries_left = "3" }`) and hash to the exact same `spec_hash`.
 - Counter increments use `"+N"` on `policy = "counter"` facts only.
+- `policy = "once"` facts refuse overwriting once set (`IK_INVARIANT_FAILED`), and `policy = "kernel_only"` facts refuse assignment in `then`.
+- `[invariants]` and command guards statically reject type mismatches, `$arg` references inside `[invariants]`, and unknown `state == '...'` literals.
 - Command arguments use `"$arg"`, whose declared type must match the target fact type.
 
 Native machines (a native delegation lifecycle today) stay in a thin product package

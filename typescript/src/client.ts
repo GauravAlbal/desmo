@@ -394,6 +394,39 @@ export interface EventFeed {
   raw: Record<string, Json>;
 }
 
+export interface ListOptions {
+  machineId?: string;
+  state?: string;
+  effect?: "none" | "pending" | "recorded";
+  terminal?: boolean;
+  after?: string;
+  limit?: number;
+}
+
+export interface AggregateSummary {
+  aggregateId: string;
+  machineId: string;
+  machineVersion: number | bigint;
+  machineSpecHash: string;
+  state: Json;
+  stateName?: string;
+  terminal: boolean;
+  generation: number | bigint;
+  sequence: number | bigint;
+  effect: Effect;
+  effectStatus: string;
+  raw: Record<string, Json>;
+}
+
+export interface AggregateList {
+  schema: string;
+  store: string;
+  nextAfter?: string;
+  hasMore: boolean;
+  aggregates: AggregateSummary[];
+  raw: Record<string, Json>;
+}
+
 export interface EffectRunResult<T = undefined> {
   planned: Aggregate;
   recorded: Aggregate | HistoricalResult;
@@ -691,6 +724,11 @@ export class Machine {
   async show(aggregateId: string): Promise<Aggregate> {
     const result = await this.kernel.call("show", this, { aggregate_id: aggregateId });
     return Aggregate.fromResult(this, result);
+  }
+
+  /** List aggregates belonging to this machine, filtered by state, effect status, or terminal flag. */
+  list(options: Omit<ListOptions, "machineId"> = {}): Promise<AggregateList> {
+    return this.kernel.list({ ...options, machineId: this.identity.machine_id });
   }
 
   /** Journal audits. These do not answer whether an operation committed; use `lookupOperation`. */
@@ -1088,6 +1126,64 @@ export class Kernel {
       nextCursor: rec.next_cursor as number | bigint,
       hasMore: Boolean(rec.has_more),
       events,
+      raw: rec,
+    };
+  }
+
+  /** Query aggregates read-only with optional machine, state, effect, terminal, and keyset filters. */
+  async list(options: ListOptions = {}): Promise<AggregateList> {
+    const argv = ["list", this.store];
+    if (options.machineId !== undefined) {
+      argv.push("--machine", options.machineId);
+    }
+    if (options.state !== undefined) {
+      argv.push("--state", options.state);
+    }
+    if (options.effect !== undefined) {
+      argv.push("--effect", options.effect);
+    }
+    if (options.terminal !== undefined) {
+      argv.push("--terminal", options.terminal ? "true" : "false");
+    }
+    if (options.after !== undefined) {
+      argv.push("--after", options.after);
+    }
+    if (options.limit !== undefined) {
+      argv.push("--limit", String(options.limit));
+    }
+    argv.push("--json");
+    const data = await runJson(this.binary, argv, this.timeoutMs);
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new TransportError("ik list returned a non-object");
+    }
+    const rec = data as Record<string, Json>;
+    if (rec.schema !== "ik.list.v1" || !Array.isArray(rec.aggregates)) {
+      throw new TransportError("ik list returned an unexpected schema");
+    }
+    const aggregates: AggregateSummary[] = rec.aggregates.map((item) => {
+      const row = item as Record<string, Json>;
+      const effect = Effect.fromWire(row.effect);
+      return {
+        aggregateId: String(row.aggregate_id ?? ""),
+        machineId: String(row.machine_id ?? ""),
+        machineVersion: row.machine_version as number | bigint,
+        machineSpecHash: String(row.machine_spec_hash ?? ""),
+        state: row.state as Json,
+        stateName: typeof row.state_name === "string" ? row.state_name : undefined,
+        terminal: Boolean(row.terminal),
+        generation: row.generation as number | bigint,
+        sequence: row.sequence as number | bigint,
+        effect,
+        effectStatus: String(row.effect_status ?? effect.status),
+        raw: row,
+      };
+    });
+    return {
+      schema: String(rec.schema),
+      store: String(rec.store ?? ""),
+      nextAfter: typeof rec.next_after === "string" ? rec.next_after : undefined,
+      hasMore: Boolean(rec.has_more),
+      aggregates,
       raw: rec,
     };
   }

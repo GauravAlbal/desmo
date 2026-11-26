@@ -164,6 +164,13 @@ func (k *Kernel) Events(ctx context.Context, opts EventsOptions) (*EventFeed, er
 	return runEvents(ctx, k.Binary, k.Store, opts.Since, opts.AggregateID, opts.Limit)
 }
 
+// List queries materialized aggregates read-only with optional filters and keyset pagination.
+func (k *Kernel) List(ctx context.Context, opts ListOptions) (*AggregateList, error) {
+	ctx, cancel := k.bound(ctx)
+	defer cancel()
+	return runList(ctx, k.Binary, k.Store, opts)
+}
+
 func (k *Kernel) bound(ctx context.Context) (context.Context, context.CancelFunc) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -251,6 +258,12 @@ func (m *Machine) CreateWith(ctx context.Context, aggregateID, operationID strin
 
 func (m *Machine) Show(ctx context.Context, aggregateID string) (*Aggregate, error) {
 	return m.kernel.Show(ctx, m, aggregateID)
+}
+
+// List queries aggregates belonging to this machine.
+func (m *Machine) List(ctx context.Context, opts ListOptions) (*AggregateList, error) {
+	opts.MachineID = m.Identity.MachineID
+	return m.kernel.List(ctx, opts)
 }
 
 func (m *Machine) Replay(ctx context.Context, aggregateID string) (map[string]any, error) {

@@ -157,6 +157,106 @@ func runEvents(ctx context.Context, binary, store string, since uint64, aggregat
 	return &feed, nil
 }
 
+type wireAggregateSummary struct {
+	AggregateID     string         `json:"aggregate_id"`
+	MachineID       string         `json:"machine_id"`
+	MachineVersion  uint64         `json:"machine_version"`
+	MachineSpecHash string         `json:"machine_spec_hash"`
+	State           any            `json:"state"`
+	StateName       string         `json:"state_name"`
+	Terminal        bool           `json:"terminal"`
+	Generation      uint64         `json:"generation"`
+	Sequence        uint64         `json:"sequence"`
+	Effect          map[string]any `json:"effect"`
+	EffectStatus    string         `json:"effect_status"`
+}
+
+type wireAggregateList struct {
+	Schema     string                 `json:"schema"`
+	Store      string                 `json:"store"`
+	NextAfter  string                 `json:"next_after"`
+	HasMore    bool                   `json:"has_more"`
+	Aggregates []wireAggregateSummary `json:"aggregates"`
+}
+
+func runList(ctx context.Context, binary, store string, opts ListOptions) (*AggregateList, error) {
+	args := []string{"list", store}
+	if opts.MachineID != "" {
+		args = append(args, "--machine", opts.MachineID)
+	}
+	if opts.State != "" {
+		args = append(args, "--state", opts.State)
+	}
+	if opts.Effect != "" {
+		args = append(args, "--effect", opts.Effect)
+	}
+	if opts.Terminal != nil {
+		if *opts.Terminal {
+			args = append(args, "--terminal", "true")
+		} else {
+			args = append(args, "--terminal", "false")
+		}
+	}
+	if opts.After != "" {
+		args = append(args, "--after", opts.After)
+	}
+	if opts.Limit > 0 {
+		args = append(args, "--limit", fmt.Sprintf("%d", opts.Limit))
+	}
+	args = append(args, "--json")
+	cmd := exec.CommandContext(ctx, binary, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		msg := strings.TrimSpace(stderr.String())
+		if msg == "" {
+			msg = strings.TrimSpace(stdout.String())
+		}
+		if msg == "" {
+			msg = err.Error()
+		}
+		return nil, &TransportError{Op: "list", Message: msg, Err: err, Unsent: neverStarted(err)}
+	}
+	dec := json.NewDecoder(bytes.NewReader(stdout.Bytes()))
+	dec.UseNumber()
+	var wire wireAggregateList
+	if err := dec.Decode(&wire); err != nil {
+		return nil, &TransportError{Op: "list", Message: "ik list returned invalid JSON", Err: err}
+	}
+	if wire.Schema != "ik.list.v1" {
+		return nil, &TransportError{Op: "list", Message: fmt.Sprintf("ik list returned unexpected schema %q", wire.Schema)}
+	}
+	aggs := make([]AggregateSummary, len(wire.Aggregates))
+	for i, row := range wire.Aggregates {
+		eff := effectFromWire(row.Effect)
+		effStatus := row.EffectStatus
+		if effStatus == "" {
+			effStatus = eff.Status
+		}
+		aggs[i] = AggregateSummary{
+			AggregateID:     row.AggregateID,
+			MachineID:       row.MachineID,
+			MachineVersion:  row.MachineVersion,
+			MachineSpecHash: row.MachineSpecHash,
+			State:           row.State,
+			StateName:       row.StateName,
+			Terminal:        row.Terminal,
+			Generation:      row.Generation,
+			Sequence:        row.Sequence,
+			Effect:          eff,
+			EffectStatus:    effStatus,
+		}
+	}
+	return &AggregateList{
+		Schema:     wire.Schema,
+		Store:      wire.Store,
+		NextAfter:  wire.NextAfter,
+		HasMore:    wire.HasMore,
+		Aggregates: aggs,
+	}, nil
+}
+
 func invoke(ctx context.Context, binary, store, machine string, request map[string]any) (map[string]any, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {

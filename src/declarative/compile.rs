@@ -572,9 +572,15 @@ impl Machine for CompiledMachine {
         let outcome = &cmd.outcomes[index];
         let mut new_facts = current_facts.clone();
         for (fact, value) in &outcome.then {
+            let policy = self
+                .fact_types
+                .get(fact)
+                .map(|f| f.policy.as_str())
+                .unwrap_or("replace");
             apply_assignment(
                 &event.event_type,
                 fact,
+                policy,
                 value,
                 &args,
                 &current_facts,
@@ -657,9 +663,15 @@ impl CompiledMachine {
         let outcome = &cmd.outcomes[index];
         let mut new_facts = current_facts.clone();
         for (fact, value) in &outcome.then {
+            let policy = self
+                .fact_types
+                .get(fact)
+                .map(|f| f.policy.as_str())
+                .unwrap_or("replace");
             apply_assignment(
                 &event.event_type,
                 fact,
+                policy,
                 value,
                 &args,
                 &current_facts,
@@ -950,11 +962,19 @@ fn validate_payload_args(
 fn apply_assignment(
     name: &str,
     fact: &str,
+    policy: &str,
     value: &ThenValue,
     args: &BTreeMap<String, Value>,
     prior_facts: &BTreeMap<String, Value>,
     facts: &mut BTreeMap<String, Value>,
 ) -> Result<(), Diagnostic> {
+    if policy == "once" && prior_facts.contains_key(fact) {
+        return Err(Diagnostic::new(
+            DiagnosticCode::IkInvariantFailed,
+            Some(format!("{name}.then.{fact}")),
+            format!("fact `{fact}` has policy `once` and is already set"),
+        ));
+    }
     let resolved = match value {
         ThenValue::Literal(v) => v.clone(),
         ThenValue::Arg(arg) => args.get(arg).cloned().ok_or_else(|| {
