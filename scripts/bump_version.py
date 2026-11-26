@@ -22,11 +22,13 @@ REPO = Path(__file__).resolve().parents[1]
 TARGETS = [
     "Cargo.toml",
     "SOURCE_VERSION_POLICY",
+    "install.sh",
     "src/protocol.rs",
     "tests/*.rs",
     "tests/fixtures/profile/golden/*.json",
     "go/*.go",
     "python/pyproject.toml",
+    "python/README.md",
     "python/src/invariant_kernel/*.py",
     "python/tests/*.py",
     "scripts/release",
