@@ -20,7 +20,7 @@ import (
 const (
 	protocolMajorDefault  = 1
 	protocolMinorDefault  = 0
-	runtimeVersionDefault = "0.6.0"
+	runtimeVersionDefault = "0.7.0"
 	maxSessionLineBytes   = 4 * 1024 * 1024
 )
 

@@ -18,7 +18,7 @@ from .errors import PreDispatchError, TransportError, raise_diagnostic
 
 PROTOCOL_MAJOR = 1
 PROTOCOL_MINOR = 0
-RUNTIME_VERSION = "0.6.0"
+RUNTIME_VERSION = "0.7.0"
 _MAX_OUTPUT = 1024 * 1024
 _PROCESS_MARKER_ENV = "IK_PROCESS_TREE_TOKEN"
 

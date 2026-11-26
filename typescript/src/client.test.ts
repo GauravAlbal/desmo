@@ -39,7 +39,7 @@ test("trace html escapes payloads and states that a refused destination was neve
   const bundle: TraceBundle = {
     schema: "ikaros.trace.v2",
     product: "Ikaros",
-    runtime_version: "0.6.0",
+    runtime_version: "0.7.0",
     machine_id: "verification_attempt",
     advisory: true,
     origin: "observed",

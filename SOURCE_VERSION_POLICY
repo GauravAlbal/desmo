@@ -1,11 +1,11 @@
 DESMO SOURCE AND VERSION POLICY
 
 protocol_major=1
-runtime_version=0.6.0
-persisted_schema=3
+runtime_version=0.7.0
+persisted_schema=4
 authoring_schema=2
 
-Runtime 0.6.0 adds region authoring after 0.3.0; protocol 1.0 and persisted store schema 3 are unchanged.
+Runtime 0.7.0 advances on protocol 1.0 and persisted store schema 4 (indexed aggregates, FULL WAL durability, explicit non-goals).
 The speaking ik, Python client/worker, and Go client expectation MUST match runtime_version exactly.
 Observed integrated-source checks are source evidence only. Before publication, the release owner MUST qualify the actual binary tarball, sdist-derived wheel, offline-installed Python, and real Go client from the exact committed source, including region session/transaction behavior, and obtain the source acceptance receipt.
 The GitHub Release MUST record the exact source SHA, artifact digests, and acceptance receipt. LATEST_RELEASE MUST be updated separately only after qualified publication.

@@ -55,7 +55,7 @@ ik simulate examples/orders/order.ik.toml --out order-simulator.html
 
 Other tools stop at the diagram. When you find a lifecycle you actually want protected for good, switch to *"Enforce this lifecycle with Desmo"* ([skills/desmo/build.md](skills/desmo/build.md), `change.md`, `diagnose.md`, `readout.md`) — the exact `.ik.toml` you just checked and simulated becomes the runtime authority (single binary, zero Rust code to write).
 
-*Other platforms can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.6.0 --bin ik`. Inside an existing Node project with `@desmo/runtime`, you can also install the skill via `npx --no-install desmo skill install --dir .`.*
+*Other platforms can build `ik` from source: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.7.0 --bin ik`. Inside an existing Node project with `@desmo/runtime`, you can also install the skill via `npx --no-install desmo skill install --dir .`.*
 
 ## What a machine looks like
 
@@ -132,14 +132,14 @@ Desmo kernel  (same .ik.toml checked before deploy and enforced at runtime)
 
 ### TypeScript / Node
 
-Download the `0.6.0` runtime tarball and your platform tarball (`darwin-arm64` or `linux-x64`) from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases/tag/v0.6.0) (no npm registry needed; the platform package bundles `ik`):
+Download the `0.7.0` runtime tarball and your platform tarball (`darwin-arm64` or `linux-x64`) from the [GitHub Release](https://github.com/GauravAlbal/desmo/releases/tag/v0.7.0) (no npm registry needed; the platform package bundles `ik`):
 
 ```bash
 # macOS arm64 (for Linux x86_64, swap darwin-arm64 -> linux-x64)
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/desmo-runtime-0.6.0.tgz
-curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/desmo-darwin-arm64-0.6.0.tgz
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-runtime-0.7.0.tgz
+curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-darwin-arm64-0.7.0.tgz
 npm install --no-audit --no-fund --ignore-scripts \
-  ./desmo-runtime-0.6.0.tgz ./desmo-darwin-arm64-0.6.0.tgz
+  ./desmo-runtime-0.7.0.tgz ./desmo-darwin-arm64-0.7.0.tgz
 
 npx --no-install desmo demo orders        # unpaid refund & cancelled delivery refused
 npx --no-install desmo demo stale-worker  # late worker refused with IK_CAPABILITY_STALE
@@ -164,7 +164,7 @@ console.log(paid.namedState(), paid.generation); // paid 1n
 Install `ik` with the one-line installer above, then install the wheel directly from the GitHub Release:
 
 ```bash
-pip install https://github.com/GauravAlbal/desmo/releases/download/v0.6.0/invariant_kernel-0.6.0-py3-none-any.whl
+pip install https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/invariant_kernel-0.7.0-py3-none-any.whl
 ```
 
 ```python
@@ -186,7 +186,7 @@ with Kernel(store=".state/orders.db", session=True) as kernel:
 ### Go
 
 ```go
-// go get github.com/GauravAlbal/desmo/go@go/v0.6.0
+// go get github.com/GauravAlbal/desmo/go@go/v0.7.0
 k, _ := invariantkernel.Open(".state/orders.db", invariantkernel.Options{Session: true})
 defer k.Close()
 m, _ := k.Machine(ctx, "examples/orders/order.ik.toml")
@@ -222,17 +222,30 @@ Desmo does **not** claim to be "formally verified" end-to-end. Here is the exact
 | SQLite durability & fencing boundary | **WAL + `synchronous=FULL` default** | Default `PRAGMA synchronous=FULL` syncs WAL transactions (`IK_SQLITE_SYNCHRONOUS=normal` opt-in). `(generation, nonce)` is a deterministic staleness-fencing token, not a secret against untrusted callers. |
 | Local throughput & latency (`scripts/bench.py`) | **Measured (release `ik --session`, Apple Silicon macOS)** | `WAL + FULL`: **3,495 commits/s** (`p50=0.232ms`, `p99=1.132ms`); indexed `ik list` at 5,000 aggregates (`limit=50`): **`p50=5.27ms`** (includes CLI subprocess spawn). Reproduce: `cargo build --release --bin ik && python3 scripts/bench.py`. |
 
-## When to use Desmo (and when not to)
+## What Desmo intentionally does NOT do
 
-**Use it for:** canonical lifecycles with illegal transitions, approval gates, retries/exhaustion, external effects with idempotency keys, generation-bound authority, and crash-recoverable local SQLite state.
+Before adopting Desmo, know the explicit boundaries it is designed around:
 
-**Do not use it for:** stateless CRUD, routing, business calculations, cross-aggregate atomic invariants, multi-replica shared SQLite, read-only serverless filesystems, or distributed consensus.
+1. **No unbounded inductive proofs or guarded deadlock-freedom proofs:** `ik check` runs bounded corpus exploration and optional SMT obligation unreachability (`--deep` / Z3+cvc5), not k-induction or unbounded liveness proofs. Any unexplored invariant violation is still evaluated by the runtime on every commit and refuses loudly (`IK_INVARIANT_FAILED`) instead of persisting illegal state.
+2. **No cross-aggregate atomic invariants or distributed consensus:** Each transaction enforces invariants on a single `aggregate_id` in local SQLite. Cross-aggregate invariants (such as balance conservation across two accounts) and multi-node consensus protocols (Raft/Paxos) are out of scope.
+3. **No multi-replica shared SQLite or network daemon (`ik serve`) in `0.7.0`:** Runtime stores are single-node local SQLite files. Stateless multi-container web apps should use Track 1 (read-only audit), route lifecycle writes through one single-writer service, or wait for the planned `ik serve` daemon.
+4. **No cryptographic caller authentication on capability tokens:** `(generation, nonce)` is a deterministic optimistic-concurrency staleness fence across cooperative workers, not an unforgeable secret against untrusted callers.
+5. **No automatic historical-state schema migrator:** Aggregates pin `(machine_id, version, spec_hash)` strictly. Evolve lifecycles by deploying a new machine version for new aggregates while existing aggregates drain on their original spec.
+6. **No whole-program static anti-bypass proof:** `ik guard` scans configured source paths for status-table write patterns in CI rather than proving full-program dataflow isolation.
+7. **No exactly-once external side effects:** External effects (payments, emails, webhooks) are **at-least-once** with kernel-bound `idempotency_key` attribution (`runEffect` / `run_effect` / `RunEffect`); downstream sinks must honor the idempotency key.
+8. **No OS sandbox for external Python reducers:** `kernel.reducer` is a cooperative deterministic-reducer contract, not an isolation boundary for untrusted code.
+9. **No npm or PyPI registry packages in `0.7.0`:** Node tarballs (`@desmo/runtime`, `@desmo/darwin-arm64`, `@desmo/linux-x64`) and the Python wheel ship directly on GitHub Releases with `SHA256SUMS`; Go installs directly from Git (`go get github.com/GauravAlbal/desmo/go@go/v0.7.0`).
+
+## When to use Desmo
+
+- **Use it for:** canonical lifecycles with illegal transitions, approval gates, retries/exhaustion, external effects with idempotency keys, generation-bound authority, and crash-recoverable local SQLite state.
+- **Avoid it for:** stateless CRUD, routing, pure calculations, or workloads blocked by the non-goals above.
 
 ## Naming & compatibility
 
 - **Product & repo:** Desmo (`GauravAlbal/desmo`). **Engine & binary:** `invariant-kernel` / `ik`. **Machine files:** `.ik.toml`. **Node:** `@desmo/runtime`. **Python:** `invariant_kernel`. **Go:** `github.com/GauravAlbal/desmo/go`.
 - The name comes from a *desmodromic valve*, driven positively in both directions by cam tracks instead of relying on a spring to close.
-- **Protocol `1.0` · Runtime `0.6.0` · Store schema `4`.** `ik` and your language client must match runtime versions exactly. Existing `ikaros.trace.v2` schema identifiers remain unchanged for bundle compatibility.
+- **Protocol `1.0` · Runtime `0.7.0` · Store schema `4`.** `ik` and your language client must match runtime versions exactly. Existing `ikaros.trace.v2` schema identifiers remain unchanged for bundle compatibility.
 
 ## Documentation
 

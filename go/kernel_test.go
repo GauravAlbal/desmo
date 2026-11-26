@@ -275,11 +275,11 @@ func TestGoMatchesDirectCLI(t *testing.T) {
 	}
 	cliStore := filepath.Join(t.TempDir(), "cli.db")
 	created := runCLI(t, bin, cliStore, va, "create", map[string]any{
-		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.6.0",
+		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.7.0",
 		"request_id": "c", "op": "create", "aggregate_id": "agg-1", "machine": identity,
 	})
 	started := runCLI(t, bin, cliStore, va, "command", map[string]any{
-		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.6.0",
+		"protocol": map[string]any{"major": 1, "minor": 0}, "runtime_version": "0.7.0",
 		"request_id": "s", "op": "command", "aggregate_id": "agg-1", "machine": identity,
 		"capability": created["result"].(map[string]any)["capability"],
 		"command":    map[string]any{"name": "start"},
@@ -375,7 +375,7 @@ func writeCaptureBin(t *testing.T, capture string) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "ik-capture")
 	script := "#!/bin/sh\n" +
-		"if [ \"$1\" = \"--version\" ]; then echo 'ik 0.6.0 protocol 1.0'; exit 0; fi\n" +
+		"if [ \"$1\" = \"--version\" ]; then echo 'ik 0.7.0 protocol 1.0'; exit 0; fi\n" +
 		"cat > '" + capture + "'\n" +
 		"echo '{\"ok\":true,\"result\":{\"recorded\":true}}'\n"
 	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {

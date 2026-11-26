@@ -312,7 +312,7 @@ fn refused_initial_command_leaves_no_partial_state() {
 }
 
 /// Native consumers match `CreateWithCommandOutcome` exhaustively. Adding a variant is a source break
-/// for them (a downstream native crate stopped compiling against the `0.6.0` candidate when `Historical` was
+/// for them (a downstream native crate stopped compiling against the `0.7.0` candidate when `Historical` was
 /// added); caller-operation history is reported through `OperationOutcome` instead. This match must
 /// stay exhaustive with exactly these two arms.
 #[test]

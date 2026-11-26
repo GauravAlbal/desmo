@@ -279,7 +279,7 @@ fn assert_child_death(status: std::process::ExitStatus, die: Die, failpoint: &st
 fn cli_request(op: &str, request_id: &str, extra: &Value) -> Value {
     let mut request = json!({
         "protocol": {"major": 1, "minor": 0},
-        "runtime_version": "0.6.0",
+        "runtime_version": "0.7.0",
         "request_id": request_id,
         "op": op,
     });
