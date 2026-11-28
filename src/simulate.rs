@@ -12,7 +12,7 @@ use crate::machine::Machine;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-const USAGE: &str = "usage: ik simulate <machine.ik.toml> [--out <file.html>] [--open]";
+const USAGE: &str = "usage: ik simulate <machine.ik.toml> [--out <file.html>] [--open] [--check] [--no-check] [--corpus <cases.json>] [--bound <expr>] [--simulate] [--seed <u64>] [--steps <n>]";
 
 pub fn run(args: &[String]) -> i32 {
     match run_inner(args) {
@@ -25,6 +25,19 @@ pub fn run(args: &[String]) -> i32 {
     }
 }
 
+struct SimFlags {
+    machine: PathBuf,
+    out: Option<PathBuf>,
+    open_browser: bool,
+    explicit_check: bool,
+    no_check: bool,
+    corpus: Option<PathBuf>,
+    bound_exprs: Vec<String>,
+    use_sim: bool,
+    sim_seed: Option<u64>,
+    sim_steps: Option<usize>,
+}
+
 fn run_inner(args: &[String]) -> Result<i32, String> {
     if args.iter().any(|arg| arg == "-h" || arg == "--help") {
         println!("{USAGE}");
@@ -32,7 +45,14 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
     }
     let mut machine: Option<PathBuf> = None;
     let mut out: Option<PathBuf> = None;
+    let mut corpus: Option<PathBuf> = None;
     let mut open_browser = false;
+    let mut explicit_check = false;
+    let mut no_check = false;
+    let mut use_sim = false;
+    let mut bound_exprs: Vec<String> = Vec::new();
+    let mut sim_seed: Option<u64> = None;
+    let mut sim_steps: Option<usize> = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -41,21 +61,70 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
                 let value = args.get(i).ok_or("--out requires a path")?;
                 out = Some(PathBuf::from(value));
             }
+            "--corpus" => {
+                i += 1;
+                let value = args.get(i).ok_or("--corpus requires a path")?;
+                corpus = Some(PathBuf::from(value));
+            }
+            "--bound" => {
+                i += 1;
+                let value = args.get(i).ok_or("--bound requires an expression")?;
+                bound_exprs.push(value.clone());
+            }
+            "--seed" => {
+                i += 1;
+                let raw = args.get(i).ok_or("--seed requires an integer")?;
+                sim_seed = Some(raw.parse::<u64>().map_err(|_| format!("invalid --seed `{raw}`"))?);
+                use_sim = true;
+            }
+            "--steps" => {
+                i += 1;
+                let raw = args.get(i).ok_or("--steps requires a positive integer")?;
+                let parsed = raw
+                    .parse::<usize>()
+                    .map_err(|_| format!("invalid --steps `{raw}`"))?;
+                if parsed == 0 {
+                    return Err("--steps must be >= 1".into());
+                }
+                sim_steps = Some(parsed);
+                use_sim = true;
+            }
             "--open" => open_browser = true,
+            "--check" => explicit_check = true,
+            "--no-check" => no_check = true,
+            "--simulate" => use_sim = true,
             flag if flag.starts_with('-') => return Err(format!("unknown flag `{flag}`")),
             path if machine.is_none() => machine = Some(PathBuf::from(path)),
             other => return Err(format!("unexpected argument `{other}`")),
         }
         i += 1;
     }
-    let machine = machine.ok_or("machine definition path is required")?;
-    let compiled = load_def(&machine).map_err(|errors| errors.join("; "))?;
+    if explicit_check && no_check {
+        return Err("--check and --no-check are mutually exclusive".into());
+    }
+    let machine_path = machine.ok_or("machine definition path is required")?;
+    let flags = SimFlags {
+        machine: machine_path,
+        out,
+        open_browser,
+        explicit_check,
+        no_check,
+        corpus,
+        bound_exprs,
+        use_sim,
+        sim_seed,
+        sim_steps,
+    };
+    let compiled = load_def(&flags.machine).map_err(|errors| errors.join("; "))?;
     let def = compiled.definition();
     let mut schema = crate::declarative::schema::machine_schema(def, compiled.identity());
-    enrich_schema_with_def(&mut schema, def, &machine);
+    enrich_schema_with_def(&mut schema, def, &flags.machine);
+    if !flags.no_check {
+        attach_check_results(&mut schema, &compiled, def, &flags)?;
+    }
     let html = render_simulator_html(&schema)?;
 
-    let target_out = match (out, open_browser) {
+    let target_out = match (flags.out, flags.open_browser) {
         (Some(path), _) => Some(path),
         (None, true) => Some(std::env::temp_dir().join(format!(
             "{}-v{}-simulator.html",
@@ -76,13 +145,195 @@ fn run_inner(args: &[String]) -> Result<i32, String> {
             def.states.len(),
             def.commands.len()
         );
-        if open_browser {
+        if flags.open_browser {
             open_in_browser(&out_path)?;
         }
     } else {
         print!("{html}");
     }
     Ok(0)
+}
+
+fn attach_check_results(
+    schema: &mut Value,
+    compiled: &crate::declarative::CompiledMachine,
+    def: &Definition,
+    flags: &SimFlags,
+) -> Result<(), String> {
+    let corpus = match &flags.corpus {
+        Some(path) => crate::declarative::corpus::load_corpus_from_path(path, def)?,
+        None => {
+            let sibling = flags.machine.with_extension("cases.json");
+            if sibling.is_file() {
+                crate::declarative::corpus::load_corpus_from_path(&sibling, def)?
+            } else {
+                crate::declarative::auto_seed_corpus(def)
+            }
+        }
+    };
+    let mut boundary = Vec::new();
+    for raw in &flags.bound_exprs {
+        let ast = crate::declarative::def::validate_state_expr(
+            def,
+            raw,
+            &format!("--bound `{raw}`"),
+        )?;
+        boundary.push((raw.clone(), ast));
+    }
+    let deep = flags.explicit_check
+        || flags.corpus.is_some()
+        || !flags.bound_exprs.is_empty()
+        || flags.use_sim;
+    let bounds = if deep {
+        crate::declarative::Bounds {
+            max_nodes: crate::declarative::profile::DEFAULT_MAX_NODES,
+            max_depth: crate::declarative::profile::DEFAULT_MAX_DEPTH,
+        }
+    } else {
+        crate::declarative::Bounds {
+            max_nodes: 512,
+            max_depth: 12,
+        }
+    };
+    let opts = crate::declarative::explore::ExploreOptions {
+        boundary: boundary.clone(),
+        fail_fast: false,
+        threads: 1,
+    };
+    let (mut exploration, mut refusals) =
+        crate::declarative::explore::explore_with_options(compiled, &corpus, bounds, &opts, true);
+
+    let mut sim_seed_used: Option<u64> = None;
+    let need_sim = flags.use_sim
+        || (deep
+            && !exploration.complete
+            && refusals.is_empty()
+            && (!def.invariants.is_empty()
+                || exploration.reach_witnesses.len() < def.reach.len()));
+    if need_sim {
+        let sim_opts = crate::declarative::sim_check::SimOptions {
+            seed: flags
+                .sim_seed
+                .unwrap_or(crate::declarative::sim_check::DEFAULT_SIM_SEED),
+            max_steps: flags
+                .sim_steps
+                .unwrap_or(crate::declarative::sim_check::DEFAULT_SIM_TRACES.min(
+                    crate::declarative::sim_check::DEFAULT_SIM_STEPS,
+                )),
+            traces: crate::declarative::sim_check::DEFAULT_SIM_TRACES,
+            fail_fast: false,
+            boundary,
+        };
+        let sim = crate::declarative::sim_check::run_simulation(compiled, &corpus, &sim_opts);
+        sim_seed_used = Some(sim.seed);
+        for (name, steps) in sim.reach_witnesses {
+            exploration.reach_witnesses.entry(name).or_insert(steps);
+        }
+        for w in sim.invariant_refusals {
+            let rule = w.diagnostic.rule.clone();
+            if !refusals.iter().any(|existing| existing.diagnostic.rule == rule) {
+                refusals.push(w);
+            }
+        }
+    }
+
+    let mut properties: Vec<Value> = Vec::new();
+    for (name, inv) in &def.invariants {
+        let found = refusals.iter().find(|w| {
+            w.diagnostic.rule.as_deref().is_some_and(|rule| {
+                rule == name
+                    || rule
+                        .strip_prefix("invariants.")
+                        .and_then(|p| p.strip_suffix(".when").or_else(|| p.strip_suffix(".assert")))
+                        == Some(name.as_str())
+            })
+        });
+        if let Some(witness) = found {
+            let trace = crate::declarative::sim_check::replay_path_steps(
+                compiled,
+                &corpus,
+                &witness.steps,
+            );
+            properties.push(json!({
+                "kind": "always",
+                "name": name,
+                "expr": inv.assert,
+                "status": "counterexample",
+                "steps": trace,
+            }));
+        } else {
+            properties.push(json!({
+                "kind": "always",
+                "name": name,
+                "expr": inv.assert,
+                "status": "holds_bounded",
+                "steps": [],
+            }));
+        }
+    }
+    for (name, expr) in &def.reach {
+        if let Some(witness) = exploration.reach_witnesses.get(name) {
+            let trace =
+                crate::declarative::sim_check::replay_path_steps(compiled, &corpus, witness);
+            properties.push(json!({
+                "kind": "sometimes",
+                "name": name,
+                "expr": expr,
+                "status": "witness_found",
+                "steps": trace,
+            }));
+        } else {
+            properties.push(json!({
+                "kind": "sometimes",
+                "name": name,
+                "expr": expr,
+                "status": "not_found",
+                "steps": [],
+            }));
+        }
+    }
+    let mut terminals: Vec<String> = def
+        .states
+        .iter()
+        .filter(|(_, s)| s.terminal)
+        .map(|(n, _)| n.clone())
+        .collect();
+    terminals.sort();
+    for name in terminals {
+        if let Some(witness) = exploration.witnesses.by_terminal.get(&name) {
+            let trace =
+                crate::declarative::sim_check::replay_path_steps(compiled, &corpus, witness);
+            properties.push(json!({
+                "kind": "terminal",
+                "name": name,
+                "expr": format!("state == '{name}'"),
+                "status": "witness_found",
+                "steps": trace,
+            }));
+        } else {
+            properties.push(json!({
+                "kind": "terminal",
+                "name": name,
+                "expr": format!("state == '{name}'"),
+                "status": "not_found",
+                "steps": [],
+            }));
+        }
+    }
+
+    if let Some(root) = schema.as_object_mut() {
+        root.insert(
+            "check_results".to_string(),
+            json!({
+                "nodes": exploration.nodes,
+                "complete": exploration.complete,
+                "boundary_pruned": exploration.boundary_pruned,
+                "sim_seed": sim_seed_used,
+                "properties": properties,
+            }),
+        );
+    }
+    Ok(())
 }
 
 fn open_in_browser(path: &Path) -> Result<(), String> {
@@ -445,6 +696,29 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   }
   .branch-pick.show { display: block; }
   .branch-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .prop-card { margin-bottom: 18px; display: none; }
+  .prop-card.show { display: block; }
+  .prop-list { display: flex; flex-direction: column; gap: 8px; }
+  .prop-row {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper);
+    font: 500 12.5px/1.4 var(--mono);
+  }
+  .prop-row.bad { background: var(--accent-soft); border-color: var(--accent); }
+  .prop-row.ok { background: var(--ok-soft); border-color: #93D2AF; }
+  .prop-row.warn { background: var(--warn-soft); border-color: #D99B00; }
+  .prop-badge {
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
+    font: 700 10.5px/1.2 var(--mono); text-transform: uppercase; margin-right: 6px;
+  }
+  .prop-badge.bad { background: var(--accent); color: var(--paper); }
+  .prop-badge.ok { background: var(--ok); color: var(--paper); }
+  .prop-badge.warn { background: #D99B00; color: var(--paper); }
+  .log-row.clickable { cursor: pointer; }
+  .log-row.clickable:hover { border-color: var(--ink); }
+  .log-row.selected { border-color: var(--ink); box-shadow: inset 3px 0 0 var(--accent); }
+  tr.fact-changed td { background: var(--accent-soft); }
+  .tool.mini { padding: 4px 8px; font-size: 11px; }
 </style>
 </head>
 <body>
@@ -467,6 +741,16 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   <div class="advisory">
     <strong>Advisory structural simulation</strong> derived from <code>ik schema</code> (<code>__SHORT_HASH__</code>).
     Legal transitions, capability generations, live facts, guard previews, and pending-effect locks mirror the declared <code>.ik.toml</code> rules; durable commits and authoritative verification run inside the Rust <code>ik</code> runtime.
+  </div>
+
+  <div class="card prop-card" id="prop-card">
+    <div class="card-head">
+      <span>Checked Properties &amp; Witness Traces</span>
+      <span id="check-summary"></span>
+    </div>
+    <div class="card-body">
+      <div class="prop-list" id="prop-list"></div>
+    </div>
   </div>
 
   <div class="grid">
@@ -524,7 +808,10 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       <div class="card">
         <div class="card-head">
           <span>Live Facts &amp; Invariants</span>
-          <span id="inv-count"></span>
+          <div class="toolbar">
+            <button class="tool mini" id="btn-fact-view" type="button">View: Full</button>
+            <span id="inv-count"></span>
+          </div>
         </div>
         <div class="card-body" id="facts-box"></div>
       </div>
@@ -532,7 +819,11 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       <div class="card">
         <div class="card-head">
           <span>Execution Timeline</span>
-          <span id="log-count">0 events</span>
+          <div class="toolbar">
+            <button class="tool mini" id="btn-prev-step" type="button" disabled>&#9664; Prev</button>
+            <button class="tool mini" id="btn-next-step" type="button" disabled>Next &#9654;</button>
+            <span id="log-count">0 events</span>
+          </div>
         </div>
         <div class="card-body">
           <div class="log" id="event-log"></div>
@@ -567,9 +858,84 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   let recordedEffect = null;
   let lastRefusal = null;
   let pendingBranch = null;
-  let events = [];
-  let scenarioSteps = [];
+  let factDeltaMode = false;
+  let history = [];
+  let cursor = 0;
   const argValues = new Map();
+
+  function cloneVal(v) {
+    return v === undefined ? undefined : JSON.parse(JSON.stringify(v));
+  }
+
+  function makeSnapshot(meta) {
+    return {
+      current,
+      facts: cloneVal(facts),
+      generation,
+      nonce,
+      savedHandle: cloneVal(savedHandle),
+      pendingEffect: cloneVal(pendingEffect),
+      recordedEffect: cloneVal(recordedEffect),
+      lastRefusal: cloneVal(lastRefusal),
+      kind: meta.kind || "initial",
+      label: meta.label || ("initial: " + current),
+      detail: meta.detail || "gen 0",
+      bannerKind: meta.bannerKind || null,
+      bannerMsg: meta.bannerMsg || "",
+      factDiff: meta.factDiff || [],
+      stepSpec: meta.stepSpec || null,
+    };
+  }
+
+  function initHistory() {
+    current = initialObj ? initialObj.name : "";
+    facts = initialFacts();
+    generation = 0;
+    nonce = nextNonce(0);
+    savedHandle = null;
+    pendingEffect = null;
+    recordedEffect = null;
+    lastRefusal = null;
+    pendingBranch = null;
+    history = [makeSnapshot({ kind: "initial", label: "initial: " + current, detail: "gen 0" })];
+    cursor = 0;
+  }
+
+  function restoreSnapshot(idx) {
+    if (idx < 0 || idx >= history.length) return;
+    cursor = idx;
+    const snap = history[idx];
+    current = snap.current;
+    facts = cloneVal(snap.facts);
+    generation = snap.generation;
+    nonce = snap.nonce;
+    pendingEffect = cloneVal(snap.pendingEffect);
+    recordedEffect = cloneVal(snap.recordedEffect);
+    lastRefusal = cloneVal(snap.lastRefusal);
+    pendingBranch = null;
+    if (snap.bannerKind && snap.bannerMsg) {
+      setBanner(snap.bannerKind, snap.bannerMsg);
+    } else {
+      clearBanner();
+    }
+    renderAll();
+  }
+
+  function pushSnapshot(meta) {
+    const branched = cursor < history.length - 1;
+    if (branched) {
+      history = history.slice(0, cursor + 1);
+      if (meta.bannerMsg) {
+        meta.bannerMsg += " (branched from step " + cursor + ")";
+      }
+    }
+    const snap = makeSnapshot(meta);
+    history.push(snap);
+    cursor = history.length - 1;
+    if (snap.bannerKind && snap.bannerMsg) {
+      setBanner(snap.bannerKind, snap.bannerMsg);
+    }
+  }
 
   function defaultArg(arg) {
     if (arg.type === "int") return "1";
@@ -986,8 +1352,22 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     b.textContent = "";
   }
 
+  function computeFactDiff(beforeFacts, afterFacts) {
+    const diffs = [];
+    const keys = new Set([...Object.keys(beforeFacts || {}), ...Object.keys(afterFacts || {})]);
+    for (const k of Array.from(keys).sort()) {
+      const a = beforeFacts[k];
+      const b = afterFacts[k];
+      if (JSON.stringify(a) !== JSON.stringify(b)) {
+        diffs.push({ fact: k, before: a, after: b });
+      }
+    }
+    return diffs;
+  }
+
   function commitOutcome(cmd, outcome, args) {
     const fromState = current;
+    const prevFacts = cloneVal(facts);
     const nextState = outcome.to || current;
     const nextFacts = applyThen(facts, outcome.then || {}, args);
     const violated = checkInvariants(nextState, nextFacts);
@@ -995,6 +1375,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       refuseCommand(cmd, "IK_INVARIANT_FAILED", "invariant `" + violated.name + "` (" + violated.assert + ") failed on target state `" + nextState + "`.", args);
       return;
     }
+    const diff = computeFactDiff(prevFacts, nextFacts);
     current = nextState;
     facts = nextFacts;
     generation += 1;
@@ -1005,52 +1386,66 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       const effKind = (cmd.effect && cmd.effect.kind) || cmd.name;
       pendingEffect = { kind: effKind, generation };
     }
-    scenarioSteps.push({
-      kind: "command",
-      label: cmd.name + "-" + generation,
-      name: cmd.name,
-      args,
-      expect: "committed",
-    });
-    events.unshift({
+    pushSnapshot({
       kind: "committed",
       label: cmd.name + ": " + fromState + " → " + nextState,
       detail: "gen " + generation + (cmd.plans_effect ? " · effect pending" : ""),
+      bannerKind: cmd.plans_effect ? "pending" : "committed",
+      bannerMsg: "✓ COMMITTED: " + cmd.name + " (" + fromState + " → " + nextState + ") · capability advanced to gen " + generation + (cmd.plans_effect ? " · pending effect locks further commands until recorded." : ""),
+      factDiff: diff,
+      stepSpec: {
+        kind: "command",
+        label: cmd.name + "-" + generation,
+        name: cmd.name,
+        args,
+        expect: "committed",
+      },
     });
-    setBanner(
-      cmd.plans_effect ? "pending" : "committed",
-      "✓ COMMITTED: " + cmd.name + " (" + fromState + " → " + nextState + ") · capability advanced to gen " + generation + (cmd.plans_effect ? " · pending effect locks further commands until recorded." : "")
-    );
     renderAll();
   }
 
   function refuseCommand(cmd, code, detail, args) {
     lastRefusal = { command: cmd.name, code, targetState: cmd.successors[0] || null };
     pendingBranch = null;
-    scenarioSteps.push({
-      kind: "command",
-      label: cmd.name + "-refused-" + (scenarioSteps.length + 1),
-      name: cmd.name,
-      args: args || {},
-      expect: "refused",
-      code,
-    });
-    events.unshift({
+    pushSnapshot({
       kind: "refused",
       label: cmd.name + " refused (" + code + ")",
       detail: "stays " + current + " · gen " + generation,
+      bannerKind: "refused",
+      bannerMsg: "✕ REFUSED (" + code + "): " + detail + " Canonical state stays " + current + " (gen " + generation + ").",
+      factDiff: [],
+      stepSpec: {
+        kind: "command",
+        label: cmd.name + "-refused-" + history.length,
+        name: cmd.name,
+        args: args || {},
+        expect: "refused:" + code,
+      },
     });
-    setBanner("refused", "✕ REFUSED (" + code + "): " + detail + " Canonical state stays " + current + " (gen " + generation + ").");
     renderAll();
   }
 
-  function onClickCommand(cmd) {
-    const parsedArgs = getCmdArgs(cmd);
-    if (parsedArgs.error) {
-      refuseCommand(cmd, "IK_COMMAND_INVALID", parsedArgs.error, {});
-      return;
+  function replayTraceSteps(steps) {
+    initHistory();
+    clearBanner();
+    const cmdMap = new Map(SCHEMA.commands.map((c) => [c.name, c]));
+    for (const step of (steps || [])) {
+      if (step.command && step.command.startsWith("record_effect:")) {
+        const digest = step.command.slice("record_effect:".length);
+        recordEffect(digest);
+        continue;
+      }
+      const cmd = cmdMap.get(step.command);
+      if (!cmd) continue;
+      for (const [k, v] of Object.entries(step.args || {})) {
+        argValues.set(cmd.name + "." + k, String(v));
+      }
+      dispatchCommandWithArgs(cmd, step.args || {});
     }
-    const args = parsedArgs.values;
+    renderAll();
+  }
+
+  function dispatchCommandWithArgs(cmd, args) {
     if (pendingEffect) {
       refuseCommand(cmd, "IK_EFFECT_PENDING", "effect `" + pendingEffect.kind + "` (gen " + pendingEffect.generation + ") is pending; record its outcome before proposing new commands.", args);
       return;
@@ -1095,6 +1490,15 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     }
     const guardList = outcomes.map((o) => o.when).filter(Boolean).join(" | ");
     refuseCommand(cmd, "IK_INVARIANT_FAILED", "guard not satisfied for `" + cmd.name + "` (" + guardList + ").", args);
+  }
+
+  function onClickCommand(cmd) {
+    const parsedArgs = getCmdArgs(cmd);
+    if (parsedArgs.error) {
+      refuseCommand(cmd, "IK_COMMAND_INVALID", parsedArgs.error, {});
+      return;
+    }
+    dispatchCommandWithArgs(cmd, parsedArgs.values);
   }
 
   function renderCommands() {
@@ -1195,6 +1599,50 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     }
   }
 
+  function renderProperties() {
+    const card = document.getElementById("prop-card");
+    const list = document.getElementById("prop-list");
+    const sum = document.getElementById("check-summary");
+    const cr = SCHEMA.check_results;
+    if (!cr || !cr.properties || cr.properties.length === 0) {
+      card.className = "card prop-card";
+      return;
+    }
+    card.className = "card prop-card show";
+    let sumText = cr.nodes + " states walked" + (cr.complete ? " (complete within bounds)" : " (bounded)");
+    if (cr.boundary_pruned !== null && cr.boundary_pruned !== undefined) {
+      sumText += " · " + cr.boundary_pruned + " pruned";
+    }
+    if (cr.sim_seed !== null && cr.sim_seed !== undefined) {
+      sumText += " · sim seed " + cr.sim_seed;
+    }
+    sum.textContent = sumText;
+    list.textContent = "";
+    for (const p of cr.properties) {
+      const row = document.createElement("div");
+      const cls = p.status === "counterexample" ? "bad" : (p.status === "not_found" ? "warn" : "ok");
+      row.className = "prop-row " + cls;
+      const left = document.createElement("div");
+      const badge = document.createElement("span");
+      badge.className = "prop-badge " + cls;
+      badge.textContent = p.status === "counterexample"
+        ? "Counterexample"
+        : (p.status === "holds_bounded" ? "Holds (bounded)" : (p.status === "witness_found" ? "Example" : "Not found"));
+      left.appendChild(badge);
+      left.appendChild(document.createTextNode(p.kind.toUpperCase() + " " + p.name + " (" + p.expr + ")"));
+      row.appendChild(left);
+      if (p.steps && p.steps.length > 0) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tool mini" + (p.status === "counterexample" ? " stale" : "");
+        btn.textContent = (p.status === "counterexample" ? "Replay Bug (" : "Replay (") + p.steps.length + " steps) →";
+        btn.addEventListener("click", () => replayTraceSteps(p.steps));
+        row.appendChild(btn);
+      }
+      list.appendChild(row);
+    }
+  }
+
   function renderMeta() {
     document.getElementById("stat-state").textContent = current;
     document.getElementById("stat-cap").textContent = "gen " + generation + " · " + nonce;
@@ -1243,31 +1691,56 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
       fireBtn.disabled = false;
     }
 
+    const activeSnap = history[cursor] || { factDiff: [] };
+    const changedSet = new Set((activeSnap.factDiff || []).map((d) => d.fact));
+    const viewBtn = document.getElementById("btn-fact-view");
+    viewBtn.textContent = factDeltaMode ? "View: Delta" : "View: Full";
+
     const factsBox = document.getElementById("facts-box");
     factsBox.textContent = "";
-    if ((SCHEMA.facts || []).length > 0) {
-      const tbl = document.createElement("table");
-      tbl.className = "facts-table";
-      const thead = document.createElement("thead");
-      thead.innerHTML = "<tr><th>Fact</th><th>Type / Policy</th><th>Current</th></tr>";
-      tbl.appendChild(thead);
-      const tbody = document.createElement("tbody");
-      for (const f of SCHEMA.facts) {
-        const tr = document.createElement("tr");
-        const td1 = document.createElement("td"); td1.textContent = f.name;
-        const td2 = document.createElement("td"); td2.textContent = f.type + " (" + f.policy + ")";
-        const td3 = document.createElement("td"); td3.className = "val";
-        td3.textContent = Object.prototype.hasOwnProperty.call(facts, f.name) ? JSON.stringify(facts[f.name]) : "unset";
-        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
-        tbody.appendChild(tr);
-      }
-      tbl.appendChild(tbody);
-      factsBox.appendChild(tbl);
-    } else {
+    const allFacts = SCHEMA.facts || [];
+    const shownFacts = factDeltaMode ? allFacts.filter((f) => changedSet.has(f.name)) : allFacts;
+    if (allFacts.length === 0) {
       const none = document.createElement("div");
       none.className = "meta";
       none.textContent = "No facts declared.";
       factsBox.appendChild(none);
+    } else if (shownFacts.length === 0) {
+      const none = document.createElement("div");
+      none.className = "meta";
+      none.textContent = "No fact changes on step " + cursor + ".";
+      factsBox.appendChild(none);
+    } else {
+      const tbl = document.createElement("table");
+      tbl.className = "facts-table";
+      const thead = document.createElement("thead");
+      thead.innerHTML = factDeltaMode
+        ? "<tr><th>Fact</th><th>Before</th><th>After</th></tr>"
+        : "<tr><th>Fact</th><th>Type / Policy</th><th>Current</th></tr>";
+      tbl.appendChild(thead);
+      const tbody = document.createElement("tbody");
+      const diffMap = new Map((activeSnap.factDiff || []).map((d) => [d.fact, d]));
+      for (const f of shownFacts) {
+        const tr = document.createElement("tr");
+        if (changedSet.has(f.name)) tr.className = "fact-changed";
+        const td1 = document.createElement("td"); td1.textContent = f.name;
+        if (factDeltaMode) {
+          const d = diffMap.get(f.name);
+          const td2 = document.createElement("td");
+          td2.textContent = d && d.before !== undefined ? JSON.stringify(d.before) : "unset";
+          const td3 = document.createElement("td"); td3.className = "val";
+          td3.textContent = d ? JSON.stringify(d.after) : "unset";
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        } else {
+          const td2 = document.createElement("td"); td2.textContent = f.type + " (" + f.policy + ")";
+          const td3 = document.createElement("td"); td3.className = "val";
+          td3.textContent = Object.prototype.hasOwnProperty.call(facts, f.name) ? JSON.stringify(facts[f.name]) : "unset";
+          tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        }
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+      factsBox.appendChild(tbl);
     }
 
     const invList = document.createElement("div");
@@ -1290,30 +1763,29 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     factsBox.appendChild(invList);
     document.getElementById("inv-count").textContent = invs.length + " invariant(s)";
 
+    document.getElementById("btn-prev-step").disabled = cursor <= 0;
+    document.getElementById("btn-next-step").disabled = cursor >= history.length - 1;
+
     const logEl = document.getElementById("event-log");
     logEl.textContent = "";
-    document.getElementById("log-count").textContent = events.length + " event(s)";
-    if (events.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "meta";
-      empty.textContent = "Click any legal or illegal command to test the lifecycle boundary.";
-      logEl.appendChild(empty);
-    } else {
-      for (const ev of events) {
-        const row = document.createElement("div");
-        row.className = "log-row " + ev.kind;
-        const left = document.createElement("span");
-        const pill = document.createElement("span");
-        pill.className = "pill " + (ev.kind === "committed" ? "ok" : "bad");
-        pill.textContent = ev.kind === "committed" ? "COMMIT" : "REFUSED";
-        left.appendChild(pill);
-        left.appendChild(document.createTextNode(" " + ev.label));
-        const right = document.createElement("span");
-        right.textContent = ev.detail;
-        row.appendChild(left);
-        row.appendChild(right);
-        logEl.appendChild(row);
-      }
+    const stepCount = Math.max(0, history.length - 1);
+    document.getElementById("log-count").textContent = "step " + cursor + "/" + stepCount;
+    for (let idx = history.length - 1; idx >= 0; idx--) {
+      const snap = history[idx];
+      const row = document.createElement("div");
+      row.className = "log-row clickable " + (snap.kind === "initial" ? "committed" : snap.kind) + (idx === cursor ? " selected" : "");
+      const left = document.createElement("span");
+      const pill = document.createElement("span");
+      pill.className = "pill " + (snap.kind === "refused" ? "bad" : "ok");
+      pill.textContent = snap.kind === "initial" ? "INIT" : (snap.kind === "committed" ? "COMMIT" : "REFUSED");
+      left.appendChild(pill);
+      left.appendChild(document.createTextNode(" #" + idx + " " + snap.label));
+      const right = document.createElement("span");
+      right.textContent = snap.detail;
+      row.appendChild(left);
+      row.appendChild(right);
+      row.addEventListener("click", () => restoreSnapshot(idx));
+      logEl.appendChild(row);
     }
   }
 
@@ -1324,21 +1796,25 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     recordedEffect = { kind: eff.kind, outcome };
     generation += 1;
     nonce = nextNonce(generation);
-    events.unshift({
+    pushSnapshot({
       kind: "committed",
       label: "record(" + eff.kind + " = " + outcome + ")",
       detail: "gen " + generation + " · unlocked",
+      bannerKind: "committed",
+      bannerMsg: "✓ RECORDED: effect `" + eff.kind + "` " + outcome + " · capability advanced to gen " + generation + ".",
+      factDiff: [],
+      stepSpec: null,
     });
-    setBanner("committed", "✓ RECORDED: effect `" + eff.kind + "` " + outcome + " · capability advanced to gen " + generation + ".");
     renderAll();
   }
 
   function exportScenario() {
+    const exportedSteps = history.slice(1).map((s) => s.stepSpec).filter(Boolean);
     const doc = {
       scenario_version: 1,
       machine: SCHEMA.source_path || (SCHEMA.machine.machine_id + ".ik.toml"),
       aggregate: SCHEMA.machine.machine_id + "-sim-1",
-      steps: scenarioSteps,
+      steps: exportedSteps,
     };
     const json = JSON.stringify(doc, null, 2) + "\n";
     const blob = new Blob([json], { type: "application/json" });
@@ -1350,10 +1826,11 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setBanner("committed", "✓ EXPORTED: " + a.download + " (" + scenarioSteps.length + " steps) — run with `ik scenario run`.");
+    setBanner("committed", "✓ EXPORTED: " + a.download + " (" + exportedSteps.length + " steps) — run with `ik scenario run`.");
   }
 
   function renderAll() {
+    renderProperties();
     renderGraph();
     renderCommands();
     renderMeta();
@@ -1361,6 +1838,7 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 
   document.getElementById("btn-save-handle").addEventListener("click", () => {
     savedHandle = { state: current, generation, nonce };
+    if (history[cursor]) history[cursor].savedHandle = cloneVal(savedHandle);
     renderMeta();
   });
 
@@ -1383,23 +1861,20 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
   document.getElementById("btn-eff-ok").addEventListener("click", () => recordEffect("succeeded"));
   document.getElementById("btn-eff-fail").addEventListener("click", () => recordEffect("failed"));
   document.getElementById("btn-export").addEventListener("click", exportScenario);
+  document.getElementById("btn-prev-step").addEventListener("click", () => restoreSnapshot(cursor - 1));
+  document.getElementById("btn-next-step").addEventListener("click", () => restoreSnapshot(cursor + 1));
+  document.getElementById("btn-fact-view").addEventListener("click", () => {
+    factDeltaMode = !factDeltaMode;
+    renderMeta();
+  });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
-    current = initialObj ? initialObj.name : "";
-    facts = initialFacts();
-    generation = 0;
-    nonce = nextNonce(0);
-    savedHandle = null;
-    pendingEffect = null;
-    recordedEffect = null;
-    lastRefusal = null;
-    pendingBranch = null;
-    events = [];
-    scenarioSteps = [];
+    initHistory();
     clearBanner();
     renderAll();
   });
 
+  initHistory();
   renderAll();
 })();
 </script>

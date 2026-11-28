@@ -30,6 +30,7 @@ pub mod release;
 pub mod report;
 pub mod schema;
 pub mod seed;
+pub mod sim_check;
 mod text_in;
 pub mod points;
 pub mod witness;

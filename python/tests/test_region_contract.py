@@ -132,7 +132,7 @@ def test_parallel_refusal_preserves_authority_then_joint_commits_and_replays(
     kernel: Kernel, region_binary: str
 ) -> None:
     version = subprocess.check_output([region_binary, "--version"], text=True).split()
-    assert version == ["invariant-kernel", "0.7.0", "protocol", "1.0"]
+    assert version == ["invariant-kernel", "0.7.1", "protocol", "1.0"]
     machine = kernel.machine(REPO / "machines/region_parallel.ik.toml")
     original = machine.create("playback")
     before = machine.show("playback")

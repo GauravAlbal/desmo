@@ -354,6 +354,8 @@ struct RegionDefinition {
     commands: BTreeMap<String, JointCommand>,
     #[serde(default)]
     invariants: BTreeMap<String, InvariantDef>,
+    #[serde(default)]
+    reach: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -502,6 +504,7 @@ fn lower(
         states: BTreeMap::new(),
         commands: BTreeMap::new(),
         invariants: source.invariants.clone(),
+        reach: source.reach.clone(),
         origin: OriginMap::default(),
         chart: Chart::default(),
     };
@@ -967,6 +970,7 @@ fn validate_local(
         states: region.states.clone(),
         commands: BTreeMap::from([(name.to_string(), cmd)]),
         invariants: BTreeMap::new(),
+        reach: BTreeMap::new(),
         origin: OriginMap::default(),
         chart: Chart::default(),
     };
@@ -1770,8 +1774,34 @@ pub fn check_source(
     baseline: &[String],
     bounds: Bounds,
 ) -> Result<RegionCheckResult, String> {
+    check_source_with_options(
+        source,
+        prior,
+        corpus,
+        baseline,
+        bounds,
+        &super::explore::ExploreOptions::default(),
+    )
+}
+
+pub fn check_source_with_options(
+    source: &SourceDefinition,
+    prior: Option<&Definition>,
+    corpus: &CaseCorpus,
+    baseline: &[String],
+    bounds: Bounds,
+    options: &super::explore::ExploreOptions,
+) -> Result<RegionCheckResult, String> {
     let (flat, run, invariant_refusals, machine, prior_exploration) =
-        super::check::check_with_run(&source.definition, prior, corpus, baseline, bounds, true)?;
+        super::check::check_with_options(
+            &source.definition,
+            prior,
+            corpus,
+            baseline,
+            bounds,
+            options,
+            true,
+        )?;
     let mut text = flat.text.clone();
     if let Some(regions) = &source.regions {
         append_unresolved_region_obligations(

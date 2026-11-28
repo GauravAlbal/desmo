@@ -52,6 +52,9 @@ cancelled = { terminal = true }
 [invariants] # boolean expressions over `state` and facts (no $args)
 paid_requires_ref = "state != 'paid' || payment_ref != ''"
 
+[reach] # nontriviality properties: must witness at least once in `ik check`
+can_refund = "state == 'refunded'"
+
 [commands.pay]
 from = ["cart"]
 to = "paid"
@@ -74,10 +77,10 @@ ik identity <machine.ik.toml>
 ik diagram <machine.ik.toml>
 ik check <machine.ik.toml> --auto-seed --summary
 ik laws <machine.ik.toml>
-ik simulate <machine.ik.toml> --out <simulator.html>
+ik simulate <machine.ik.toml> --check --out <simulator.html>
 ```
 
-*(`ik check` with `--auto-seed` requires zero hand-written corpus and catches structural traps plus invariant violations right away; use `ik corpus init` + `--corpus` when testing custom business witness cases. Pass `--open` to `ik simulate` if running locally with a desktop browser.)*
+*(`ik check` with `--auto-seed` requires zero hand-written corpus and catches structural traps plus invariant violations right away; use `ik corpus init` + `--corpus` when testing custom business witness cases. Pass `--bound "<expr>"` to exhaust bounded counters cleanly, `--simulate --seed <u64> --steps <n>` to hunt deep bugs past BFS depth 16, `--emit-scenario <file.json>` to turn any witnessed refusal into a runnable `ik scenario run` file, or `--open` on `ik simulate` locally with a desktop browser.)*
 
 If `ik` is not on `PATH` (or `$HOME/.local/bin/ik`) yet: if the user asked to install or onboard Desmo, install via `curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh` and prepend `$HOME/.local/bin` to `PATH`; otherwise tell them the one-line installer before running the workbench and generating the interactive simulator.
 
@@ -99,7 +102,7 @@ Present a concise report to the user containing:
 1. **Implicit lifecycles found** (ranked table: lifecycle, writers count, highest-risk bug class, `file:line` pointers).
 2. **Structural diagram** (verbatim `ik diagram` output for the primary audited lifecycle).
 3. **Concrete findings** (each citing exact `file:line`, the violating sequence, and what invariant breaks).
-4. **Interactive simulator path** (`<scratch>/<name>-simulator.html` when generated — clearly labeled as an interactive scratch simulator, not runtime authority).
+4. **Interactive simulator path** (`<scratch>/<name>-simulator.html` when generated — clearly labeled as an interactive scratch simulator, not runtime authority; includes embedded checked properties, 1-click **Replay Bug** / **Replay Witness** traces, **Delta / Full** fact diffs, and clickable step branching).
 5. **Honest recommendation:**
    - **Keep in host** if the flow is simple CRUD or has no hard shared invariant.
    - **Harden behind Desmo** if illegal transitions, stale workers, or crash recovery matter — offer to switch to `build.md` (beside this file) to lock this exact `.ik.toml` behind `ik` (one command family first, projecting read-only via `ik events`, and adding `ik guard init --machine <machine.ik.toml> --table <table>` to prevent bypass writes once Desmo owns the transition).

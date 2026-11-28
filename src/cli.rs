@@ -64,13 +64,13 @@ const SUBCOMMANDS: &[Subcommand] = &[
     Subcommand {
         group: "Model & Verify",
         name: "simulate",
-        usage: "       ik simulate <machine.ik.toml> [--out <file.html>] [--open]",
+        usage: "       ik simulate <machine.ik.toml> [--out <file.html>] [--open] [--check] [--no-check] [--corpus <cases.json>] [--bound <expr>] [--simulate] [--seed <u64>] [--steps <n>]",
         run: crate::simulate::run,
     },
     Subcommand {
         group: "Model & Verify",
         name: "check",
-        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]",
+        usage: "       ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--corpus-template <machine.ik.toml>] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan] [--bound <expr>] [--simulate] [--seed <u64>] [--steps <n>] [--traces <n>] [--threads <n>] [--fail-fast] [--emit-scenario <file.json>]",
         run: run_check,
     },
     Subcommand {
@@ -1293,7 +1293,7 @@ fn run_check(args: &[String]) -> i32 {
         Ok(code) => code,
         Err(msg) => {
             eprintln!("ik check: {msg}");
-            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
+            eprintln!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan] [--bound <expr>] [--simulate] [--seed <u64>] [--steps <n>] [--traces <n>] [--threads <n>] [--fail-fast] [--emit-scenario <file.json>]");
             2
         }
     }
@@ -1313,6 +1313,14 @@ struct CheckFlags {
     plan: bool,
     region_product_bound: Option<usize>,
     template_only: bool,
+    bounds_exprs: Vec<String>,
+    simulate: bool,
+    sim_seed: Option<u64>,
+    sim_steps: Option<usize>,
+    sim_traces: Option<usize>,
+    threads: usize,
+    fail_fast: bool,
+    emit_scenario: Option<PathBuf>,
 }
 
 fn path_value(args: &[String], i: usize, flag: &str) -> Result<PathBuf, String> {
@@ -1321,23 +1329,47 @@ fn path_value(args: &[String], i: usize, flag: &str) -> Result<PathBuf, String> 
         .ok_or_else(|| format!("{flag} requires a path"))
 }
 
+fn positive_usize(args: &[String], i: usize, flag: &str) -> Result<usize, String> {
+    let raw = args
+        .get(i)
+        .ok_or_else(|| format!("{flag} requires a positive integer"))?;
+    let parsed = raw
+        .parse::<usize>()
+        .map_err(|_| format!("invalid {flag} `{raw}`"))?;
+    if parsed == 0 {
+        return Err(format!("{flag} must be >= 1"));
+    }
+    Ok(parsed)
+}
+
 fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
     let mut path: Option<PathBuf> = None;
     let mut values: BTreeMap<&str, PathBuf> = BTreeMap::new();
     let (mut auto_seed, mut release, mut summary, mut json, mut compact, mut plan) =
         (false, false, false, false, false, false);
+    let (mut simulate, mut fail_fast) = (false, false);
     let mut region_product_bound: Option<usize> = None;
     let mut template: Option<PathBuf> = None;
+    let mut emit_scenario: Option<PathBuf> = None;
+    let mut bounds_exprs: Vec<String> = Vec::new();
+    let mut sim_seed: Option<u64> = None;
+    let mut sim_steps: Option<usize> = None;
+    let mut sim_traces: Option<usize> = None;
+    let mut threads: usize = 1;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "-h" | "--help" => {
-                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan]");
+                println!("usage: ik check <machine.ik.toml> [--prior <old.toml>] [--corpus <cases.json>] [--auto-seed] [--baseline <json>] [--release] [--summary] [--json] [--compact] [--region-product-bound <n>] [--profile <checks.toml>] [--plan] [--bound <expr>] [--simulate] [--seed <u64>] [--steps <n>] [--traces <n>] [--threads <n>] [--fail-fast] [--emit-scenario <file.json>]");
                 return Ok(None);
             }
             flag @ ("--prior" | "--corpus" | "--baseline" | "--profile") => {
                 i += 1;
                 values.insert(flag, path_value(args, i, flag)?);
+            }
+            "--emit-scenario" => {
+                i += 1;
+                emit_scenario = Some(path_value(args, i, "--emit-scenario")?);
             }
             "--corpus-template" => {
                 i += 1;
@@ -1345,17 +1377,37 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
             }
             "--region-product-bound" => {
                 i += 1;
-                let raw = args
-                    .get(i)
-                    .ok_or("--region-product-bound requires a positive integer")?;
-                let parsed = raw
-                    .parse::<usize>()
-                    .map_err(|_| format!("invalid --region-product-bound `{raw}`"))?;
-                if parsed == 0 {
-                    return Err("--region-product-bound must be >= 1".into());
-                }
-                region_product_bound = Some(parsed);
+                region_product_bound = Some(positive_usize(args, i, "--region-product-bound")?);
             }
+            "--bound" => {
+                i += 1;
+                let expr = args
+                    .get(i)
+                    .ok_or("--bound requires an expression")?;
+                bounds_exprs.push(expr.clone());
+            }
+            "--simulate" => simulate = true,
+            "--seed" => {
+                i += 1;
+                let raw = args.get(i).ok_or("--seed requires an integer")?;
+                sim_seed = Some(raw.parse::<u64>().map_err(|_| format!("invalid --seed `{raw}`"))?);
+                simulate = true;
+            }
+            "--steps" => {
+                i += 1;
+                sim_steps = Some(positive_usize(args, i, "--steps")?);
+                simulate = true;
+            }
+            "--traces" => {
+                i += 1;
+                sim_traces = Some(positive_usize(args, i, "--traces")?);
+                simulate = true;
+            }
+            "--threads" => {
+                i += 1;
+                threads = positive_usize(args, i, "--threads")?;
+            }
+            "--fail-fast" => fail_fast = true,
             "--auto-seed" => auto_seed = true,
             "--release" => release = true,
             "--summary" => summary = true,
@@ -1388,6 +1440,12 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
                 .into(),
         );
     }
+    if simulate && release {
+        return Err(
+            "--simulate cannot be combined with --release; supply an explicit --corpus for release checks"
+                .into(),
+        );
+    }
     if auto_seed && values.contains_key("--corpus") {
         return Err("--auto-seed and --corpus are mutually exclusive".into());
     }
@@ -1405,6 +1463,14 @@ fn parse_check_args(args: &[String]) -> Result<Option<CheckFlags>, String> {
         plan,
         region_product_bound,
         template_only,
+        bounds_exprs,
+        simulate,
+        sim_seed,
+        sim_steps,
+        sim_traces,
+        threads,
+        fail_fast,
+        emit_scenario,
     }))
 }
 
@@ -1471,12 +1537,37 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
             max_nodes: crate::declarative::profile::DEFAULT_MAX_NODES,
             max_depth: crate::declarative::profile::DEFAULT_MAX_DEPTH,
         });
-    let mut result = crate::declarative::region::check_source(
+    let mut boundary_exprs = Vec::new();
+    for raw in &flags.bounds_exprs {
+        let ast = crate::declarative::def::validate_state_expr(
+            new,
+            raw,
+            &format!("--bound `{raw}`"),
+        )?;
+        boundary_exprs.push((raw.clone(), ast));
+    }
+    if let Some(ref p) = profile {
+        if let Some(ref raw) = p.boundary {
+            let ast = crate::declarative::def::validate_state_expr(
+                new,
+                raw,
+                "profile limits.boundary",
+            )?;
+            boundary_exprs.push((raw.clone(), ast));
+        }
+    }
+    let explore_options = crate::declarative::explore::ExploreOptions {
+        boundary: boundary_exprs.clone(),
+        fail_fast: flags.fail_fast,
+        threads: flags.threads,
+    };
+    let mut result = crate::declarative::region::check_source_with_options(
         &source,
         old.as_ref(),
         &corpus,
         &baseline,
         bounds,
+        &explore_options,
     )?;
     // When no explicit corpus was supplied, run a fast bounded auto-seeded falsifier
     // strictly to catch real runtime invariant violations early. Never upgrades REFUSED to ACCEPT.
@@ -1487,10 +1578,17 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
             max_nodes: 256.min(bounds.max_nodes),
             max_depth: 12.min(bounds.max_depth),
         };
-        let (_, found) = crate::declarative::explore::explore_with_invariant_witnesses(
+        let falsify_opts = crate::declarative::explore::ExploreOptions {
+            boundary: boundary_exprs.clone(),
+            fail_fast: flags.fail_fast,
+            threads: flags.threads,
+        };
+        let (_, found) = crate::declarative::explore::explore_with_options(
             &compiled,
             &seed_corpus,
             falsify_bounds,
+            &falsify_opts,
+            true,
         );
         if !found.is_empty() {
             falsified_by_autoseed = true;
@@ -1520,6 +1618,81 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
             result.invariant_refusals = found;
         }
     }
+
+    // Track which corpus was used for replay & simulation (auto-seed when user invokes --simulate without corpus).
+    let sim_corpus = if corpus.commands.is_empty() && !flags.auto_seed && !flags.release {
+        crate::declarative::auto_seed_corpus(new)
+    } else {
+        corpus.clone()
+    };
+    let should_simulate = !flags.release
+        && (flags.simulate
+            || (!result.exploration_complete
+                && result.invariant_refusals.is_empty()
+                && (!new.invariants.is_empty()
+                    || result.exploration.reach_witnesses.len() < new.reach.len())));
+    let mut sim_result: Option<crate::declarative::sim_check::SimResult> = None;
+    if should_simulate {
+        let sim_opts = crate::declarative::sim_check::SimOptions {
+            seed: flags
+                .sim_seed
+                .unwrap_or(crate::declarative::sim_check::DEFAULT_SIM_SEED),
+            max_steps: flags
+                .sim_steps
+                .unwrap_or(crate::declarative::sim_check::DEFAULT_SIM_STEPS),
+            traces: flags
+                .sim_traces
+                .unwrap_or(crate::declarative::sim_check::DEFAULT_SIM_TRACES),
+            fail_fast: flags.fail_fast,
+            boundary: boundary_exprs.clone(),
+        };
+        let sim = crate::declarative::sim_check::run_simulation(&compiled, &sim_corpus, &sim_opts);
+        for (name, steps) in &sim.reach_witnesses {
+            result
+                .exploration
+                .reach_witnesses
+                .entry(name.clone())
+                .or_insert_with(|| steps.clone());
+        }
+        if !sim.invariant_refusals.is_empty() {
+            for w in &sim.invariant_refusals {
+                let rule = w.diagnostic.rule.as_deref().unwrap_or("unknown");
+                if !result
+                    .invariant_refusals
+                    .iter()
+                    .any(|existing| existing.diagnostic.rule.as_deref() == Some(rule))
+                {
+                    result.invariant_refusals.push(w.clone());
+                    result.flat.judgment.reasons.push(format!(
+                        "seeded simulation (seed={}) found deep invariant violation {rule} at depth {}",
+                        sim.seed,
+                        w.steps.len()
+                    ));
+                }
+            }
+            result.verdict = "REFUSED".to_string();
+            result.flat.verdict = "REFUSED".to_string();
+            result.flat.judgment.verdict = "refused".to_string();
+            result.flat.judgment.status = "witnessed_violation".to_string();
+        }
+        if flags.simulate && !new.reach.is_empty() && result.flat.judgment.status == "unreached_property" {
+            let all_reached = new
+                .reach
+                .keys()
+                .all(|k| result.exploration.reach_witnesses.contains_key(k));
+            if all_reached {
+                result.flat.judgment.reasons.retain(|r| !r.starts_with("reach property `"));
+                if result.flat.judgment.reasons.is_empty() && result.flat.report.obligations.uncovered == 0 {
+                    result.verdict = "ACCEPT".to_string();
+                    result.flat.verdict = "ACCEPT".to_string();
+                    result.flat.judgment.verdict = "accept".to_string();
+                    result.flat.judgment.status = "accepted".to_string();
+                }
+            }
+        }
+        sim_result = Some(sim);
+    }
+
     let mut envelope = profile
         .as_ref()
         .map(|item| crate::declarative::profile::evaluate(item, new, &corpus, &result.exploration));
@@ -1530,6 +1703,26 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
         &result,
         &corpus,
     )?;
+    if let Some(ref emit_path) = flags.emit_scenario {
+        if let Some(first_violation) = result.invariant_refusals.first() {
+            let trace_corpus = if falsified_by_autoseed || sim_result.is_some() {
+                &sim_corpus
+            } else {
+                &corpus
+            };
+            let steps = crate::declarative::sim_check::replay_path_steps(
+                &compiled,
+                trace_corpus,
+                &first_violation.steps,
+            );
+            write_emitted_scenario(emit_path, &flags.path, &new.machine_id, &steps)?;
+        }
+    }
+    let trace_corpus = if falsified_by_autoseed || sim_result.is_some() {
+        &sim_corpus
+    } else {
+        &corpus
+    };
     let hint = if flags.auto_seed {
         None
     } else {
@@ -1541,9 +1734,13 @@ fn run_check_inner(args: &[String]) -> Result<i32, String> {
     };
     emit_check(
         &flags,
+        new,
+        &compiled,
+        trace_corpus,
         &result,
         &lints,
         falsified_by_autoseed,
+        sim_result.as_ref(),
         envelope.as_ref(),
         hint.as_deref(),
     )?;
@@ -1631,14 +1828,172 @@ fn attach_check_extras(
     Ok(())
 }
 
+fn relative_path_from_dir(from_dir: &Path, target: &Path) -> Result<String, String> {
+    let cwd = std::env::current_dir().map_err(|e| format!("cwd: {e}"))?;
+    let from_abs = std::fs::canonicalize(from_dir).unwrap_or_else(|_| cwd.join(from_dir));
+    let target_abs = std::fs::canonicalize(target).unwrap_or_else(|_| cwd.join(target));
+    let from_comps: Vec<std::path::Component<'_>> = from_abs.components().collect();
+    let target_comps: Vec<std::path::Component<'_>> = target_abs.components().collect();
+    let common = from_comps
+        .iter()
+        .zip(target_comps.iter())
+        .take_while(|(a, b)| a == b)
+        .count();
+    let mut parts: Vec<String> = Vec::new();
+    for comp in &from_comps[common..] {
+        if matches!(comp, std::path::Component::Normal(_)) {
+            parts.push("..".to_string());
+        }
+    }
+    for comp in &target_comps[common..] {
+        match comp {
+            std::path::Component::Normal(s) => parts.push(s.to_string_lossy().into_owned()),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => parts.push("..".to_string()),
+            std::path::Component::RootDir | std::path::Component::Prefix(_) => {
+                return Ok(target.display().to_string());
+            }
+        }
+    }
+    if parts.is_empty() {
+        Ok(".".to_string())
+    } else {
+        Ok(parts.join("/"))
+    }
+}
+
+fn write_emitted_scenario(
+    out_path: &Path,
+    machine_path: &Path,
+    machine_id: &str,
+    steps: &[crate::declarative::sim_check::TraceStep],
+) -> Result<(), String> {
+    let mut out_steps = Vec::with_capacity(steps.len());
+    for (idx, step) in steps.iter().enumerate() {
+        if step.outcome == "record_effect" {
+            return Err(
+                "--emit-scenario cannot automatically synthesize external effect IDs for `record_effect` steps"
+                    .to_string(),
+            );
+        }
+        let expect = if step.outcome == "refused" {
+            format!(
+                "refused:{}",
+                step.code.as_deref().unwrap_or("IK_INVARIANT_FAILED")
+            )
+        } else {
+            step.outcome.clone()
+        };
+        out_steps.push(json!({
+            "kind": "command",
+            "label": format!("{}-{}", step.command, idx + 1),
+            "name": step.command,
+            "args": step.args,
+            "expect": expect,
+        }));
+    }
+    let out_dir = match out_path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("create {}: {e}", parent.display()))?;
+            parent
+        }
+        _ => Path::new("."),
+    };
+    let rel_machine = relative_path_from_dir(out_dir, machine_path)?;
+    let doc = json!({
+        "scenario_version": 1,
+        "machine": rel_machine,
+        "aggregate": format!("{machine_id}-repro-1"),
+        "steps": out_steps,
+    });
+    let pretty = serde_json::to_string_pretty(&doc).map_err(|e| e.to_string())?;
+    std::fs::write(out_path, format!("{pretty}\n"))
+        .map_err(|e| format!("write {}: {e}", out_path.display()))
+}
+
+fn format_actionable_trace(steps: &[crate::declarative::sim_check::TraceStep]) -> String {
+    let mut out = String::new();
+    for step in steps {
+        let case_tag = step
+            .case
+            .as_ref()
+            .map(|c| format!("[{c}]"))
+            .unwrap_or_default();
+        let args_str = step
+            .args
+            .as_object()
+            .filter(|m| !m.is_empty())
+            .map(|m| {
+                m.iter()
+                    .map(|(k, v)| format!("{k}={v}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            })
+            .map(|s| format!(" ({s})"))
+            .unwrap_or_default();
+        let diff_str = if step.fact_diff.is_empty() {
+            String::new()
+        } else {
+            let items = step
+                .fact_diff
+                .iter()
+                .map(|d| match &d.before {
+                    Some(b) => format!("{}: {} -> {}", d.fact, b, d.after),
+                    None => format!("{}={}", d.fact, d.after),
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!(" {{{items}}}")
+        };
+        if step.outcome == "refused" {
+            let code = step.code.as_deref().unwrap_or("REFUSED");
+            let msg = step.message.as_deref().unwrap_or("");
+            out.push_str(&format!(
+                "    {}. [{}] --{}{case_tag}{args_str}--> REFUSED ({code}: {msg})\n",
+                step.index + 1,
+                step.from_state,
+                step.command
+            ));
+        } else {
+            out.push_str(&format!(
+                "    {}. [{}] --{}{case_tag}{args_str}--> [{}]{diff_str}\n",
+                step.index + 1,
+                step.from_state,
+                step.command,
+                step.to_state
+            ));
+        }
+    }
+    out
+}
+
+#[allow(clippy::too_many_arguments)]
 fn emit_check(
     flags: &CheckFlags,
+    new: &crate::declarative::Definition,
+    compiled: &crate::declarative::CompiledMachine,
+    corpus: &crate::declarative::CaseCorpus,
     result: &crate::declarative::region::RegionCheckResult,
     lints: &[crate::declarative::StructuralLint],
     falsified_by_autoseed: bool,
+    sim_result: Option<&crate::declarative::sim_check::SimResult>,
     envelope: Option<&crate::declarative::profile::ProfileEnvelope>,
     hint: Option<&str>,
 ) -> Result<(), String> {
+    let reach_results: Vec<Value> = new
+        .reach
+        .iter()
+        .map(|(name, expr)| {
+            let steps = result.exploration.reach_witnesses.get(name);
+            json!({
+                "name": name,
+                "expr": expr,
+                "reached": steps.is_some(),
+                "steps": steps,
+            })
+        })
+        .collect();
     if flags.compact {
         let mut value = json!({
             "verdict": result.verdict,
@@ -1659,6 +2014,21 @@ fn emit_check(
             "structural_lints": lints,
             "invariant_witnesses": crate::declarative::region::invariant_witness_json(&result.invariant_refusals),
         });
+        if !reach_results.is_empty() {
+            value.as_object_mut().unwrap().insert("reach_results".into(), json!(reach_results));
+        }
+        if let Some(pruned) = result.exploration.boundary_pruned {
+            value.as_object_mut().unwrap().insert("boundary_pruned".into(), json!(pruned));
+        }
+        if let Some(sim) = sim_result {
+            value.as_object_mut().unwrap().insert("simulation".into(), json!({
+                "seed": sim.seed,
+                "traces_run": sim.traces_run,
+                "steps_executed": sim.steps_executed,
+                "max_depth_reached": sim.max_depth_reached,
+                "boundary_pruned": sim.boundary_pruned,
+            }));
+        }
         attach_check_extras(&mut value, envelope, hint)?;
         println!("{}", canonical_json(&value));
     } else if flags.json {
@@ -1673,6 +2043,21 @@ fn emit_check(
             if let Some(object) = value.as_object_mut() {
                 object.insert("assurance_mode".into(), json!("auto_seeded_bounded"));
             }
+        }
+        if !reach_results.is_empty() {
+            value.as_object_mut().unwrap().insert("reach_results".into(), json!(reach_results));
+        }
+        if let Some(pruned) = result.exploration.boundary_pruned {
+            value.as_object_mut().unwrap().insert("boundary_pruned".into(), json!(pruned));
+        }
+        if let Some(sim) = sim_result {
+            value.as_object_mut().unwrap().insert("simulation".into(), json!({
+                "seed": sim.seed,
+                "traces_run": sim.traces_run,
+                "steps_executed": sim.steps_executed,
+                "max_depth_reached": sim.max_depth_reached,
+                "boundary_pruned": sim.boundary_pruned,
+            }));
         }
         if !lints.is_empty() {
             if let Some(object) = value.as_object_mut() {
@@ -1713,6 +2098,27 @@ fn emit_check(
             cov.terminal_states.len(),
         );
         println!("mode: {mode}");
+        if let Some(pruned) = result.exploration.boundary_pruned {
+            println!(
+                "boundary: complete={} (nodes={}, pruned={pruned})",
+                result.exploration.complete, result.exploration.nodes
+            );
+        }
+        if let Some(sim) = sim_result {
+            println!(
+                "simulation: seed={} · traces={} · max_depth={} · steps={}",
+                sim.seed, sim.traces_run, sim.max_depth_reached, sim.steps_executed
+            );
+        }
+        if !new.reach.is_empty() {
+            println!("reach ({}):", new.reach.len());
+            for (name, expr) in &new.reach {
+                match result.exploration.reach_witnesses.get(name) {
+                    Some(steps) => println!("  [ok] {name} ({} steps): {expr}", steps.len()),
+                    None => println!("  [MISS] {name} (not witnessed): {expr}"),
+                }
+            }
+        }
         if !lints.is_empty() {
             print!("{}", crate::declarative::render_lints(lints));
         }
@@ -1720,16 +2126,18 @@ fn emit_check(
             println!("invariant violations witnessed ({}):", result.invariant_refusals.len());
             for w in &result.invariant_refusals {
                 let rule = w.diagnostic.rule.as_deref().unwrap_or("unknown");
-                let steps: Vec<String> = w
-                    .steps
-                    .iter()
-                    .map(|s| match &s.case {
-                        Some(c) => format!("{}[{c}]", s.command),
-                        None => s.command.clone(),
-                    })
-                    .collect();
-                println!("  - {rule}: {}", steps.join(" -> "));
+                let steps = crate::declarative::sim_check::replay_path_steps(
+                    compiled,
+                    corpus,
+                    &w.steps,
+                );
+                println!("  - {rule} ({} steps):", steps.len());
+                print!("{}", format_actionable_trace(&steps));
             }
+            println!(
+                "reproduce: ik simulate {} --check --open",
+                flags.path.display()
+            );
         }
         if result.verdict != "ACCEPT" && !result.flat.judgment.reasons.is_empty() {
             for r in &result.flat.judgment.reasons {
@@ -1745,6 +2153,44 @@ fn emit_check(
             println!("AUTO-SEEDED (advisory bounded check — supply --corpus for --release)\n");
         }
         print!("{}", result.text);
+        if let Some(pruned) = result.exploration.boundary_pruned {
+            println!(
+                "\nBOUNDARY\n  complete: {}\n  nodes: {}\n  pruned: {pruned}",
+                result.exploration.complete, result.exploration.nodes
+            );
+        }
+        if let Some(sim) = sim_result {
+            println!(
+                "\nSIMULATION\n  seed: {}\n  traces: {}\n  max_depth: {}\n  steps: {}",
+                sim.seed, sim.traces_run, sim.max_depth_reached, sim.steps_executed
+            );
+        }
+        if !new.reach.is_empty() {
+            println!("\nREACH PROPERTIES");
+            for (name, expr) in &new.reach {
+                match result.exploration.reach_witnesses.get(name) {
+                    Some(steps) => println!("  [ok] {name} ({} steps): {expr}", steps.len()),
+                    None => println!("  [MISS] {name} (not witnessed): {expr}"),
+                }
+            }
+        }
+        if !result.invariant_refusals.is_empty() {
+            println!("\nACTIONABLE COUNTEREXAMPLE TRACES");
+            for w in &result.invariant_refusals {
+                let rule = w.diagnostic.rule.as_deref().unwrap_or("unknown");
+                let steps = crate::declarative::sim_check::replay_path_steps(
+                    compiled,
+                    corpus,
+                    &w.steps,
+                );
+                println!("  rule={rule} ({} steps):", steps.len());
+                print!("{}", format_actionable_trace(&steps));
+            }
+            println!(
+                "  reproduce interactively: ik simulate {} --check --open",
+                flags.path.display()
+            );
+        }
         if !lints.is_empty() {
             print!("{}", crate::declarative::render_lints(lints));
         }
@@ -1816,23 +2262,7 @@ fn load_corpus(
     explicit: Option<&Path>,
     def: &crate::declarative::Definition,
 ) -> Result<crate::declarative::CaseCorpus, String> {
-    let sibling = machine.with_extension("cases.json");
-    let path = explicit.or_else(|| sibling.exists().then_some(sibling.as_path()));
-    let mut corpus = if let Some(path) = path {
-        let text =
-            std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-        serde_json::from_str(&text).map_err(|e| format!("corpus {}: {e}", path.display()))?
-    } else {
-        crate::declarative::CaseCorpus::new()
-    };
-    for (name, cmd) in &def.commands {
-        if cmd.args.as_ref().map(|a| a.is_empty()).unwrap_or(true)
-            && !corpus.commands.contains_key(name)
-        {
-            corpus.insert(name.clone(), "default", std::collections::BTreeMap::new());
-        }
-    }
-    Ok(corpus)
+    crate::declarative::corpus::load_corpus(machine, explicit, def)
 }
 
 fn load_baseline(explicit: Option<&Path>, machine_id: &str) -> Result<Vec<String>, String> {

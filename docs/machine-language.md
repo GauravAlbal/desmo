@@ -72,6 +72,21 @@ Then-literal quoting and native TOML values:
 Native machines (a native delegation lifecycle today) stay in a thin product package
 above the generic client. They are not a second protocol.
 
+## Inline reachability assertions (`[reach]`)
+
+Optional `[reach]` maps assert `sometimes` properties right inside `.ik.toml` alongside `[invariants]`, pairing safety (`always`) with nontrivial reachability checks in one file:
+
+```toml
+[reach]
+can_refund = "state == 'refunded'"
+paid_with_ref = "state == 'paid' && payment_ref != ''"
+```
+
+- Supported in both schema 1 and schema 2 `.ik.toml` definitions (and documented in [schema/ik.schema.json](../schema/ik.schema.json)).
+- Expressions use the same state-and-fact grammar as `[invariants]`: `$arg` references and `effect_*` operands are statically rejected, and `state == '...'` literals must name declared flat or lowered states.
+- `[reach]` is omitted from canonical `spec_hash` serialization (`skip_serializing`), so adding or editing `[reach]` checks never breaks persisted `(machine_id, version, spec_hash)` identity on live aggregates.
+- During `ik check`, every `[reach]` entry must witness at least one reachable state where it holds; any unreached entry fails the check (`unreached_property`). `ik simulate` embeds `[reach]` outcomes and witness replay paths directly in the offline HTML Explorer.
+
 ## Schema versions
 
 Schema 1 declares flat states and commands. Its deserialization, runtime

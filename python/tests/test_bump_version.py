@@ -21,14 +21,14 @@ def make_tree(root: Path) -> None:
 
 def test_only_whole_tokens_in_explicit_targets_are_rewritten(tmp_path: Path) -> None:
     make_tree(tmp_path)
-    changed = bv.rewrite(tmp_path, "0.4.1", "0.7.0")
+    changed = bv.rewrite(tmp_path, "0.4.1", "0.7.1")
     assert sorted(p.name for p in changed) == ["Cargo.toml", "protocol.rs"]
-    assert (tmp_path / "Cargo.toml").read_text() == 'version = "0.7.0"\ndep = "0.4.14"\n'
+    assert (tmp_path / "Cargo.toml").read_text() == 'version = "0.7.1"\ndep = "0.4.14"\n'
     assert (tmp_path / "CHANGELOG.md").read_text() == "## [0.4.1] released\n"
 
 
 def test_stale_reports_what_a_forgotten_target_still_expects(tmp_path: Path) -> None:
     make_tree(tmp_path)
-    bv.rewrite(tmp_path, "0.4.1", "0.7.0")
+    bv.rewrite(tmp_path, "0.4.1", "0.7.1")
     (tmp_path / "src" / "protocol.rs").write_text('pub const RUNTIME_VERSION: &str = "0.4.1";\n')
     assert [p.name for p in bv.stale(tmp_path, "0.4.1")] == ["protocol.rs"]

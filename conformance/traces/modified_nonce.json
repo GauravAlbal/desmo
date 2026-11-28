@@ -1,7 +1,7 @@
 {
   "machine": "verification_attempt",
   "steps": [
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s0", "op": "create", "aggregate_id": "agg-1"},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s1", "op": "command", "aggregate_id": "agg-1", "capability": {"generation": 0, "nonce": "0000000000000000000000000000000000000000000000000000000000000000"}, "command": {"name": "start"}}
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s0", "op": "create", "aggregate_id": "agg-1"},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s1", "op": "command", "aggregate_id": "agg-1", "capability": {"generation": 0, "nonce": "0000000000000000000000000000000000000000000000000000000000000000"}, "command": {"name": "start"}}
   ]
 }

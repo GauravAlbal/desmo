@@ -3,14 +3,18 @@
 Developer analysis. Not a lifecycle operation.
 
 ```bash
-ik check machine.ik.toml [--prior old.toml] [--corpus cases.json] [--auto-seed] [--summary] [--compact] [--baseline validation/verification_baseline.json]
+ik check machine.ik.toml [--prior old.toml] [--corpus cases.json] [--auto-seed] [--summary] [--compact] [--bound "retries <= 5"] [--simulate] [--seed <u64>] [--steps <n>] [--threads <n>] [--fail-fast] [--emit-scenario repro.json] [--baseline validation/verification_baseline.json]
 ```
 
-Prints a repair packet and a `VERDICT` of `ACCEPT` or `REFUSED` (or a concise 5-line developer summary with `--summary`, or agent-friendly JSON with `--compact`).
+Prints a repair packet and a `VERDICT` of `ACCEPT` or `REFUSED` (or a concise developer summary with `--summary`, or agent-friendly JSON with `--compact`).
 Exit 0 on accept, 1 on refuse, 2 on transport/usage failure.
 
 - **Zero-corpus static structural lints:** every `ik check` and `ik laws` run checks for unreachable states, reachable non-terminal sinks (dead ends), duplicate-guard shadowed outcomes, and initial-state invariant violations without requiring a corpus.
 - **Guard-guided `--auto-seed` & automatic invariant falsifier:** `--auto-seed` synthesizes concrete boundary cases from guards, `text_in` predicates, and fact-equality links as an explicit `auto_seeded_bounded` advisory check (`--auto-seed` is refused with `--release`; use `ik corpus init --smart` to save and pin an editable corpus). Even without `--corpus` or `--auto-seed`, `ik check` runs a fast bounded auto-seeded falsifier on machines with `[invariants]` to surface concrete runtime invariant-violation witnesses early.
+- **Inline `[reach]` (`sometimes`) properties:** declare `[reach]` predicates directly in `.ik.toml` (for example `can_refund = "state == 'refunded'"`). Because `[reach]` is omitted from `spec_hash` serialization, adding `[reach]` preserves live aggregate compatibility; any unreached `[reach]` property refuses the check (`unreached_property`).
+- **Domain bounds (`--bound` / `[limits].boundary`), `--threads`, `--fail-fast`:** pass repeatable `--bound "<expr>"` predicates (e.g. `--bound "retries <= 5"`) so counter/unbounded BFS completes cleanly inside that domain instead of truncating at `max_nodes`. Use `--threads <n>` for parallel BFS and `--fail-fast` to halt on the first `IK_INVARIANT_FAILED` witness.
+- **Seeded deep simulation (`--simulate --seed <u64> --steps <n> --traces <n>`):** runs a deterministic seeded random walk ($O(\text{depth})$ trace memory) to catch deep invariant bugs beyond BFS depth 16, and automatically falls back when BFS hits node/depth limits in advisory mode.
+- **Actionable traces & interactive Explorer (`--emit-scenario`, `ik simulate --check`):** any invariant refusal prints step-by-step pre/post-states, concrete arguments, fact diffs, and an `ik simulate <file> --check --open` command; `--emit-scenario <file.json>` writes a runnable `ik scenario run` reproduction bundle, while `ik simulate` embeds checked properties, 1-click **Replay Bug** traces, a **Delta / Full** fact view toggle, and timeline scrubbing/branching directly inside the offline HTML.
 
 `--json` `judgment.verdict` is `accept` or `refused` (the same two
 outcomes as the text `VERDICT`, in lowercase). `judgment.status` is the
@@ -160,7 +164,7 @@ allow_waiting = ["awaiting_review"]
 duplicate ids, and references to undeclared states or commands are usage
 errors (exit 2).
 
-`[limits]` may set `max_nodes` and `max_depth`. Omitted limits use 4096 and 16.
+`[limits]` may set `max_nodes`, `max_depth`, and optional `boundary = "<expr>"` (using the same state-and-fact predicate grammar as `--bound` to prune out-of-domain states cleanly so BFS finishes inside that finite domain). Omitted limits use 4096 and 16.
 A profile has its own digest over the canonical profile, so reformatting the
 file does not change it, and it does not change the machine spec hash. Each
 goal carries a content digest over the canonical JSON of that goal. Changing

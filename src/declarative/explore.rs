@@ -6,12 +6,13 @@
 use super::analyze::{analyze, machine_graph, MachineGraph, StructuralAnalysis};
 use super::compile::CompiledMachine;
 use super::def::Definition;
+use super::expr::{self, EvalCtx, Expr};
 use crate::canonical::{canonical_json, digest_json};
 use crate::effect::EffectStatus;
 use crate::machine::{Decision, Machine};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 
 /// Explicit exploration bound. Exceeding it is incomplete, not silent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,6 +59,20 @@ pub struct Exploration {
     pub edges: usize,
     pub coverage: Coverage,
     pub witnesses: WitnessBook,
+    /// Shortest witness paths for declared inline `[reach]` predicates.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub reach_witnesses: BTreeMap<String, Vec<WitnessStep>>,
+    /// Number of candidate transitions pruned by explicit `--bound` predicates.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boundary_pruned: Option<usize>,
+}
+
+/// Optional exploration controls modeled on Stateright's boundary, fail-fast, and multi-thread BFS.
+#[derive(Clone, Debug, Default)]
+pub struct ExploreOptions {
+    pub boundary: Vec<(String, Expr)>,
+    pub fail_fast: bool,
+    pub threads: usize,
 }
 
 /// Structural vs bounded executable coverage.
@@ -345,10 +360,38 @@ impl CaseCorpus {
 
 /// Explore from the real initial state using the real evaluator.
 pub fn explore(machine: &CompiledMachine, corpus: &CaseCorpus, bounds: Bounds) -> Exploration {
+    explore_with_options(machine, corpus, bounds, &ExploreOptions::default(), false).0
+}
+
+/// Explore with explicit boundary predicates, `--fail-fast`, and optional parallel worker threads.
+pub fn explore_with_options(
+    machine: &CompiledMachine,
+    corpus: &CaseCorpus,
+    bounds: Bounds,
+    options: &ExploreOptions,
+    capture_invariant_refusals: bool,
+) -> (Exploration, Vec<InvariantRefusalWitness>) {
     let def = machine.definition();
     let graph = machine_graph(def);
     let analysis = analyze(&graph);
-    walk(machine, def, &graph, &analysis, corpus, bounds, None, false).0
+    let mut refusals = BTreeMap::new();
+    let refusal_target = if capture_invariant_refusals {
+        Some(&mut refusals)
+    } else {
+        None
+    };
+    let (run, _) = walk(
+        machine,
+        def,
+        &graph,
+        &analysis,
+        corpus,
+        bounds,
+        options,
+        refusal_target,
+        false,
+    );
+    (run, refusals.into_values().collect())
 }
 
 /// The same traversal, retaining the finite graph the explorer actually walked.
@@ -360,7 +403,8 @@ pub fn explore_graph(
     let def = machine.definition();
     let graph = machine_graph(def);
     let analysis = analyze(&graph);
-    let (run, traced) = walk(machine, def, &graph, &analysis, corpus, bounds, None, true);
+    let options = ExploreOptions::default();
+    let (run, traced) = walk(machine, def, &graph, &analysis, corpus, bounds, &options, None, true);
     let mut traced = traced.expect("graph builder requested");
     traced.restrictions = input_restrictions(def, corpus);
     (run, traced)
@@ -372,21 +416,7 @@ pub fn explore_with_invariant_witnesses(
     corpus: &CaseCorpus,
     bounds: Bounds,
 ) -> (Exploration, Vec<InvariantRefusalWitness>) {
-    let def = machine.definition();
-    let graph = machine_graph(def);
-    let analysis = analyze(&graph);
-    let mut refusals = BTreeMap::new();
-    let (run, _) = walk(
-        machine,
-        def,
-        &graph,
-        &analysis,
-        corpus,
-        bounds,
-        Some(&mut refusals),
-        false,
-    );
-    (run, refusals.into_values().collect())
+    explore_with_options(machine, corpus, bounds, &ExploreOptions::default(), true)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -397,31 +427,26 @@ fn walk(
     analysis: &StructuralAnalysis,
     corpus: &CaseCorpus,
     bounds: Bounds,
+    options: &ExploreOptions,
     mut invariant_refusals: Option<&mut BTreeMap<String, InvariantRefusalWitness>>,
     build_graph: bool,
 ) -> (Exploration, Option<RuntimeGraph>) {
-    let uses_effect_guards = machine_uses_effect_guards(def);
-    let effect_outcomes = if uses_effect_guards {
-        harvest_effect_outcomes(def)
+    let compiled_reach = compile_reach(def);
+    let effect_outcomes = if machine_uses_effect_guards(def) {
+        Some(harvest_effect_outcomes(def))
     } else {
-        Vec::new()
+        None
     };
+    let uses_effect_guards = effect_outcomes.is_some();
 
     let mut queue = VecDeque::new();
-    let mut seen = std::collections::HashSet::<[u8; 32]>::new();
+    let mut seen = HashSet::<(u64, u64)>::new();
     let initial = machine.initial_state();
     let initial_effect = EffectStatus::None;
-    let initial_key = node_seen_key(&initial, &initial_effect, uses_effect_guards);
-    seen.insert(initial_key);
-    queue.push_back(Node {
-        state: initial.clone(),
-        effect: initial_effect,
-        path: Vec::new(),
-        depth: 0,
-    });
 
     let mut nodes = 0usize;
     let mut edges = 0usize;
+    let mut boundary_pruned = 0usize;
     let mut complete = true;
     let mut incomplete_reason = None;
     let mut executed_commands = BTreeSet::new();
@@ -431,180 +456,116 @@ fn walk(
     let mut reached_terminals = BTreeSet::new();
     let mut refusal_classes = BTreeSet::new();
     let mut witnesses = WitnessBook::default();
+    let mut reach_witnesses = BTreeMap::new();
 
-    record_label(
-        &mut witnesses,
-        &mut reached_labels,
-        &mut reached_terminals,
-        &initial,
-        &[],
-        false,
-    );
+    if state_within_boundary(&initial, &initial_effect, &options.boundary) {
+        seen.insert(structural_fingerprint(&initial, &initial_effect, uses_effect_guards));
+        queue.push_back(Node {
+            state: initial.clone(),
+            effect: initial_effect.clone(),
+            path: Vec::new(),
+            depth: 0,
+        });
+        record_label(
+            &mut witnesses,
+            &mut reached_labels,
+            &mut reached_terminals,
+            &initial,
+            &[],
+            false,
+        );
+        check_reach_witnesses(
+            &compiled_reach,
+            &initial,
+            &initial_effect,
+            &[],
+            &mut reach_witnesses,
+        );
+    } else {
+        boundary_pruned += 1;
+    }
+
     let mut traced = build_graph.then(|| GraphBuilder::start(&initial, &analysis.terminal_states));
-    let all_candidates = candidates(def, corpus);
+    let all_candidates = candidates_for(def, corpus);
+    let threads = options.threads.max(1);
 
-    while let Some(node) = queue.pop_front() {
-        nodes += 1;
-        if nodes > bounds.max_nodes {
-            complete = false;
-            incomplete_reason = Some("max_nodes".to_string());
-            break;
-        }
-        if let Some(gb) = traced.as_mut() {
-            gb.mark_expanded(&node.state);
-        }
-        if uses_effect_guards {
-            if let EffectStatus::Pending(intent) = &node.effect {
-                for digest in &effect_outcomes {
-                    let recorded_effect =
-                        EffectStatus::Recorded(intent.clone(), digest.clone(), None);
-                    let key = node_seen_key(&node.state, &recorded_effect, true);
-                    if !seen.insert(key) {
-                        continue;
-                    }
-                    if node.depth + 1 >= bounds.max_depth {
-                        complete = false;
-                        incomplete_reason = Some("max_depth".to_string());
-                        continue;
-                    }
-                    let mut path = node.path.clone();
-                    path.push(WitnessStep {
-                        command: format!("record_effect:{digest}"),
-                        case: None,
-                        outcome_index: None,
-                    });
-                    queue.push_back(Node {
-                        state: node.state.clone(),
-                        effect: recorded_effect,
-                        path,
-                        depth: node.depth + 1,
-                    });
-                }
+    let mut ctx = FoldCtx {
+        def,
+        bounds,
+        options,
+        uses_effect_guards,
+        compiled_reach: &compiled_reach,
+        invariant_refusals: invariant_refusals.as_deref_mut(),
+        traced: traced.as_mut(),
+        seen: &mut seen,
+        queue: &mut queue,
+        nodes: &mut nodes,
+        edges: &mut edges,
+        boundary_pruned: &mut boundary_pruned,
+        complete: &mut complete,
+        incomplete_reason: &mut incomplete_reason,
+        executed_commands: &mut executed_commands,
+        executed_command_sources: &mut executed_command_sources,
+        executed_outcomes: &mut executed_outcomes,
+        reached_labels: &mut reached_labels,
+        reached_terminals: &mut reached_terminals,
+        refusal_classes: &mut refusal_classes,
+        witnesses: &mut witnesses,
+        reach_witnesses: &mut reach_witnesses,
+        aborted_fail_fast: false,
+    };
+
+    if threads <= 1 || build_graph {
+        while let Some(node) = ctx.queue.pop_front() {
+            if *ctx.nodes >= ctx.bounds.max_nodes {
+                *ctx.complete = false;
+                *ctx.incomplete_reason = Some("max_nodes".to_string());
+                // Push back implicitly accounted for via !queue.is_empty() or break
+                break;
+            }
+            *ctx.nodes += 1;
+            let expanded = expand_single_node(
+                machine,
+                def,
+                &node,
+                effect_outcomes.as_deref(),
+                &all_candidates,
+                build_graph,
+            );
+            fold_expanded_node(&node, expanded, &mut ctx);
+            if ctx.aborted_fail_fast {
+                break;
             }
         }
-        let cur_state_name = node.state.get("state").and_then(Value::as_str);
-        for candidate in &all_candidates {
-            if !build_graph {
-                if let (Some(st), Some(cdef)) =
-                    (cur_state_name, def.commands.get(&candidate.command_name))
-                {
-                    if !cdef.from.iter().any(|s| s == st) {
-                        refusal_classes.insert(crate::diagnostic::DiagnosticCode::IkIllegalState.as_str());
-                        continue;
-                    }
-                }
+    } else {
+        while !ctx.queue.is_empty() && !ctx.aborted_fail_fast {
+            let remaining = ctx.bounds.max_nodes.saturating_sub(*ctx.nodes);
+            if remaining == 0 {
+                *ctx.complete = false;
+                *ctx.incomplete_reason = Some("max_nodes".to_string());
+                break;
             }
-            match classify(machine, &node.state, &node.effect, &candidate.command) {
-                Step::Commit {
-                    next,
-                    terminal,
-                    outcome_index,
-                    planned_effect,
-                } => {
-                    if uses_effect_guards
-                        && planned_effect.is_some()
-                        && matches!(node.effect, EffectStatus::Pending(_))
-                    {
-                        refusal_classes
-                            .insert(crate::diagnostic::DiagnosticCode::IkEffectStale.as_str());
-                        if let Some(gb) = traced.as_mut() {
-                            gb.record_loop(&node.state, candidate, "refused:IK_EFFECT_STALE");
-                        }
-                        continue;
-                    }
-                    edges += 1;
-                    if let Some(gb) = traced.as_mut() {
-                        gb.record_commit(&node.state, &next, terminal, candidate);
-                    }
-                    record_executed(
-                        &mut executed_commands,
-                        &mut executed_command_sources,
-                        &mut executed_outcomes,
-                        &node.state,
-                        &candidate.command_name,
-                        outcome_index,
-                    );
-                    let mut path = node.path.clone();
-                    path.push(WitnessStep {
-                        command: candidate.command_name.clone(),
-                        case: candidate.case.clone(),
-                        outcome_index: Some(outcome_index),
-                    });
-                    record_command(&mut witnesses, &candidate.command_name, &path);
-                    record_outcome(
-                        &mut witnesses,
-                        &candidate.command_name,
-                        outcome_index,
-                        &path,
-                    );
-                    record_label(
-                        &mut witnesses,
-                        &mut reached_labels,
-                        &mut reached_terminals,
-                        &next,
-                        &path,
-                        terminal,
-                    );
-                    let next_effect = if uses_effect_guards {
-                        match planned_effect {
-                            Some(intent) => EffectStatus::Pending(intent),
-                            None => node.effect.clone(),
-                        }
-                    } else {
-                        EffectStatus::None
-                    };
-                    let key = node_seen_key(&next, &next_effect, uses_effect_guards);
-                    if !seen.insert(key) {
-                        continue;
-                    }
-                    if terminal {
-                        if let Some(gb) = traced.as_mut() {
-                            gb.close_terminal(&next);
-                        }
-                        continue;
-                    }
-                    if node.depth + 1 >= bounds.max_depth {
-                        complete = false;
-                        incomplete_reason = Some("max_depth".to_string());
-                        continue;
-                    }
-                    queue.push_back(Node {
-                        state: next,
-                        effect: next_effect,
-                        path,
-                        depth: node.depth + 1,
-                    });
-                }
-                Step::Noop => {
-                    if let Some(gb) = traced.as_mut() {
-                        gb.record_loop(&node.state, candidate, "noop");
-                    }
-                }
-                Step::Refuse {
-                    diagnostic,
-                    outcome_index,
-                } => {
-                    refusal_classes.insert(diagnostic.code.as_str());
-                    record_invariant_refusal(
-                        def,
-                        invariant_refusals.as_deref_mut(),
-                        &node.path,
-                        candidate,
-                        &diagnostic,
-                        outcome_index,
-                    );
-                    if let Some(gb) = traced.as_mut() {
-                        gb.record_loop(
-                            &node.state,
-                            candidate,
-                            &format!("refused:{}", diagnostic.code.as_str()),
-                        );
-                    }
+            let take = ctx.queue.len().min(remaining);
+            let batch: Vec<Node> = ctx.queue.drain(..take).collect();
+            *ctx.nodes += batch.len();
+            let expanded_batch = expand_level_parallel(
+                machine,
+                def,
+                &batch,
+                effect_outcomes.as_deref(),
+                &all_candidates,
+                threads,
+            );
+            for (node, expanded) in batch.into_iter().zip(expanded_batch) {
+                fold_expanded_node(&node, expanded, &mut ctx);
+                if ctx.aborted_fail_fast {
+                    break;
                 }
             }
         }
     }
-    if !queue.is_empty() && complete {
+
+    if !ctx.aborted_fail_fast && !queue.is_empty() && complete {
         complete = false;
         incomplete_reason = Some("max_nodes".to_string());
     }
@@ -633,11 +594,322 @@ fn walk(
             },
         ),
         witnesses,
+        reach_witnesses,
+        boundary_pruned: (!options.boundary.is_empty()).then_some(boundary_pruned),
     };
     (exploration, traced.map(GraphBuilder::finish))
 }
 
-fn record_invariant_refusal(
+struct ExpandedEffectStep {
+    digest: String,
+    recorded_effect: EffectStatus,
+}
+
+struct ExpandedCandidate<'a> {
+    candidate: &'a Candidate,
+    from_mismatch: bool,
+    step: Option<Step>,
+}
+
+struct ExpandedNode<'a> {
+    effect_steps: Vec<ExpandedEffectStep>,
+    candidate_steps: Vec<ExpandedCandidate<'a>>,
+}
+
+struct FoldCtx<'a, 'b> {
+    def: &'a Definition,
+    bounds: Bounds,
+    options: &'a ExploreOptions,
+    uses_effect_guards: bool,
+    compiled_reach: &'a [(String, Expr)],
+    invariant_refusals: Option<&'b mut BTreeMap<String, InvariantRefusalWitness>>,
+    traced: Option<&'b mut GraphBuilder>,
+    seen: &'b mut HashSet<(u64, u64)>,
+    queue: &'b mut VecDeque<Node>,
+    nodes: &'b mut usize,
+    edges: &'b mut usize,
+    boundary_pruned: &'b mut usize,
+    complete: &'b mut bool,
+    incomplete_reason: &'b mut Option<String>,
+    executed_commands: &'b mut BTreeSet<String>,
+    executed_command_sources: &'b mut BTreeSet<CommandSourceRef>,
+    executed_outcomes: &'b mut BTreeSet<OutcomeRef>,
+    reached_labels: &'b mut BTreeSet<String>,
+    reached_terminals: &'b mut BTreeSet<String>,
+    refusal_classes: &'b mut BTreeSet<String>,
+    witnesses: &'b mut WitnessBook,
+    reach_witnesses: &'b mut BTreeMap<String, Vec<WitnessStep>>,
+    aborted_fail_fast: bool,
+}
+
+fn expand_single_node<'a>(
+    machine: &CompiledMachine,
+    def: &Definition,
+    node: &Node,
+    effect_outcomes: Option<&[String]>,
+    all_candidates: &'a [Candidate],
+    build_graph: bool,
+) -> ExpandedNode<'a> {
+    let mut effect_steps = Vec::new();
+    if let (Some(outcomes), EffectStatus::Pending(intent)) = (effect_outcomes, &node.effect) {
+        for digest in outcomes {
+            effect_steps.push(ExpandedEffectStep {
+                digest: digest.clone(),
+                recorded_effect: EffectStatus::Recorded(intent.clone(), digest.clone(), None),
+            });
+        }
+    }
+    let cur_state_name = node.state.get("state").and_then(Value::as_str);
+    let mut candidate_steps = Vec::with_capacity(all_candidates.len());
+    for candidate in all_candidates {
+        if !build_graph {
+            if let (Some(st), Some(cdef)) =
+                (cur_state_name, def.commands.get(&candidate.command_name))
+            {
+                if !cdef.from.iter().any(|s| s == st) {
+                    candidate_steps.push(ExpandedCandidate {
+                        candidate,
+                        from_mismatch: true,
+                        step: None,
+                    });
+                    continue;
+                }
+            }
+        }
+        let step = step_machine(machine, &node.state, &node.effect, &candidate.command);
+        candidate_steps.push(ExpandedCandidate {
+            candidate,
+            from_mismatch: false,
+            step: Some(step),
+        });
+    }
+    ExpandedNode {
+        effect_steps,
+        candidate_steps,
+    }
+}
+
+fn expand_level_parallel<'a>(
+    machine: &CompiledMachine,
+    def: &Definition,
+    batch: &[Node],
+    effect_outcomes: Option<&[String]>,
+    all_candidates: &'a [Candidate],
+    threads: usize,
+) -> Vec<ExpandedNode<'a>> {
+    let workers = threads.min(batch.len()).max(1);
+    if workers == 1 {
+        return batch
+            .iter()
+            .map(|n| expand_single_node(machine, def, n, effect_outcomes, all_candidates, false))
+            .collect();
+    }
+    let chunk_size = batch.len().div_ceil(workers);
+    std::thread::scope(|scope| {
+        let mut handles = Vec::new();
+        for chunk in batch.chunks(chunk_size) {
+            handles.push(scope.spawn(move || {
+                chunk
+                    .iter()
+                    .map(|node| {
+                        expand_single_node(
+                            machine,
+                            def,
+                            node,
+                            effect_outcomes,
+                            all_candidates,
+                            false,
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            }));
+        }
+        let mut out = Vec::with_capacity(batch.len());
+        for handle in handles {
+            out.extend(handle.join().expect("parallel explore worker panicked"));
+        }
+        out
+    })
+}
+
+fn fold_expanded_node(node: &Node, expanded: ExpandedNode<'_>, ctx: &mut FoldCtx<'_, '_>) {
+    if let Some(gb) = ctx.traced.as_deref_mut() {
+        gb.mark_expanded(&node.state);
+    }
+    for eff in expanded.effect_steps {
+        if !state_within_boundary(&node.state, &eff.recorded_effect, &ctx.options.boundary) {
+            *ctx.boundary_pruned += 1;
+            continue;
+        }
+        let key = structural_fingerprint(&node.state, &eff.recorded_effect, true);
+        if !ctx.seen.insert(key) {
+            continue;
+        }
+        if node.depth + 1 >= ctx.bounds.max_depth {
+            *ctx.complete = false;
+            *ctx.incomplete_reason = Some("max_depth".to_string());
+            continue;
+        }
+        let mut path = node.path.clone();
+        path.push(WitnessStep {
+            command: format!("record_effect:{}", eff.digest),
+            case: None,
+            outcome_index: None,
+        });
+        check_reach_witnesses(
+            ctx.compiled_reach,
+            &node.state,
+            &eff.recorded_effect,
+            &path,
+            ctx.reach_witnesses,
+        );
+        ctx.queue.push_back(Node {
+            state: node.state.clone(),
+            effect: eff.recorded_effect,
+            path,
+            depth: node.depth + 1,
+        });
+    }
+    for entry in expanded.candidate_steps {
+        if entry.from_mismatch {
+            ctx.refusal_classes
+                .insert(crate::diagnostic::DiagnosticCode::IkIllegalState.as_str());
+            continue;
+        }
+        let Some(step) = entry.step else {
+            continue;
+        };
+        let candidate = entry.candidate;
+        match step {
+            Step::Commit {
+                next,
+                terminal,
+                outcome_index,
+                planned_effect,
+            } => {
+                if ctx.uses_effect_guards
+                    && planned_effect.is_some()
+                    && matches!(node.effect, EffectStatus::Pending(_))
+                {
+                    ctx.refusal_classes
+                        .insert(crate::diagnostic::DiagnosticCode::IkEffectStale.as_str());
+                    if let Some(gb) = ctx.traced.as_deref_mut() {
+                        gb.record_loop(&node.state, candidate, "refused:IK_EFFECT_STALE");
+                    }
+                    continue;
+                }
+                *ctx.edges += 1;
+                if let Some(gb) = ctx.traced.as_deref_mut() {
+                    gb.record_commit(&node.state, &next, terminal, candidate);
+                }
+                record_executed(
+                    ctx.executed_commands,
+                    ctx.executed_command_sources,
+                    ctx.executed_outcomes,
+                    &node.state,
+                    &candidate.command_name,
+                    outcome_index,
+                );
+                let mut path = node.path.clone();
+                path.push(WitnessStep {
+                    command: candidate.command_name.clone(),
+                    case: candidate.case.clone(),
+                    outcome_index: Some(outcome_index),
+                });
+                record_command(ctx.witnesses, &candidate.command_name, &path);
+                record_outcome(ctx.witnesses, &candidate.command_name, outcome_index, &path);
+                record_label(
+                    ctx.witnesses,
+                    ctx.reached_labels,
+                    ctx.reached_terminals,
+                    &next,
+                    &path,
+                    terminal,
+                );
+                let next_effect = if ctx.uses_effect_guards {
+                    match planned_effect {
+                        Some(intent) => EffectStatus::Pending(intent),
+                        None => node.effect.clone(),
+                    }
+                } else {
+                    EffectStatus::None
+                };
+                check_reach_witnesses(
+                    ctx.compiled_reach,
+                    &next,
+                    &next_effect,
+                    &path,
+                    ctx.reach_witnesses,
+                );
+                if !state_within_boundary(&next, &next_effect, &ctx.options.boundary) {
+                    *ctx.boundary_pruned += 1;
+                    continue;
+                }
+                let key = structural_fingerprint(&next, &next_effect, ctx.uses_effect_guards);
+                if !ctx.seen.insert(key) {
+                    continue;
+                }
+                if terminal {
+                    if let Some(gb) = ctx.traced.as_deref_mut() {
+                        gb.close_terminal(&next);
+                    }
+                    continue;
+                }
+                if node.depth + 1 >= ctx.bounds.max_depth {
+                    *ctx.complete = false;
+                    *ctx.incomplete_reason = Some("max_depth".to_string());
+                    continue;
+                }
+                ctx.queue.push_back(Node {
+                    state: next,
+                    effect: next_effect,
+                    path,
+                    depth: node.depth + 1,
+                });
+            }
+            Step::Noop => {
+                if let Some(gb) = ctx.traced.as_deref_mut() {
+                    gb.record_loop(&node.state, candidate, "noop");
+                }
+            }
+            Step::Refuse {
+                diagnostic,
+                outcome_index,
+            } => {
+                ctx.refusal_classes.insert(diagnostic.code.as_str());
+                let prev_len = ctx.invariant_refusals.as_ref().map_or(0, |m| m.len());
+                record_invariant_refusal(
+                    ctx.def,
+                    ctx.invariant_refusals.as_deref_mut(),
+                    &node.path,
+                    candidate,
+                    &diagnostic,
+                    outcome_index,
+                );
+                if ctx.options.fail_fast
+                    && ctx
+                        .invariant_refusals
+                        .as_ref()
+                        .is_some_and(|m| m.len() > prev_len)
+                {
+                    *ctx.complete = false;
+                    *ctx.incomplete_reason = Some("fail_fast".to_string());
+                    ctx.aborted_fail_fast = true;
+                    return;
+                }
+                if let Some(gb) = ctx.traced.as_deref_mut() {
+                    gb.record_loop(
+                        &node.state,
+                        candidate,
+                        &format!("refused:{}", diagnostic.code.as_str()),
+                    );
+                }
+            }
+        }
+    }
+}
+
+pub(crate) fn record_invariant_refusal(
     def: &Definition,
     refusals: Option<&mut BTreeMap<String, InvariantRefusalWitness>>,
     path: &[WitnessStep],
@@ -747,25 +1019,174 @@ fn collect_effect_outcome_literals(ast: &super::expr::Expr, out: &mut BTreeSet<S
     }
 }
 
-fn node_seen_key(state: &Value, effect: &EffectStatus, track_effect: bool) -> [u8; 32] {
-    if !track_effect {
-        return crate::canonical::sha256_value_raw(state);
+pub(crate) fn machine_effect_outcomes(def: &Definition) -> Option<Vec<String>> {
+    if machine_uses_effect_guards(def) {
+        Some(harvest_effect_outcomes(def))
+    } else {
+        None
     }
-    let eff = match effect {
-        EffectStatus::None => json!({"s": "none"}),
-        EffectStatus::Pending(i) => json!({"s": "pending", "k": i.effect_kind}),
-        EffectStatus::Recorded(i, o, _) => json!({"s": "recorded", "k": i.effect_kind, "o": o}),
+}
+
+/// Zero-allocation 128-bit structural fingerprint for visited-state deduplication during BFS.
+/// Uses two independent 64-bit FNV-1a streams with explicit JSON variant tags.
+pub(crate) fn structural_fingerprint(
+    state: &Value,
+    effect: &EffectStatus,
+    track_effect: bool,
+) -> (u64, u64) {
+    struct Hasher128 {
+        h1: u64,
+        h2: u64,
+    }
+    impl Hasher128 {
+        fn new() -> Self {
+            Self {
+                h1: 0xcbf29ce484222325,
+                h2: 0xaf63bd4c8601b7df,
+            }
+        }
+        #[inline]
+        fn byte(&mut self, b: u8) {
+            self.h1 ^= b as u64;
+            self.h1 = self.h1.wrapping_mul(0x100000001b3);
+            self.h2 ^= (b as u64).wrapping_add(0x9e);
+            self.h2 = self.h2.wrapping_mul(0x100000001b3).rotate_left(5);
+        }
+        #[inline]
+        fn bytes(&mut self, data: &[u8]) {
+            self.u64(data.len() as u64);
+            for &b in data {
+                self.byte(b);
+            }
+        }
+        #[inline]
+        fn u64(&mut self, v: u64) {
+            for b in v.to_le_bytes() {
+                self.byte(b);
+            }
+        }
+        fn value(&mut self, v: &Value) {
+            match v {
+                Value::Null => self.byte(0),
+                Value::Bool(b) => {
+                    self.byte(1);
+                    self.byte(*b as u8);
+                }
+                Value::Number(n) => {
+                    self.byte(2);
+                    if let Some(i) = n.as_i64() {
+                        self.byte(0);
+                        self.u64(i as u64);
+                    } else if let Some(u) = n.as_u64() {
+                        self.byte(1);
+                        self.u64(u);
+                    } else {
+                        self.byte(2);
+                        self.bytes(n.to_string().as_bytes());
+                    }
+                }
+                Value::String(s) => {
+                    self.byte(3);
+                    self.bytes(s.as_bytes());
+                }
+                Value::Array(arr) => {
+                    self.byte(4);
+                    self.u64(arr.len() as u64);
+                    for item in arr {
+                        self.value(item);
+                    }
+                }
+                Value::Object(map) => {
+                    self.byte(5);
+                    self.u64(map.len() as u64);
+                    for (k, val) in map {
+                        self.bytes(k.as_bytes());
+                        self.value(val);
+                    }
+                }
+            }
+        }
+    }
+    let mut h = Hasher128::new();
+    h.value(state);
+    if track_effect {
+        match effect {
+            EffectStatus::None => h.byte(10),
+            EffectStatus::Pending(i) => {
+                h.byte(11);
+                h.bytes(i.effect_kind.as_bytes());
+            }
+            EffectStatus::Recorded(i, o, _) => {
+                h.byte(12);
+                h.bytes(i.effect_kind.as_bytes());
+                h.bytes(o.as_bytes());
+            }
+        }
+    }
+    (h.h1, h.h2)
+}
+
+pub(crate) fn compile_reach(def: &Definition) -> Vec<(String, Expr)> {
+    def.reach
+        .iter()
+        .filter_map(|(name, src)| expr::parse(src).ok().map(|ast| (name.clone(), ast)))
+        .collect()
+}
+
+pub(crate) fn eval_state_expr(expr: &Expr, state: &Value, effect: &EffectStatus) -> Result<bool, String> {
+    let label = state.get("state").and_then(Value::as_str).unwrap_or("");
+    let mut facts = BTreeMap::new();
+    if let Some(obj) = state.as_object() {
+        for (k, v) in obj {
+            if k != "state" {
+                facts.insert(k.clone(), v.clone());
+            }
+        }
+    }
+    let args = BTreeMap::new();
+    let ctx = EvalCtx {
+        facts: &facts,
+        args: &args,
+        state: label,
+        effect: Some(effect),
     };
-    crate::canonical::sha256_value_raw(&json!([state, eff]))
+    expr::eval(expr, &ctx)
 }
 
-struct Candidate {
-    command_name: String,
-    case: Option<String>,
-    command: Value,
+pub(crate) fn state_within_boundary(
+    state: &Value,
+    effect: &EffectStatus,
+    boundary: &[(String, Expr)],
+) -> bool {
+    boundary
+        .iter()
+        .all(|(_, ast)| eval_state_expr(ast, state, effect).unwrap_or(false))
 }
 
-fn candidates(def: &Definition, corpus: &CaseCorpus) -> Vec<Candidate> {
+pub(crate) fn check_reach_witnesses(
+    reach: &[(String, Expr)],
+    state: &Value,
+    effect: &EffectStatus,
+    path: &[WitnessStep],
+    witnesses: &mut BTreeMap<String, Vec<WitnessStep>>,
+) {
+    for (name, ast) in reach {
+        if witnesses.contains_key(name) {
+            continue;
+        }
+        if eval_state_expr(ast, state, effect).unwrap_or(false) {
+            witnesses.insert(name.clone(), path.to_vec());
+        }
+    }
+}
+
+pub(crate) struct Candidate {
+    pub(crate) command_name: String,
+    pub(crate) case: Option<String>,
+    pub(crate) command: Value,
+}
+
+pub(crate) fn candidates_for(def: &Definition, corpus: &CaseCorpus) -> Vec<Candidate> {
     let mut out = Vec::new();
     for (name, cmd) in &def.commands {
         let needs_args = cmd
@@ -795,7 +1216,7 @@ fn candidates(def: &Definition, corpus: &CaseCorpus) -> Vec<Candidate> {
     out
 }
 
-enum Step {
+pub(crate) enum Step {
     Commit {
         next: Value,
         terminal: bool,
@@ -809,7 +1230,7 @@ enum Step {
     },
 }
 
-fn classify(
+pub(crate) fn step_machine(
     machine: &dyn Machine,
     state: &Value,
     effect: &EffectStatus,

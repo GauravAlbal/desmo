@@ -88,7 +88,7 @@ test("skill install is idempotent and refuses a local edit without force", () =>
     assert.equal(targeted.status, 0, targeted.stderr);
     assert.equal(existsSync(join(target, "desmo", "routing.json")), true);
     const fakeIk = join(dir, "fake-ik");
-    writeFileSync(fakeIk, "#!/bin/sh\nprintf '%s\\n' 'invariant-kernel 0.7.0 protocol 1.0'\n");
+    writeFileSync(fakeIk, "#!/bin/sh\nprintf '%s\\n' 'invariant-kernel 0.7.1 protocol 1.0'\n");
     chmodSync(fakeIk, 0o755);
     const env = { ...process.env, IK_BINARY: fakeIk, IK_BIN: "" };
     const doctor = runCli(["doctor", "--dir", dir, "--json"], dir, env);
@@ -180,7 +180,7 @@ function sameBytes(left: StoreSnap, right: StoreSnap): boolean {
 function envelope(op: string, identity: unknown, extra: Record<string, unknown>): string {
   return JSON.stringify({
     protocol: { major: 1, minor: 0 },
-    runtime_version: "0.7.0",
+    runtime_version: "0.7.1",
     request_id: `r-${op}`,
     op,
     machine: identity,

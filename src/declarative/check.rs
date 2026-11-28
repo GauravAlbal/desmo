@@ -6,7 +6,7 @@
 use super::compile::compile;
 use super::def::Definition;
 use super::evidence::discharge_exploration;
-use super::explore::{explore, Bounds, CaseCorpus, Exploration};
+use super::explore::{explore_with_options, Bounds, CaseCorpus, Exploration, ExploreOptions};
 use super::local::LocalAdequacy;
 use super::plan::{plan_diff, verification_plan, VerificationObligationV1, VerificationPlanV1};
 use super::release::{release_evidence, ReleaseEvidence, ReleaseInputs};
@@ -79,6 +79,35 @@ pub(crate) fn check_with_run(
     ),
     String,
 > {
+    check_with_options(
+        new,
+        prior,
+        corpus,
+        baseline,
+        bounds,
+        &ExploreOptions::default(),
+        capture_invariant_refusals,
+    )
+}
+
+pub(crate) fn check_with_options(
+    new: &Definition,
+    prior: Option<&Definition>,
+    corpus: &CaseCorpus,
+    baseline: &[String],
+    bounds: Bounds,
+    options: &ExploreOptions,
+    capture_invariant_refusals: bool,
+) -> Result<
+    (
+        CheckResult,
+        Exploration,
+        Vec<super::explore::InvariantRefusalWitness>,
+        super::compile::CompiledMachine,
+        Option<Exploration>,
+    ),
+    String,
+> {
     let new_machine = compile(new.clone()).map_err(|e| e.join("; "))?;
     let initial_violation = new_machine.validate_initial().err();
     let mut new_plan = verification_plan(new);
@@ -88,11 +117,13 @@ pub(crate) fn check_with_run(
         }
         crate::smt::merge_certificates(new, &new_machine, &mut new_plan);
     }
-    let (new_run, invariant_refusals) = if capture_invariant_refusals {
-        super::explore::explore_with_invariant_witnesses(&new_machine, corpus, bounds)
-    } else {
-        (explore(&new_machine, corpus, bounds), Vec::new())
-    };
+    let (new_run, invariant_refusals) = explore_with_options(
+        &new_machine,
+        corpus,
+        bounds,
+        options,
+        capture_invariant_refusals,
+    );
     let discharges = discharge_exploration(&new_plan, &new_run);
     let old_compiled = prior
         .map(|old| compile(old.clone()))
@@ -100,7 +131,7 @@ pub(crate) fn check_with_run(
         .map_err(|e| e.join("; "))?;
     let old_run = old_compiled
         .as_ref()
-        .map(|m| explore(m, corpus, bounds));
+        .map(|m| explore_with_options(m, corpus, bounds, options, false).0);
     let machine_diff = match (prior, old_compiled.as_ref(), old_run.as_ref()) {
         (Some(old), Some(old_machine), Some(old_r)) => Some(super::diff::diff_machines_with_runs(
             old,
@@ -159,6 +190,17 @@ pub(crate) fn check_with_run(
             judgment.reasons.push(format!(
                 "model transition violates invariant {}; runtime blocked the proposal",
                 witness.diagnostic.rule.as_deref().unwrap_or("unknown")
+            ));
+        }
+    }
+    for (name, expr_src) in &new.reach {
+        if !new_run.reach_witnesses.contains_key(name) {
+            judgment.verdict = "refused".into();
+            if judgment.status != "witnessed_violation" {
+                judgment.status = "unreached_property".into();
+            }
+            judgment.reasons.push(format!(
+                "reach property `{name}` (`{expr_src}`) was not witnessed within exploration bounds"
             ));
         }
     }

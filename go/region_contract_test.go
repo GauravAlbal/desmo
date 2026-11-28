@@ -186,7 +186,7 @@ func TestRegionParallelRefusalPreservesAuthorityThenJointCommitsAndReplays(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(strings.Fields(string(version)), []string{"invariant-kernel", "0.7.0", "protocol", "1.0"}) {
+	if !reflect.DeepEqual(strings.Fields(string(version)), []string{"invariant-kernel", "0.7.1", "protocol", "1.0"}) {
 		t.Fatalf("runtime release contract mismatch: %s", version)
 	}
 	k, err := invariantkernel.Open(filepath.Join(t.TempDir(), "parallel.db"), invariantkernel.Options{Binary: bin})

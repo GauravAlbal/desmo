@@ -248,6 +248,11 @@
         "invariants": {
           "type": "object",
           "additionalProperties": { "$ref": "#/definitions/InvariantDef" }
+        },
+        "reach": {
+          "type": "object",
+          "description": "Inline `sometimes` reachability assertions checked by `ik check` and `ik simulate` (non-semantic: omitted from spec_hash).",
+          "additionalProperties": { "type": "string" }
         }
       }
     },
@@ -275,6 +280,11 @@
         "invariants": {
           "type": "object",
           "additionalProperties": { "$ref": "#/definitions/InvariantDef" }
+        },
+        "reach": {
+          "type": "object",
+          "description": "Inline `sometimes` reachability assertions checked by `ik check` and `ik simulate` (non-semantic: omitted from spec_hash).",
+          "additionalProperties": { "type": "string" }
         }
       }
     }

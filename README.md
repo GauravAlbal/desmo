@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/GauravAlbal/desmo/actions/workflows/ci.yml"><img src="https://github.com/GauravAlbal/desmo/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://github.com/GauravAlbal/desmo/releases/tag/v0.7.0"><img src="https://img.shields.io/github/v/release/GauravAlbal/desmo?style=flat-square&color=f97316" alt="Release v0.7.0" /></a>
+  <a href="https://github.com/GauravAlbal/desmo/releases/tag/v0.7.1"><img src="https://img.shields.io/github/v/release/GauravAlbal/desmo?style=flat-square&color=f97316" alt="Release v0.7.1" /></a>
   <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/platforms-macOS%20arm64%20%C2%B7%20Linux%20x86__64-black?style=flat-square" alt="Platforms" />
 </p>
@@ -32,7 +32,7 @@
 Install Desmo (`curl -fsSL https://raw.githubusercontent.com/GauravAlbal/desmo/main/install.sh | sh` and `npx skills add GauravAlbal/desmo`), then follow the Desmo skill in read-only audit mode: find the highest-risk implicit state machines in this repo, extract a scratch `.ik.toml`, run `ik check --auto-seed --summary`, and generate an interactive HTML simulator with `ik simulate`. Don't edit any repo files until I pick a lifecycle to enforce.
 ```
 
-Your agent stays strictly read-only ([`skills/desmo/audit.md`](skills/desmo/audit.md)), maps every `status`/flag writer with `file:line` coordinates, and hands you a self-contained HTML simulator you can click through yourself.
+Your agent stays strictly read-only ([`skills/desmo/audit.md`](skills/desmo/audit.md)), maps every `status`/flag writer with `file:line` coordinates, and hands you one self-contained offline HTML simulator (`ik simulate --check`) with checked properties, 1-click **Replay Bug** traces, and **Delta / Full** step scrubbing.
 
 **Option B — Run the 10-second live demo yourself** (zero Node, Python, or Go required):
 
@@ -57,7 +57,7 @@ ik demo
 
 ## Why Desmo
 
-- **What you check is what runs:** `ik check` and runtime commits execute the same declarative AST and evaluator, catching `policy = "once"`, invariant violations (`IK_INVARIANT_FAILED`), and dead ends before deploy.
+- **What you check is what runs:** `ik check` and runtime commits execute the same declarative AST and evaluator — supporting inline `[reach]` properties, `--bound` bounded counter domains, deterministic seeded deep simulation (`--simulate --seed`), parallel BFS (`--threads`, `--fail-fast`), runnable `--emit-scenario` repros, and 1-click counterexample replay inside offline `ik simulate` HTML.
 - **Stale-worker & race fencing:** Every read and commit returns a `(generation, nonce)` capability handle so late workers and stale webhooks refuse (`IK_CAPABILITY_STALE`) before any row mutates.
 - **Crash-safe external effects:** Guards inspect `effect_status`, `effect_kind`, and `effect_outcome`; `runEffect` / `run_effect` / `RunEffect` bind `idempotency_key` before running side effects and recording outcomes.
 - **Zero-ops local SQLite throughput:** `WAL + PRAGMA synchronous=FULL` default delivers **3,495 commits/s** (`p50=0.23ms`, `p99=1.13ms`) on Apple Silicon; indexed `ik list` at 5k aggregates runs in **`p50=5.27ms`** ([`scripts/bench.py`](scripts/bench.py)), with read-only whole-store verification via `ik store verify`.
@@ -108,7 +108,8 @@ to = "refunded"
 
 ```bash
 ik check examples/orders/order.ik.toml --auto-seed --summary
-ik simulate examples/orders/order.ik.toml --open
+# Optional: --bound "retries <= 5" --simulate --seed 42 --emit-scenario repro.json
+ik simulate examples/orders/order.ik.toml --check --open
 ```
 
 ## Use it in TypeScript, Python, or Go
@@ -147,17 +148,17 @@ paid, _ := order.Command(ctx, "pay", map[string]any{"payment_ref": "ch_1042"}) /
 ```
 
 <details>
-<summary>Manual SDK install from GitHub Releases v0.7.0 (not yet on npm / PyPI)</summary>
+<summary>Manual SDK install from GitHub Releases v0.7.1 (not yet on npm / PyPI)</summary>
 
 - **TypeScript / Node** (macOS arm64; swap `darwin-arm64` → `linux-x64` for Linux x86_64):
   ```bash
-  curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-runtime-0.7.0.tgz
-  curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/desmo-darwin-arm64-0.7.0.tgz
-  npm install --no-audit --no-fund --ignore-scripts ./desmo-runtime-0.7.0.tgz ./desmo-darwin-arm64-0.7.0.tgz
+  curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.1/desmo-runtime-0.7.1.tgz
+  curl -fsSLO https://github.com/GauravAlbal/desmo/releases/download/v0.7.1/desmo-darwin-arm64-0.7.1.tgz
+  npm install --no-audit --no-fund --ignore-scripts ./desmo-runtime-0.7.1.tgz ./desmo-darwin-arm64-0.7.1.tgz
   ```
-- **Python** (requires `ik` installed): `pip install https://github.com/GauravAlbal/desmo/releases/download/v0.7.0/invariant_kernel-0.7.0-py3-none-any.whl`
-- **Go**: `go get github.com/GauravAlbal/desmo/go@go/v0.7.0`
-- **From source**: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.7.0 --bin ik`
+- **Python** (requires `ik` installed): `pip install https://github.com/GauravAlbal/desmo/releases/download/v0.7.1/invariant_kernel-0.7.1-py3-none-any.whl`
+- **Go**: `go get github.com/GauravAlbal/desmo/go@go/v0.7.1`
+- **From source**: `cargo install --git https://github.com/GauravAlbal/desmo --tag v0.7.1 --bin ik`
 
 </details>
 
@@ -167,7 +168,7 @@ Desmo does **not** claim to be "formally verified" end-to-end ([`docs/assurance.
 
 | Layer | Verified in CI | Explicit boundary |
 |---|---|---|
-| Shared semantics & test suites | 700+ Rust, 163 Python, 86 TS, 45+ Go tests (`scripts/public-verify`) | `ik guard` catches configured bypass writes in CI; not a full-program proof. |
+| Shared semantics & test suites | 700+ Rust, 160+ Python, 86 TS, 45+ Go tests (`scripts/public-verify`) | `ik guard` catches configured bypass writes in CI; not a full-program proof. |
 | Deleted-wall mutation suites | **15/15 kernel + 6/6 SDK walls killed** | Deleting constitutional runtime or TS/Py/Go transport guards fails CI. |
 | Crash recovery & concurrency | **35+ `SIGABRT`/`exit(86)` tests + 40×3 linearizability** | Finite schedule sampling; trusts SQLite WAL & local OS. |
 | Bounded formal & SMT/TLC | **5 CI Kani 0.68 harnesses** + optional Z3/cvc5 & TLC 2.19 | Concrete JSON/SHA-256 serialization & SQLite remain outside Kani. |
@@ -175,15 +176,15 @@ Desmo does **not** claim to be "formally verified" end-to-end ([`docs/assurance.
 
 ### What Desmo intentionally does NOT do
 
-1. **No unbounded inductive proofs or guarded deadlock-freedom proofs:** `ik check` runs bounded corpus exploration + optional SMT unreachability, not k-induction or unbounded liveness proofs; unexplored invariant violations refuse at runtime (`IK_INVARIANT_FAILED`).
+1. **No unbounded inductive proofs or guarded deadlock-freedom proofs:** `ik check` runs bounded corpus BFS (with optional `--bound` domain pruning, deterministic seeded deep simulation `--simulate`, and optional SMT unreachability) rather than k-induction or unbounded liveness proofs; unexplored invariant violations refuse at runtime (`IK_INVARIANT_FAILED`).
 2. **No cross-aggregate atomic invariants or distributed consensus:** Each transaction enforces invariants on one `aggregate_id` in local SQLite (no cross-account conservation or Raft/Paxos consensus).
-3. **No multi-replica shared SQLite or `ik serve` network daemon in `0.7.0`:** Stores are single-node local SQLite; use read-only audit or single-writer projection (`kernel.events()`) for multi-container web apps.
+3. **No multi-replica shared SQLite or `ik serve` network daemon in `0.7.1`:** Stores are single-node local SQLite; use read-only audit or single-writer projection (`kernel.events()`) for multi-container web apps.
 4. **No cryptographic caller authentication on capability tokens:** `(generation, nonce)` is deterministic optimistic-concurrency staleness fencing, not a secret against untrusted callers.
 5. **No automatic historical-state schema migrator:** Aggregates pin `(machine_id, version, spec_hash)` strictly; deploy new versions for new aggregates while older ones drain.
 6. **No whole-program static anti-bypass proof:** `ik guard` scans configured source paths for status-table writes rather than proving full-program dataflow isolation.
 7. **No exactly-once external side effects:** External effects are at-least-once with kernel-bound `idempotency_key` attribution; downstream sinks must honor the key.
 8. **No OS sandbox for external Python reducers:** `kernel.reducer` is a cooperative deterministic-reducer contract, not an isolation sandbox.
-9. **No npm or PyPI registry packages in `0.7.0`:** Node tarballs and Python wheels ship directly on GitHub Releases with `SHA256SUMS`; Go installs via `go/v0.7.0`.
+9. **No npm or PyPI registry packages in `0.7.1`:** Node tarballs and Python wheels ship directly on GitHub Releases with `SHA256SUMS`; Go installs via `go/v0.7.1`.
 
 ## Documentation
 
@@ -191,4 +192,4 @@ Desmo does **not** claim to be "formally verified" end-to-end ([`docs/assurance.
 
 ---
 
-**Protocol `1.0` · Runtime `0.7.0` · Store schema `4`** (`ikaros.trace.v2` wire compatibility preserved). Named after the *desmodromic valve*. Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
+**Protocol `1.0` · Runtime `0.7.1` · Store schema `4`** (`ikaros.trace.v2` wire compatibility preserved). Named after the *desmodromic valve*. Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
