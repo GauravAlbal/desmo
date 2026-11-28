@@ -9,6 +9,20 @@ always a SemVer major. See [docs/release-compatibility.md](docs/release-compatib
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-27
+
+### Added
+
+- **Interactive counterexample & witness replay in `ik simulate` (`--check`, Delta/Full, timeline branching):** `ik simulate` now embeds bounded check results (`--check` by default, opt-out via `--no-check`, plus `--corpus`, `--bound`, `--simulate`, `--seed`, `--steps`) directly inside the single-file offline HTML Explorer with a **Properties & Traces** card, one-click **Replay Bug** / **Replay Witness** buttons, **View: Delta / Full** fact diffs, and clickable timeline scrubbing (`◀ Prev` / `Next ▶`) + branching from any historical step.
+- **Seeded random-walk `SimulationChecker` (`ik check --simulate`):** Added deterministic `SplitMix64`-seeded deep exploration (`--simulate --seed <u64> --steps <n> --traces <n>`) using $O(\text{depth})$ memory to uncover deep `IK_INVARIANT_FAILED` witnesses beyond BFS node/depth limits, plus automatic fallback when bounded BFS is incomplete.
+- **First-class inline `[reach]` (`sometimes`) assertions:** Schema 1 and schema 2 `.ik.toml` files support `[reach]` predicates (`#[serde(skip_serializing)]`, preserving `spec_hash`), statically validated against declared states and checked during `ik check` (`unreached_property`).
+- **Explicit finite-domain bounds (`--bound` & `[limits].boundary`):** Prune out-of-domain states cleanly during BFS (`boundary_pruned`) so bounded counter/retry lifecycles complete exhaustively inside declared finite domains.
+- **Actionable witness path traces & `--emit-scenario`:** `ik check` prints step-by-step pre/post-states, concrete arguments, fact diffs, and a runnable `ik simulate <machine> --check --open` hint on invariant refusals, while `--emit-scenario <file.json>` writes a runnable `ik scenario run` reproduction bundle (with scenario-relative machine paths).
+
+### Changed
+
+- **Fast structural exploration, parallel BFS, & early stop (`--threads`, `--fail-fast`):** Replaced per-state canonical SHA-256 hashing in `src/declarative/explore.rs` BFS `seen` sets with zero-allocation 128-bit structural fingerprinting (`(u64, u64)`), and added level-synchronous parallel BFS (`--threads <n>`) plus `--fail-fast` early stop on the first witnessed invariant violation.
+
 ## [0.7.0] - 2026-11-26
 
 ### Added

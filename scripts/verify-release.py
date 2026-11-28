@@ -17,7 +17,7 @@ import venv
 import zipfile
 
 REPO = Path(__file__).resolve().parent.parent
-VERSION = "0.7.0"
+VERSION = "0.7.1"
 # Independently accepted v0.2.1 darwin-arm64 artifact, source
 # 568525461ed4b73cc4874e2735cc0786bc23781c, artifact SHA256
 # 81edee455b8d139210508e1f12e525540f043deba165f6bc824969b7f24c79a5.
@@ -141,7 +141,7 @@ binary, repo, install, work, accepted_hash = map(Path, sys.argv[1:])
 accepted_hash = str(accepted_hash)
 assert Path(invariant_kernel.__file__).resolve().is_relative_to(install.resolve()), invariant_kernel.__file__
 distribution = importlib.metadata.distribution("invariant-kernel")
-assert distribution.version == "0.7.0", distribution.version
+assert distribution.version == "0.7.1", distribution.version
 assert Path(distribution.locate_file("")).resolve().is_relative_to(install.resolve())
 assert all(Path(item).name not in {"ik", "ik.exe"} for item in distribution.files)
 assert not any(str(repo / "python" / "src") == entry for entry in sys.path), sys.path
@@ -175,7 +175,7 @@ def rows(database=store):
 before = rows()
 meta = dict(before["meta"])
 assert meta["schema_version"] == "4", meta
-assert meta["runtime_version"] == "0.7.0", meta
+assert meta["runtime_version"] == "0.7.1", meta
 try:
     created.command("mute")
 except InvariantFailedError as error:
@@ -258,7 +258,7 @@ def main() -> None:
                 shutil.copyfileobj(source, target)
         binary.chmod(0o700)
         version = run([str(binary), "--version"], cwd=work, env=env).strip()
-        require(version == "invariant-kernel 0.7.0 protocol 1.0", f"wrong packaged runtime: {version}")
+        require(version == "invariant-kernel 0.7.1 protocol 1.0", f"wrong packaged runtime: {version}")
         identity = json.loads(run([str(binary), "identity", str(REPO / "machines/verification_attempt.ik.toml")], cwd=work, env=env))
         require(identity == {"machine_id": "verification_attempt", "version": 1, "spec_hash": SCHEMA1_HASH},
                 "packaged schema-1 identity differs from independently accepted v0.2.1 identity")

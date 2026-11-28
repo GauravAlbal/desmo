@@ -1,10 +1,10 @@
 {
   "machine": "verification_attempt",
   "steps": [
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s0", "op": "create", "aggregate_id": "agg-1", "machine": {"machine_id": "verification_attempt", "version": 99, "spec_hash": "$machine.spec_hash"}},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s1", "op": "create", "aggregate_id": "agg-1", "machine": {"machine_id": "verification_attempt", "version": 1, "spec_hash": "0000000000000000000000000000000000000000000000000000000000000000"}},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s2", "op": "create", "aggregate_id": "agg-1", "machine": {"machine_id": "other_machine", "version": 1, "spec_hash": "0000000000000000000000000000000000000000000000000000000000000000"}},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s3", "op": "create", "aggregate_id": "agg-1", "machine": "$machine"},
-    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.0", "request_id": "s4", "op": "command", "aggregate_id": "agg-1", "machine": "$machines.effect_probe", "capability": "$steps.3.result.capability", "command": {"name": "start"}}
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s0", "op": "create", "aggregate_id": "agg-1", "machine": {"machine_id": "verification_attempt", "version": 99, "spec_hash": "$machine.spec_hash"}},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s1", "op": "create", "aggregate_id": "agg-1", "machine": {"machine_id": "verification_attempt", "version": 1, "spec_hash": "0000000000000000000000000000000000000000000000000000000000000000"}},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s2", "op": "create", "aggregate_id": "agg-1", "machine": {"machine_id": "other_machine", "version": 1, "spec_hash": "0000000000000000000000000000000000000000000000000000000000000000"}},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s3", "op": "create", "aggregate_id": "agg-1", "machine": "$machine"},
+    {"protocol": {"major": 1, "minor": 0}, "runtime_version": "0.7.1", "request_id": "s4", "op": "command", "aggregate_id": "agg-1", "machine": "$machines.effect_probe", "capability": "$steps.3.result.capability", "command": {"name": "start"}}
   ]
 }

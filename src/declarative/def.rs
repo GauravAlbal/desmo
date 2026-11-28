@@ -151,6 +151,10 @@ pub struct Definition {
     pub commands: BTreeMap<String, CommandDef>,
     #[serde(default)]
     pub invariants: BTreeMap<String, InvariantDef>,
+    /// Optional inline `sometimes` reachability assertions checked by `ik check` / `ik simulate`.
+    /// Omitted from `spec_hash` serialization so adding `[reach]` preserves wire compatibility.
+    #[serde(default, skip_serializing)]
+    pub reach: BTreeMap<String, String>,
     /// Lowering provenance. Never part of spec_hash.
     #[serde(skip)]
     pub origin: OriginMap,
@@ -334,6 +338,7 @@ pub fn check(def: &Definition) -> StaticErrors {
     check_facts(def, &mut errors);
     check_commands(def, &mut errors);
     check_invariants(def, &mut errors);
+    check_reach(def, &mut errors);
     errors
 }
 
@@ -628,6 +633,36 @@ fn check_effect(cmd: &CommandDef, name: &str, errors: &mut Vec<String>) {
             }
         } else if value.is_empty() {
             errors.push(format!("command `{name}` effect {field} is required"));
+        }
+    }
+}
+
+/// Validate a state/fact predicate (used by `[reach]`, `--bound`, and profile boundaries).
+pub fn validate_state_expr(
+    def: &Definition,
+    expr_src: &str,
+    label: &str,
+) -> Result<crate::declarative::expr::Expr, String> {
+    let expr = crate::declarative::expr::parse(expr_src)
+        .map_err(|e| format!("{label} parse error: {e}"))?;
+    let mut issues = Vec::new();
+    walk_expr(&expr, def, None, &mut issues);
+    if issues.is_empty() {
+        Ok(expr)
+    } else {
+        Err(issues
+            .into_iter()
+            .map(|issue| format!("{label}: {issue}"))
+            .collect::<Vec<_>>()
+            .join("; "))
+    }
+}
+
+/// Inline `[reach]` properties: state/fact predicates checked as `sometimes` goals.
+fn check_reach(def: &Definition, errors: &mut Vec<String>) {
+    for (name, expr_src) in &def.reach {
+        if let Err(err) = validate_state_expr(def, expr_src, &format!("reach `{name}`")) {
+            errors.push(err);
         }
     }
 }

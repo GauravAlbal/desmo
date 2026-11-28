@@ -31,6 +31,7 @@ const NO_OUTGOING: &str = "no_outgoing_command";
 pub struct Profile {
     pub profile_version: u64,
     pub limits: Bounds,
+    pub boundary: Option<String>,
     pub goals: Vec<Goal>,
 }
 
@@ -130,6 +131,7 @@ struct ProfileFile {
 struct LimitsFile {
     max_nodes: Option<usize>,
     max_depth: Option<usize>,
+    boundary: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -148,6 +150,8 @@ struct GoalFile {
 struct ProfileDocument {
     profile_version: u64,
     limits: Bounds,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    boundary: Option<String>,
     goals: Vec<GoalDocument>,
 }
 
@@ -191,11 +195,15 @@ pub fn parse_profile(text: &str) -> Result<Profile, String> {
             max_nodes: file.limits.max_nodes.unwrap_or(DEFAULT_MAX_NODES),
             max_depth: file.limits.max_depth.unwrap_or(DEFAULT_MAX_DEPTH),
         },
+        boundary: file.limits.boundary,
         goals,
     })
 }
 
 pub fn bind_profile(profile: &Profile, def: &Definition) -> Result<(), String> {
+    if let Some(boundary) = &profile.boundary {
+        super::def::validate_state_expr(def, boundary, "profile limits.boundary")?;
+    }
     for goal in &profile.goals {
         bind_goal(goal, def)?;
     }
@@ -992,6 +1000,7 @@ fn profile_digest(profile: &Profile) -> String {
     digest_json(&ProfileDocument {
         profile_version: profile.profile_version,
         limits: profile.limits,
+        boundary: profile.boundary.clone(),
         goals: profile.goals.iter().map(goal_document).collect(),
     })
 }

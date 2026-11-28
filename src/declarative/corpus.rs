@@ -1,10 +1,52 @@
 //! Editable starter corpora. Examples are type-valid inputs, not a domain.
 
 use super::def::{CommandDef, Definition};
+use super::explore::CaseCorpus;
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
+use std::path::Path;
 
 pub const STARTER_NOTE: &str = "example cases, not an exhaustive domain";
+
+/// Load a `CaseCorpus` from an explicit path, filling zero-argument commands
+/// with a `"default"` empty-arg case when omitted.
+pub fn load_corpus_from_path(path: &Path, def: &Definition) -> Result<CaseCorpus, String> {
+    let text =
+        std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    let mut corpus: CaseCorpus =
+        serde_json::from_str(&text).map_err(|e| format!("corpus {}: {e}", path.display()))?;
+    fill_zero_arg_defaults(&mut corpus, def);
+    Ok(corpus)
+}
+
+/// Resolve an explicit corpus file or sibling `<machine>.cases.json`, falling back
+/// to an empty corpus seeded only with zero-arg command defaults.
+pub fn load_corpus(
+    machine: &Path,
+    explicit: Option<&Path>,
+    def: &Definition,
+) -> Result<CaseCorpus, String> {
+    let sibling = machine.with_extension("cases.json");
+    let path = explicit.or_else(|| sibling.exists().then_some(sibling.as_path()));
+    match path {
+        Some(path) => load_corpus_from_path(path, def),
+        None => {
+            let mut corpus = CaseCorpus::new();
+            fill_zero_arg_defaults(&mut corpus, def);
+            Ok(corpus)
+        }
+    }
+}
+
+fn fill_zero_arg_defaults(corpus: &mut CaseCorpus, def: &Definition) {
+    for (name, cmd) in &def.commands {
+        if cmd.args.as_ref().map(|a| a.is_empty()).unwrap_or(true)
+            && !corpus.commands.contains_key(name)
+        {
+            corpus.insert(name.clone(), "default", BTreeMap::new());
+        }
+    }
+}
 
 /// One type-valid example per command, plus one min and one max case for each
 /// command that declares an `int` argument. `int` is the only bounded argument
